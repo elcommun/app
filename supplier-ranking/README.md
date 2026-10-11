@@ -3,7 +3,7 @@
 `ranking/index.html` の仕様（ログイン・サイドバー・KPI・ランキング表・検索・期間/店舗フィルタ・データ追加アップロード）を踏襲したシングルページアプリ。
 対象商品が自社品番ではなく **仕入れメーカー商品**（`ec-maker-only` アプリで変換したメーカー商品）である点のみが異なる。
 
-公開URL: `https://elcommun.github.io/Claude-App/supplier-ranking/`
+公開URL: `https://elcommun.github.io/app/supplier-ranking/`
 
 ## サイドバーの分類
 

@@ -3,7 +3,7 @@
 `ranking` などと同じく `index.html` 一枚のシングルページアプリ。
 EC在庫データ（itemdata CSV）を取り込み、**自社商品**と**メーカー商品**の2シートに振り分けて、棚卸し用Excelを出力する。
 
-公開URL: `https://elcommun.github.io/Claude-App/ec-inventory/`
+公開URL: `https://elcommun.github.io/app/ec-inventory/`
 
 **⚠️ 未入荷の予約商品に注意**: 手帳・カレンダーなど、まだ入荷していない予約商品が itemdata に含まれている場合は、棚卸しデータを生成する前に itemdata CSV から該当行を削除すること（アプリでは判別できないため、ページ上部に目立つ注意書きを表示している）。
 

@@ -3,7 +3,7 @@
 `index.html` 一枚のシングルページアプリ。
 EC在庫の**入荷データ（xlsx）**を、**「SKU」「総在庫数」の2列のみのCSV**に変換する。
 
-公開URL: `https://elcommun.github.io/Claude-App/inventory-convert/`
+公開URL: `https://elcommun.github.io/app/inventory-convert/`
 
 ## 使い方
 

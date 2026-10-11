@@ -5,7 +5,7 @@
 `ranking/index.html` 一枚のシングルページアプリ（約2,100行）。  
 EC（楽天・Amazon等）の販売データをExcelでインポートし、カテゴリ別・商品別の売上ランキングを表示する。
 
-**URL（GitHub Pages）**: `elcommun/Claude-App` の `main` ブランチで公開。
+**URL（GitHub Pages）**: `elcommun/app` の `main` ブランチで公開。
 
 ---
 
