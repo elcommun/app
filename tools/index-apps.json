@@ -3,7 +3,7 @@
     {"id": "sales", "title": "📊 販売データ・ランキング", "apps": [
       {"dir": "ranking", "name": "EC 販売ランキング（自社商品）", "desc": "自社商品の売上ランキング"},
       {"dir": "supplier-ranking", "name": "EC 販売ランキング（メーカー商品）", "desc": "仕入れ（メーカー）商品の売上ランキング"},
-      {"dir": "ec-sales-split", "name": "EC販売データ振り分け（販売数確認App取込用）", "desc": "自社／メーカー変換データを同時生成"},
+      {"dir": "ec-sales-split", "name": "EC販売データ振り分け（集計App取込用）", "desc": "自社／メーカー変換データを同時生成"},
       {"dir": "ec-category", "name": "ECカテゴリ別販売数"},
       {"dir": "ec-monthly", "name": "EC月次販売データ"}
     ]},
@@ -21,7 +21,7 @@
       {"dir": "rakuten-yahoo", "name": "楽天 → Yahoo 商品データ作成"},
       {"dir": "rakuten-aupay", "name": "楽天 → auPAY 商品データ作成"},
       {"dir": "aupay-convert", "name": "楽天 → auPAY 変換ツール"},
-      {"dir": "laikle-convert", "name": "楽天 店舗間 商品データ変換（EL COMMUN → LAIKLE）"},
+      {"dir": "laikle-convert", "name": "楽天 EL COMMUN → LAIKLE 変換"},
       {"dir": "rakuten-filter", "name": "楽天データ絞り込みフィルター"},
       {"dir": "rakuten-image-dl", "name": "楽天画像ダウンローダー"},
       {"dir": "qoo10-data-add", "name": "Qoo10 商品データ補完ツール"},
