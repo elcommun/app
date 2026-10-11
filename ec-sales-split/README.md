@@ -4,7 +4,7 @@
 
 同じ**受注・売上データCSV**を1回アップロードするだけで、行ごとに**自社商品**か**メーカー（仕入れ）商品**かを自動判定し、それぞれ専用のルール・形式で変換した**2つのファイルを同時に生成**する。
 
-公開URL: `https://elcommun.github.io/Claude-App/ec-sales-split/`
+公開URL: `https://elcommun.github.io/app/ec-sales-split/`
 
 ## 入力データ
 
@@ -30,7 +30,7 @@
 
 `販売日 / 大分類 / 中分類 / 小分類 / 商品名 / 商品番号 / 税抜単価 / 数量 / 小計（税抜）/ 店舗 / 検索コード / マスター一致`
 
-`DR-`/`XDR-` の両形式が存在する品番（データ内に両方ある、または商品マスタにXDR-側が登録されている場合）は `XDR-` に統一する。ファイル名は実データの出荷日（無ければ注文日時）の範囲から自動生成（例: `2026年EC販売データ（7月1日〜7月7日）.xlsx`）。[ranking](https://elcommun.github.io/Claude-App/ranking/) アプリへの取込用（`item-data/update_sales.py` で `PRELOADED` に反映）。
+`DR-`/`XDR-` の両形式が存在する品番（データ内に両方ある、または商品マスタにXDR-側が登録されている場合）は `XDR-` に統一する。ファイル名は実データの出荷日（無ければ注文日時）の範囲から自動生成（例: `2026年EC販売データ（7月1日〜7月7日）.xlsx`）。[ranking](https://elcommun.github.io/app/ranking/) アプリへの取込用（`item-data/update_sales.py` で `PRELOADED` に反映）。
 
 ## 出力②: メーカー変換データ（`ec-maker-only` ルール・XLSX）
 
@@ -38,7 +38,7 @@
 
 `店舗 / 出荷日 / 商品名 / 項目・選択肢 / 商品番号 / 税抜単価 / 数量 / 小計（税抜）/ メーカー / 掛け率`
 
-税抜単価・掛け率表・フォールバック推定ルールの詳細は `ec-maker-only/README.md` を参照（本アプリも同じ `MAKER_MAP` / `makerFallback` を使用）。ファイル名は `{年}年EC販売データ（{開始月}月{開始日}日〜{終了月}月{終了日}日）_メーカー変換.xlsx`。[supplier-ranking](https://elcommun.github.io/Claude-App/supplier-ranking/) アプリへの取込用。
+税抜単価・掛け率表・フォールバック推定ルールの詳細は `ec-maker-only/README.md` を参照（本アプリも同じ `MAKER_MAP` / `makerFallback` を使用）。ファイル名は `{年}年EC販売データ（{開始月}月{開始日}日〜{終了月}月{終了日}日）_メーカー変換.xlsx`。[supplier-ranking](https://elcommun.github.io/app/supplier-ranking/) アプリへの取込用。
 
 ## 確認用Excel
 

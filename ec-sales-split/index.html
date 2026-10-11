@@ -197,7 +197,7 @@
     <ol class="steps">
       <li>「受注・売上データCSV」と「商品データxlsx」をアップロードする</li>
       <li>「生成」ボタンを押す（自社商品とメーカー商品に自動で振り分けられます）</li>
-      <li><b>自社データ（XLSX）</b>は<a href="https://elcommun.github.io/Claude-App/ranking/" target="_blank" rel="noopener">ranking</a>アプリへ、<b>メーカー変換データ（XLSX）</b>は<a href="https://elcommun.github.io/Claude-App/supplier-ranking/" target="_blank" rel="noopener">supplier-ranking</a>アプリへ、それぞれダウンロードして取り込む</li>
+      <li><b>自社データ（XLSX）</b>は<a href="https://elcommun.github.io/app/ranking/" target="_blank" rel="noopener">ranking</a>アプリへ、<b>メーカー変換データ（XLSX）</b>は<a href="https://elcommun.github.io/app/supplier-ranking/" target="_blank" rel="noopener">supplier-ranking</a>アプリへ、それぞれダウンロードして取り込む</li>
     </ol>
   </div>
 
@@ -280,8 +280,8 @@
     <div class="info">
       <ul>
         <li><span class="b">A</span><span><b>振り分け</b>：各行の<code>商品番号</code>を内部品番に解決し（<code>item-data</code> 準拠のロジック）、<b>自社品番マスタ</b>（商品データxlsxの品番一覧）に一致、<code>elco-</code> <code>cal-</code>・自社確定接頭辞（<code>X?DR-</code> <code>CAL-</code> <code>EGP-</code> <code>LBG-</code> <code>AMP-C</code> <code>SFD-</code> <code>MK-</code> <code>CRB-</code> <code>WCL-</code>、大文字<code>AK-</code>）に一致、または<b>商品名に「エルコミューン」を含む</b>行を<b>自社商品</b>として、それ以外を<b>メーカー商品</b>として振り分けます。<code>商品番号</code>が空の行はどちらにも含めず「要確認」として除外します。</span></li>
-        <li><span class="b">B</span><span><b>自社データ</b>（<code>item-data</code> ルール）：商品データxlsxの品番マスタ・商品分類シートから商品名・大分類/中分類/小分類・楽天商品URLベースの検索コードを付与し、<code>販売日・大分類・中分類・小分類・商品名・商品番号・税抜単価・数量・小計（税抜）・店舗・検索コード・マスター一致</code> の12列XLSXとして出力（<a href="https://elcommun.github.io/Claude-App/ranking/" target="_blank" rel="noopener">ranking</a>アプリへの取込用）。</span></li>
-        <li><span class="b">C</span><span><b>メーカー変換データ</b>（<code>ec-maker-only</code> ルール）：<code>商品番号</code>の接頭辞を内蔵の掛け率表（37件）と照合してメーカー名・掛け率を付与（未登録時はブランド名・作家名等のキーワードからフォールバック推定）。項目・選択肢列から「デザイン:」「カラー:」の値だけを抽出。<code>店舗・出荷日・商品名・項目・選択肢・商品番号・税抜単価・数量・小計（税抜）・メーカー・掛け率</code> の10列XLSXとして出力（<a href="https://elcommun.github.io/Claude-App/supplier-ranking/" target="_blank" rel="noopener">supplier-ranking</a>アプリへの取込用）。</span></li>
+        <li><span class="b">B</span><span><b>自社データ</b>（<code>item-data</code> ルール）：商品データxlsxの品番マスタ・商品分類シートから商品名・大分類/中分類/小分類・楽天商品URLベースの検索コードを付与し、<code>販売日・大分類・中分類・小分類・商品名・商品番号・税抜単価・数量・小計（税抜）・店舗・検索コード・マスター一致</code> の12列XLSXとして出力（<a href="https://elcommun.github.io/app/ranking/" target="_blank" rel="noopener">ranking</a>アプリへの取込用）。</span></li>
+        <li><span class="b">C</span><span><b>メーカー変換データ</b>（<code>ec-maker-only</code> ルール）：<code>商品番号</code>の接頭辞を内蔵の掛け率表（37件）と照合してメーカー名・掛け率を付与（未登録時はブランド名・作家名等のキーワードからフォールバック推定）。項目・選択肢列から「デザイン:」「カラー:」の値だけを抽出。<code>店舗・出荷日・商品名・項目・選択肢・商品番号・税抜単価・数量・小計（税抜）・メーカー・掛け率</code> の10列XLSXとして出力（<a href="https://elcommun.github.io/app/supplier-ranking/" target="_blank" rel="noopener">supplier-ranking</a>アプリへの取込用）。</span></li>
         <li><span class="b">D</span><span><b>税抜単価</b>：<code>税込別</code>が「込」の行は<code>商品単価 ÷ 1.1</code>（四捨五入）で税抜換算。それ以外は<code>商品単価</code>をそのまま使用。両ファイル共通のルールです。</span></li>
       </ul>
     </div>
