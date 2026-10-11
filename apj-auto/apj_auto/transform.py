@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """GoQ受注CSV → APJ発注書データへの変換ロジック。
 
-整形ルールは既存アプリ apj-order-app (https://elcommun.github.io/apj-order-app/)
+整形ルールは既存アプリ apj-order (https://elcommun.github.io/app/apj-order/)
 の processProductName / processOptions を正として移植したもの。
 挙動を変える場合は必ず apj-order-app 側と揃えること。
 """
