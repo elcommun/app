@@ -6,7 +6,7 @@ Mac（macOS）常駐の自動化スクリプト。
 
 要件定義書（2026-07-17 EL COMMUN EC事業部）に基づく実装。
 発注書の整形ルール・Excelレイアウトは既存アプリ
-[apj-order-app](https://elcommun.github.io/apj-order-app/) から移植（同一出力）。
+[apj-order](https://elcommun.github.io/app/apj-order/) から移植（同一出力）。
 
 > **実データ検証済み（2026-07-17）**: GoQからダウンロードした実受注CSVと
 > apj-order-app が生成した発注書xlsxのペアで、本実装の変換出力が
