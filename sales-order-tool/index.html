@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECプロパー週次発注ツール（販売実績版） | EL COMMUN</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --primary:#0E7490;--primary-light:#ECFEFF;--primary-dark:#155E75;
+  --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;
+  --gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;
+  --green:#10B981;--green-light:#ECFDF5;
+  --red:#EF4444;--red-light:#FEF2F2;
+  --yellow-light:#FFFBEB;--blue-light:#EFF6FF;
+  --purple-light:#F5F3FF;--purple:#7C3AED;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
+header{background:white;border-bottom:3px solid var(--primary);padding:16px 32px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;}
+header h1{font-size:18px;font-weight:700;}
+header span{font-size:12px;color:var(--gray-400);margin-left:4px;}
+.container{max-width:1020px;margin:0 auto;padding:32px 16px;}
+
+/* ヒーローエリア */
+.hero{background:linear-gradient(135deg,#0E7490 0%,#155E75 100%);border-radius:16px;padding:32px 36px;margin-bottom:28px;color:white;display:flex;align-items:flex-start;gap:24px;}
+.hero-icon{font-size:48px;flex-shrink:0;line-height:1;}
+.hero-text h2{font-size:22px;font-weight:800;margin-bottom:8px;letter-spacing:-.3px;}
+.hero-text p{font-size:14px;line-height:1.8;opacity:.92;}
+.hero-text p strong{font-weight:700;background:rgba(255,255,255,.2);padding:1px 6px;border-radius:4px;}
+
+/* フローガイド */
+.flow-guide{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:28px;background:white;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;}
+.flow-step{padding:20px 16px;text-align:center;position:relative;}
+.flow-step:not(:last-child)::after{content:'▶';position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:14px;z-index:1;}
+.flow-step:not(:last-child){border-right:1px solid var(--gray-100);}
+.flow-step-num{width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+.flow-step-icon{font-size:26px;margin-bottom:8px;}
+.flow-step-title{font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:4px;}
+.flow-step-desc{font-size:11px;color:var(--gray-400);line-height:1.6;}
+
+/* ロジック説明 */
+.rule-guide{background:white;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:28px;overflow:hidden;}
+.rule-guide-header{padding:16px 20px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.rule-guide-header h3{font-size:14px;font-weight:700;flex:1;}
+.rule-guide-body{padding:20px;display:none;}
+.rule-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.rule-card{border-radius:10px;padding:14px 16px;border:1px solid;}
+.rule-card.c1{background:var(--primary-light);border-color:#A5F3FC;}
+.rule-card.c2{background:var(--yellow-light);border-color:#FDE68A;}
+.rule-card.c3{background:var(--red-light);border-color:#FECACA;}
+.rule-card-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;margin-bottom:8px;}
+.rule-card.c1 .rule-card-badge{background:#A5F3FC;color:#155E75;}
+.rule-card.c2 .rule-card-badge{background:#FCD34D;color:#78350F;}
+.rule-card.c3 .rule-card-badge{background:#FECACA;color:#991B1B;}
+.rule-card-title{font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:6px;}
+.rule-card-desc{font-size:12px;color:var(--gray-600);line-height:1.7;}
+
+.card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px;}
+.step{width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;}
+.card-header h2{font-size:15px;font-weight:700;}
+.sub{font-size:12px;color:var(--gray-400);margin-left:4px;}
+.card-body{padding:20px;}
+/* アップロード */
+.upload-zone{border:2px dashed var(--gray-200);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50);position:relative;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--primary);background:var(--primary-light);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:30px;margin-bottom:8px;}
+.upload-zone p{font-size:14px;color:var(--gray-600);margin-bottom:4px;}
+.upload-zone small{font-size:11px;color:var(--gray-400);line-height:1.5;display:block;}
+.file-status{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:13px;line-height:1.5;}
+.file-status.ok{background:var(--green-light);color:#065F46;}
+.file-status.err{background:var(--red-light);color:#991B1B;}
+.file-status.loading{background:var(--blue-light);color:#1E40AF;}
+.dl-hint{margin-top:10px;padding:10px 14px;background:var(--blue-light);border:1px solid #BFDBFE;border-radius:8px;font-size:12px;color:#1E40AF;line-height:1.8;}
+/* 設定 */
+.setting-box{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;}
+.setting-box input[type=number]{border:1px solid var(--gray-200);border-radius:6px;padding:6px 10px;font-size:14px;font-family:inherit;width:70px;text-align:center;font-weight:700;}
+.setting-box input[type=number]:focus{outline:none;border-color:var(--primary);}
+/* ボタン */
+.primary-btn{width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.primary-btn:hover:not(:disabled){background:var(--primary-dark);}
+.primary-btn:disabled{background:var(--gray-400);cursor:not-allowed;}
+/* ログ */
+.log-box{margin-top:16px;background:var(--gray-800);color:#D1FAE5;border-radius:8px;padding:16px;font-size:12px;font-family:'Courier New',monospace;line-height:1.8;max-height:420px;overflow-y:auto;display:none;}
+.log-box.show{display:block;}
+.log-ok{color:#6EE7B7;}.log-warn{color:#FCD34D;}.log-err{color:#FCA5A5;}.log-info{color:#93C5FD;}.log-purple{color:#C4B5FD;}
+.log-sep{color:#4B5563;border-top:1px solid #374151;margin:4px 0;}
+/* 結果 */
+.result-section{display:none;background:var(--green-light);border:1px solid #6EE7B7;border-radius:10px;padding:20px;margin-top:20px;text-align:center;}
+.result-section.show{display:block;}
+.result-section h3{color:#065F46;font-size:16px;margin-bottom:12px;}
+.dl-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--green);color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s;}
+.dl-btn:hover{background:#059669;}
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px;}
+.stat{background:white;border-radius:8px;padding:12px;text-align:center;border:1px solid var(--gray-200);}
+.stat .num{font-size:20px;font-weight:800;color:var(--primary);}
+.stat .label{font-size:11px;color:var(--gray-600);margin-top:2px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+/* プレビュー */
+.preview-wrap{max-height:180px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;margin-top:10px;}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px;}
+.preview-table th{background:var(--gray-100);padding:6px 9px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);position:sticky;top:0;}
+.preview-table td{padding:6px 9px;border-bottom:1px solid var(--gray-200);}
+.preview-table tr:last-child td{border-bottom:none;}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.badge-red{background:#FEE2E2;color:#991B1B;}
+.badge-gray{background:#F3F4F6;color:#374151;}
+@media(max-width:800px){.three-col{grid-template-columns:1fr;}}
+@media(max-width:640px){
+  .stats-grid{grid-template-columns:repeat(3,1fr);}
+  .flow-guide{grid-template-columns:repeat(2,1fr);}
+  .flow-step:nth-child(2)::after{display:none;}
+  .rule-cards{grid-template-columns:1fr;}
+  .hero{flex-direction:column;gap:12px;padding:22px 20px;}
+  .hero-icon{font-size:36px;}
+  .hero-text h2{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">週次</div>
+  <div><h1>ECプロパー 週次発注ツール <span>販売実績版 | EL COMMUN</span></h1></div>
+</header>
+
+<div class="container">
+
+  <!-- ヒーロー -->
+  <div class="hero">
+    <div class="hero-icon">📈</div>
+    <div class="hero-text">
+      <h2>ECプロパー 週次発注ツール（販売実績版）</h2>
+      <p>
+        GoQ Systemの<strong>注文データCSV</strong>（過去2〜4週間分）から商品ごとの販売ペースを自動計算し、<strong>今後1週間で売れる数</strong>を予測して発注書を作成します。<br>
+        欠品していた期間は平均計算から自動で除外。長期欠品の商品は<strong>個別ルールまたは仮1ロット</strong>を入れ、備考でわかるように明示します。
+      </p>
+    </div>
+  </div>
+
+  <!-- 使い方フロー -->
+  <div class="flow-guide">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-icon">📦</div>
+      <div class="flow-step-title">在庫CSVを読込</div>
+      <div class="flow-step-desc">GoQ Systemの「itemdata_」で始まる在庫CSVをドロップ</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-icon">📊</div>
+      <div class="flow-step-title">商品データを読込</div>
+      <div class="flow-step-desc">サイボウズの最新の商品データXLSXをドロップ</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-icon">🛒</div>
+      <div class="flow-step-title">注文データを読込</div>
+      <div class="flow-step-desc">GoQ Systemの注文データCSV（過去2〜4週間分）をドロップ</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-icon">⬇️</div>
+      <div class="flow-step-title">発注書を生成</div>
+      <div class="flow-step-desc">販売ペースから1週間分の発注数を自動計算してExcel出力</div>
+    </div>
+  </div>
+
+  <!-- 発注ロジック説明 -->
+  <div class="rule-guide">
+    <div class="rule-guide-header" onclick="toggleRuleGuide()">
+      <span style="font-size:16px">💡</span>
+      <h3>発注数の計算方法（クリックで確認）</h3>
+      <span id="ruleGuideIcon" style="color:var(--gray-400);font-size:16px;">▼</span>
+    </div>
+    <div class="rule-guide-body" id="ruleGuideBody">
+      <div class="rule-cards">
+        <div class="rule-card c1">
+          <div class="rule-card-badge">基本の計算</div>
+          <div class="rule-card-title">📈 販売ペース × 7日</div>
+          <div class="rule-card-desc">注文データの期間（注文日時の最初〜最後）から1日あたりの販売数を計算し、7日分を予測。そこから現在庫を引いた不足分を、ロット単位に切り上げて発注します。通常商品はこの平均ベースのみで判定します。</div>
+        </div>
+        <div class="rule-card c2">
+          <div class="rule-card-badge">欠品補正</div>
+          <div class="rule-card-title">🔧 欠品期間を自動除外</div>
+          <div class="rule-card-desc">よく売れている商品の販売が途中で長期間止まっている場合、欠品とみなしてその期間を平均計算の分母から除外。現在庫0の商品は最終販売日以降も除外します（除外は期間の最大70%まで）。</div>
+        </div>
+        <div class="rule-card c3">
+          <div class="rule-card-badge">長期欠品</div>
+          <div class="rule-card-title">✍️ 在庫0が続く商品</div>
+          <div class="rule-card-desc">在庫が0になってから一定日数以上経過した商品（最終販売日から推定）は正確な予測ができないため、品番個別ルールがあればその発注数を、なければ仮で1ロットを入れ、備考に「長期欠品・…」と記載します。必要に応じて数を調整してください。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1-3: ファイルアップロード -->
+  <div class="three-col">
+    <div class="card">
+      <div class="card-header"><div class="step">1</div><h2>在庫CSV <span class="sub">itemdata</span></h2></div>
+      <div class="card-body">
+        <div class="upload-zone" id="zoneCSV">
+          <input type="file" accept=".csv" id="fileCSV" onchange="loadCSV(this)">
+          <div class="upload-icon">📦</div>
+          <p>在庫CSVをドロップ</p>
+          <small>ファイル名「itemdata_」から始まるCSV<br>「システム連携用SKU番号」「在庫数」列</small>
+        </div>
+        <div class="dl-hint">
+          <strong>📥 取得方法（GoQ System）</strong><br>
+          「在庫連携画面」上部の「【CSV】」プルダウンで「EL COMMUN 楽天市場店」を選択 →「すべて」にチェック →「CSV出力」
+        </div>
+        <div id="statusCSV"></div>
+        <div id="previewCSV"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="step">2</div><h2>商品データ <span class="sub">XLSX</span></h2></div>
+      <div class="card-body">
+        <div class="upload-zone" id="zoneXLSX">
+          <input type="file" accept=".xlsx,.xls" id="fileXLSX" onchange="loadXLSX(this)">
+          <div class="upload-icon">📋</div>
+          <p>XLSXをドロップ</p>
+          <small>「品番」「ロット」列が必須<br>（「廃盤」列も対応）</small>
+        </div>
+        <div class="dl-hint">
+          <strong>📥 取得方法（サイボウズ）</strong><br>
+          「ファイル管理」＞「elcommun」フォルダから最新の「商品データ」をダウンロード
+        </div>
+        <div id="statusXLSX"></div>
+        <div id="previewXLSX"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="step">3</div><h2>注文データ <span class="sub">GoQ System出力</span></h2></div>
+      <div class="card-body">
+        <div class="upload-zone" id="zoneSales">
+          <input type="file" accept=".csv" id="fileSales" onchange="loadSales(this)">
+          <div class="upload-icon">🛒</div>
+          <p>注文データCSVをドロップ</p>
+          <small>「商品番号」「個数」「注文日時」列を含む<br>過去2〜4週間分の注文データ</small>
+        </div>
+        <div class="dl-hint">
+          <strong>📥 取得方法（GoQ System）</strong><br>
+          受注管理から対象期間（2〜4週間）の注文データをCSV出力
+        </div>
+        <div id="statusSales"></div>
+        <div id="previewSales"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: 実行 -->
+  <div class="card">
+    <div class="card-header"><div class="step">4</div><h2>発注書を生成</h2></div>
+    <div class="card-body">
+      <div class="setting-box" style="margin-bottom:14px;">
+        <span>📅 予測日数：今後</span>
+        <input type="number" id="forecastDays" value="7" min="1" max="60">
+        <span>日分の販売数を発注</span>
+        <span style="margin-left:16px;">✍️ 長期欠品の判定：在庫が0になってから</span>
+        <input type="number" id="staleDays" value="7" min="1" max="60">
+        <span>日以上経過した商品（最終販売日から推定）</span>
+      </div>
+      <button class="primary-btn" id="actionBtn" disabled onclick="doGenerate()">
+        <span id="actionBtnLabel">📈 発注書Excelを生成する</span>
+      </button>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-section" id="resultSection">
+    <h3>✅ 発注書の生成が完了しました！</h3>
+    <button class="dl-btn" id="dlBtn">⬇️ 発注書をダウンロード</button>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div id="notFoundAlert" style="display:none;margin-top:14px;background:var(--red-light);border:1px solid #FECACA;border-radius:8px;padding:14px 18px;text-align:left;font-size:13px;color:#991B1B;line-height:1.8;"></div>
+  </div>
+
+</div>
+
+<script>
+// =====================================================
+// 状態管理
+// =====================================================
+let csvData   = null;  // 在庫CSV
+let xlsxData  = null;  // 商品データ
+let salesData = null;  // 注文データ
+
+// =====================================================
+// 品番変換ロジック（発注書作成ツールと同一仕様）
+// =====================================================
+function resolvePartCode(rawPn) {
+  if (!rawPn || !rawPn.startsWith('elco-')) return null;
+  const pn = rawPn.trim();
+  if (/^elco-(ECL|LLN)-/i.test(pn))
+    return pn.replace(/^elco-/, '').replace(/wf-(brown|natural)/gi, '').trim();
+  let m = pn.match(/^elco-(WCL-\d+)$/);              if (m) return m[1];
+  m = pn.match(/^elco-wcl(\d+)$/i);                  if (m) return 'WCL-' + m[1];
+  m = pn.match(/^elco-wcl-\d+(WCL-\d+)$/i);         if (m) return m[1];
+  m = pn.match(/^elco-wpk(\d+)$/i);                  if (m) return 'WPK-' + m[1];
+  m = pn.match(/^elco-gyr-\d+(GYR-[\w-]+)$/i);      if (m) return m[1].toUpperCase();
+  m = pn.match(/^elco-gyr-\d+-(GYR-[\w-]+)$/i);     if (m) return m[1].toUpperCase();
+  m = pn.match(/^elco-nba-041-(NBA-[\w-]+)$/i);      if (m) return m[1].toUpperCase();
+  m = pn.match(/^elco-nxt(\w+)$/i);                  if (m) return 'NXT-' + m[1].toUpperCase();
+  m = pn.match(/^elco-lbg(\w+)$/i);                  if (m) return null; // LBG-系は発注対象外
+  m = pn.match(/^cal-.+-(CAL-[\w-]+)$/i);            if (m) return m[1].toUpperCase();
+  if (/^elco-[^-]+-X?DR-/.test(pn)) return null;
+  // elco- を外すだけで「プレフィックス-英数字」の品番になるシリーズ（PNT, DCL, AMP など。3セグメント構成）
+  m = pn.match(/^elco-([A-Za-z]{2,5})-([A-Za-z0-9]+)$/);
+  if (m) return `${m[1].toUpperCase()}-${m[2].toUpperCase()}`;
+  const parts = pn.split('-');
+  if (parts.length >= 3 && parts[0] === 'elco') {
+    const result = parts.slice(2).join('-');
+    if (/^X?DR-/.test(result)) return null;
+    if (/^CRB-/.test(result))  return null; // CRB-系は発注対象外
+    if (/^XEC-/.test(result))  return null; // XEC-系は発注対象外
+    return result;
+  }
+  return null;
+}
+
+
+// =====================================================
+// 発注ルール（発注書作成ツールと共通の閾値ルール。更新時は両ツールに反映すること）
+// =====================================================
+const INIT_EXACT_RULES = [
+  { hinban: 'CLB-203', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-205', threshold: 10, orderQty: 10 },
+  { hinban: 'CLB-210', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-213', threshold: 3,  orderQty: 4  },
+  { hinban: 'CLB-214', threshold: 20, orderQty: 20 },
+  { hinban: 'CLB-218', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-221', threshold: 10, orderQty: 10 },
+  { hinban: 'CLB-222', threshold: 10, orderQty: 10 },
+  { hinban: 'CLB-225', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-226', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-229', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-230', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-231', threshold: 2,  orderQty: 4  },
+  { hinban: 'CLB-232', threshold: 3,  orderQty: 10 },
+  { hinban: 'CLB-233', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-402', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-404', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-405', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-410', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-413', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-414', threshold: 2,  orderQty: 4  },
+  { hinban: 'CLB-415', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-416', threshold: 3,  orderQty: 2  },
+  { hinban: 'CLB-417', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-418', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-419', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-420', threshold: 8,  orderQty: 6  },
+  { hinban: 'CLB-421', threshold: 3,  orderQty: 2  },
+  { hinban: 'CLB-422', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-423', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-424', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-425', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-426', threshold: 4,  orderQty: 2  },
+  { hinban: 'CLB-428', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-429', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-430', threshold: 4,  orderQty: 2  },
+  { hinban: 'CLB-431', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-432', threshold: 8,  orderQty: 6  },
+  { hinban: 'CLB-433', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-702', threshold: 2,  orderQty: 4  },
+  { hinban: 'CLB-703', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-710', threshold: 4,  orderQty: 2  },
+  { hinban: 'CLB-713', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-714', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-718', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-719', threshold: 2,  orderQty: 2  },
+  { hinban: 'CLB-722', threshold: 4,  orderQty: 2  },
+  { hinban: 'CLB-729', threshold: 1,  orderQty: 2  },
+  { hinban: 'CLB-730', threshold: 5,  orderQty: 4  },
+  { hinban: 'CLB-731', threshold: 4,  orderQty: 4  },
+  { hinban: 'CLB-732', threshold: 5,  orderQty: 6  },
+  { hinban: 'CLB-733', threshold: 2,  orderQty: 4  },
+  { hinban: 'CTB-014', threshold: 6,  orderQty: 8  },
+  { hinban: 'CTB-032', threshold: 2,  orderQty: 2  },
+  { hinban: 'EBA-604', threshold: 4,  orderQty: 4  },
+  { hinban: 'FLS-001', threshold: 4,  orderQty: 10  },
+  { hinban: 'LNC-318', threshold: 2,  orderQty: 2  },
+  { hinban: 'LNC-319', threshold: 4,  orderQty: 2  },
+  { hinban: 'LNC-320', threshold: 6,  orderQty: 6  },
+  { hinban: 'LNC-321', threshold: 20,  orderQty: 20  },
+  { hinban: 'LNC-322', threshold: 2,  orderQty: 2  },
+  { hinban: 'LNC-323', threshold: 1,  orderQty: 2  },
+  { hinban: 'LNC-311', threshold: 20,  orderQty: 20  },
+  { hinban: 'LNC-312', threshold: 3,  orderQty: 4  },
+  { hinban: 'LNC-313', threshold: 20,  orderQty: 26  },
+  { hinban: 'LNC-314', threshold: 10,  orderQty: 10  },
+  { hinban: 'LNC-315', threshold: 4,  orderQty: 4  },
+  { hinban: 'LNC-317', threshold: 2,  orderQty: 2  },
+  { hinban: 'MPD-002', threshold: 10,  orderQty: 6  },
+  { hinban: 'MPD-003', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-004', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-005', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-006', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-007', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-010', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-011', threshold: 4,  orderQty: 4  },
+  { hinban: 'MPD-012', threshold: 4,  orderQty: 4  },
+  { hinban: 'MSJ-004', threshold: 10,  orderQty: 10  },
+  { hinban: 'MSJ-005', threshold: 10,  orderQty: 10  },
+  { hinban: 'MSJ-006', threshold: 4,  orderQty: 4  },
+  { hinban: 'MTP-001', threshold: 10,  orderQty: 12  },
+  { hinban: 'MTP-002', threshold: 10,  orderQty: 6  },
+  { hinban: 'MTP-003', threshold: 10,  orderQty: 6  },
+  { hinban: 'MTP-004', threshold: 10,  orderQty: 6  },
+  { hinban: 'MTP-005', threshold: 2,  orderQty: 6  },
+  { hinban: 'MTP-006', threshold: 3,  orderQty: 6  },
+  { hinban: 'MTP-007', threshold: 4,  orderQty: 6  },
+  { hinban: 'MTP-008', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-001', threshold: 10,  orderQty: 15  },
+  { hinban: 'PBC-002', threshold: 10,  orderQty: 21  },
+  { hinban: 'PBC-003', threshold: 15,  orderQty: 21  },
+  { hinban: 'PBC-004', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-005', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-006', threshold: 30,  orderQty: 30  },
+  { hinban: 'PBC-007', threshold: 10,  orderQty: 15  },
+  { hinban: 'PBC-008', threshold: 8,  orderQty: 9  },
+  { hinban: 'PBC-009', threshold: 8,  orderQty: 9  },
+  { hinban: 'PBC-010', threshold: 10,  orderQty: 15  },
+  { hinban: 'PBC-011', threshold: 8,  orderQty: 9  },
+  { hinban: 'PBC-012', threshold: 8,  orderQty: 9  },
+  { hinban: 'PBC-013', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-014', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-015', threshold: 10,  orderQty: 15  },
+  { hinban: 'PBC-016', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-017', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-018', threshold: 5,  orderQty: 18  },
+  { hinban: 'PBC-019', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-020', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-021', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-022', threshold: 30,  orderQty: 30  },
+  { hinban: 'PBC-023', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-024', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-025', threshold: 10,  orderQty: 15  },
+  { hinban: 'PBC-026', threshold: 21,  orderQty: 30  },
+  { hinban: '5A-CE-050', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-051', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-052', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-053', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-054', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-055', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-056', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-057', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-058', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-059', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-060', threshold: 0, orderQty: 2  },
+  { hinban: '5A-CE-061', threshold: 0, orderQty: 2  },
+  { hinban: 'PPC-084', threshold: 2, orderQty: 2  },
+  { hinban: 'CTM-033', threshold: 2,  orderQty: 2  },
+  { hinban: 'CTM-036', threshold: 1,  orderQty: 2  },
+  { hinban: 'CTM-037', threshold: 1,  orderQty: 2  },
+  { hinban: 'CTM-038', threshold: 1,  orderQty: 2  },
+  { hinban: 'GLC-016', threshold: 1,  orderQty: 2  },
+  { hinban: 'JYX-003', threshold: 1,  orderQty: 5  },
+  { hinban: 'JYX-005', threshold: 1,  orderQty: 5  },
+  { hinban: 'JYX-018', threshold: 1,  orderQty: 5  },
+  { hinban: 'PPC-044', threshold: 1,  orderQty: 2  },
+  { hinban: 'PPC-048', threshold: 1,  orderQty: 2  },
+  { hinban: 'PPC-051', threshold: 1,  orderQty: 2  },
+  { hinban: 'PPC-067', threshold: 1,  orderQty: 2  },
+  { hinban: 'SVT-001', threshold: 50, orderQty: 40 },
+  { hinban: 'SVT-002', threshold: 10, orderQty: 20 },
+  { hinban: 'SVT-003', threshold: 10, orderQty: 20 },
+  { hinban: 'SVT-004', threshold: 15, orderQty: 40 },
+  { hinban: 'SVT-005', threshold: 10, orderQty: 20 },
+  { hinban: 'SVT-006', threshold: 20, orderQty: 50 },
+  { hinban: 'SVT-101', threshold: 20, orderQty: 20 },
+  { hinban: 'SVT-104', threshold: 10, orderQty: 20 },
+  { hinban: 'SVT-106', threshold: 10, orderQty: 10 },
+  { hinban: 'SVT-204', threshold: 10, orderQty: 10 },
+  { hinban: 'SVT-206', threshold: 10, orderQty: 20 },
+  { hinban: 'MOF-011', threshold: 1, orderQty: 10 },
+  { hinban: 'PNT-001', threshold: 1, orderQty: 1  },
+  { hinban: 'PNT-002', threshold: 1, orderQty: 1  },
+  { hinban: 'PNT-003', threshold: 4, orderQty: 10 },
+  { hinban: 'PPC-066', threshold: 2, orderQty: 2  },
+  { hinban: 'PPC-083', threshold: 2, orderQty: 2  },
+  { hinban: 'FC-32',   threshold: 2, orderQty: 2  },
+  { hinban: 'GLC-007', threshold: 2, orderQty: 2  },
+  { hinban: 'JYX-027', threshold: 3, orderQty: 5  },
+  { hinban: 'LTS-009', threshold: 2, orderQty: 5  },
+  { hinban: 'LTS-043', threshold: 2, orderQty: 5  },
+  { hinban: 'LTS-047', threshold: 2, orderQty: 5  },
+  { hinban: 'CPC-032', threshold: 2, orderQty: 2  },
+  { hinban: 'EGP-051', threshold: 2, orderQty: 5  },
+  { hinban: 'EGP-052', threshold: 2, orderQty: 5  },
+  { hinban: 'EGP-071', threshold: 2, orderQty: 2  },
+  { hinban: 'EGP-072', threshold: 2, orderQty: 2  },
+  { hinban: 'ALA-501', threshold: 1, orderQty: 6  },
+  { hinban: 'ALA-508', threshold: 1, orderQty: 6  },
+  { hinban: 'ALA-506', threshold: 1, orderQty: 6  },
+  { hinban: 'ALA-507', threshold: 1, orderQty: 6  },
+  { hinban: 'ALA-504', threshold: 1, orderQty: 6  },
+  { hinban: 'ALA-505', threshold: 1, orderQty: 6  },
+  { hinban: 'CLB-721', threshold: 2, orderQty: 2  },
+  { hinban: 'CLB-723', threshold: 2, orderQty: 2  },
+  { hinban: 'CLB-724', threshold: 2, orderQty: 2  },
+  { hinban: 'PBC-027', threshold: 10,  orderQty: 15  },
+  { hinban: 'PBC-028', threshold: 8,  orderQty: 9  },
+  { hinban: 'PBC-029', threshold: 3,  orderQty: 6  },
+  { hinban: 'PBC-030', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-031', threshold: 8,  orderQty: 9  },
+  { hinban: 'PBC-032', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-033', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-034', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-035', threshold: 6,  orderQty: 6  },
+  { hinban: 'PBC-036', threshold: 6,  orderQty: 6  },
+  { hinban: 'PRT-003', threshold: 2,  orderQty: 4  },
+  { hinban: 'PRT-201', threshold: 10,  orderQty: 27  },
+  { hinban: 'PRT-202', threshold: 10,  orderQty: 27  },
+  { hinban: 'PRT-203', threshold: 10,  orderQty: 27  },
+  { hinban: 'PRT-301', threshold: 4,  orderQty: 4  },
+  { hinban: 'PRT-302', threshold: 2,  orderQty: 2  },
+  { hinban: 'PRT-303', threshold: 1,  orderQty: 2  },
+  { hinban: 'SJK-001', threshold: 4,  orderQty: 5  },
+  { hinban: 'SJK-003', threshold: 4,  orderQty: 5  },
+  { hinban: 'SJK-007', threshold: 4,  orderQty: 5  },
+  { hinban: 'SJK-008', threshold: 4,  orderQty: 5  },
+  { hinban: 'SGR-002', threshold: 1,  orderQty: 5  },
+  { hinban: 'SGR-005', threshold: 1,  orderQty: 5  },
+  { hinban: 'STP-001', threshold: 6,  orderQty: 15  },
+  { hinban: 'STP-002', threshold: 3,  orderQty: 3  },
+  { hinban: 'STP-004', threshold: 2,  orderQty: 3  },
+  { hinban: 'STP-005', threshold: 2,  orderQty: 3  },
+  { hinban: 'STP-008', threshold: 3,  orderQty: 3  },
+  { hinban: 'STP-010', threshold: 2,  orderQty: 3  },
+  { hinban: 'STP-011', threshold: 2,  orderQty: 3  },
+  { hinban: 'STP-012', threshold: 2,  orderQty: 3  },
+  { hinban: 'STP-014', threshold: 2,  orderQty: 3  },
+  { hinban: 'PPC-068', threshold: 1,  orderQty: 4  },
+  { hinban: 'CLB-811', threshold: 2,  orderQty: 4  },
+  { hinban: 'CLB-817', threshold: 0,  orderQty: 4  },
+  { hinban: 'GLC-012', threshold: 2,  orderQty: 4  },
+  { hinban: 'LTS-010', threshold: 5,  orderQty: 15 },
+  { hinban: 'BMK-017', threshold: 10, orderQty: 10 },
+  { hinban: 'JYX-004', threshold: 3,  orderQty: 5  },
+  { hinban: 'JYX-006', threshold: 3,  orderQty: 5  },
+  { hinban: 'JYX-031', threshold: 3,  orderQty: 5  },
+  { hinban: 'JYX-032', threshold: 3,  orderQty: 5  },
+  { hinban: 'JYX-035', threshold: 3,  orderQty: 5  },
+];
+const INIT_HINMEI_RULES = [
+  { keyword: 'ミニカード', threshold: 1 },
+  { keyword: 'ペンケース', threshold: 2 },
+];
+const INIT_HINBAN_RULES = [
+  { keyword: 'ECL-', threshold: 3 },
+  { keyword: 'LLN-', threshold: 3 },
+  { keyword: 'NBA-', threshold: 1 },
+  { keyword: 'BBC-', threshold: 5 },
+  { keyword: 'BMK-', threshold: 5 },
+];
+const EXACT_RULE_MAP = new Map();
+INIT_EXACT_RULES.forEach(r => {
+  if (!EXACT_RULE_MAP.has(r.hinban) || r.threshold > EXACT_RULE_MAP.get(r.hinban).threshold)
+    EXACT_RULE_MAP.set(r.hinban, r);
+});
+
+/**
+ * 閾値ルール評価：現在庫がルールの閾値以下なら発注数を返す（該当なしは0）
+ */
+function evalThresholdRules(partCode, hinmei, currentStock, lotNum) {
+  const ex = EXACT_RULE_MAP.get(partCode);
+  if (ex && currentStock <= ex.threshold) return ex.orderQty;
+  let best = -1;
+  for (const r of INIT_HINMEI_RULES)
+    if (hinmei.includes(r.keyword) && r.threshold > best) best = r.threshold;
+  for (const r of INIT_HINBAN_RULES)
+    if (partCode.includes(r.keyword) && r.threshold > best) best = r.threshold;
+  if (best >= 0 && currentStock <= best) return lotNum;
+  return 0;
+}
+
+// =====================================================
+// 文字コード自動判定 & CSVパーサー
+// =====================================================
+function decodeBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF)
+    return new TextDecoder('utf-8').decode(buffer);
+  let sjisScore = 0;
+  for (let i = 0; i < Math.min(bytes.length, 2000); i++) {
+    const b = bytes[i];
+    if ((b >= 0x81 && b <= 0x9F) || (b >= 0xE0 && b <= 0xFC)) sjisScore++;
+  }
+  const enc = sjisScore > 5 ? 'shift_jis' : 'utf-8';
+  try { return new TextDecoder(enc).decode(buffer); }
+  catch(e) { return new TextDecoder('utf-8').decode(buffer); }
+}
+
+function parseCSVText(text) {
+  const rows = [];
+  let cur = '', inQ = false, row = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQ && text[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      row.push(cur.trim()); cur = '';
+    } else if ((c === '\n' || (c === '\r' && text[i+1] === '\n')) && !inQ) {
+      if (c === '\r') i++;
+      row.push(cur.trim()); cur = '';
+      if (row.some(v => v !== '')) rows.push(row);
+      row = [];
+    } else { cur += c; }
+  }
+  row.push(cur.trim());
+  if (row.some(v => v !== '')) rows.push(row);
+  return rows;
+}
+
+function findColIdx(headers, candidates) {
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h === c);
+    if (idx >= 0) return idx;
+  }
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h.includes(c));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+// =====================================================
+// ドラッグ&ドロップ
+// =====================================================
+[['zoneCSV', f => loadCSV({files:[f]})], ['zoneXLSX', f => loadXLSX({files:[f]})], ['zoneSales', f => loadSales({files:[f]})]].forEach(([id, fn]) => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag');
+    const f = e.dataTransfer.files[0]; if (!f) return;
+    fn(f);
+  });
+});
+
+// =====================================================
+// Step1: 在庫CSV 読み込み
+// =====================================================
+function loadCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  setStatus('statusCSV', 'loading', `📂 読み込み中... ${file.name}`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text    = decodeBuffer(e.target.result);
+      const rows    = parseCSVText(text);
+      if (!rows.length) throw new Error('データが空です');
+      const headers = rows[0].map(h => h.replace(/^﻿/, '').trim());
+
+      const idxSku   = findColIdx(headers, ['システム連携用SKU番号','SKU番号','商品番号','SKU']);
+      const idxStock = findColIdx(headers, ['在庫数','在庫','数量']);
+      if (idxSku   < 0) throw new Error(`品番列が見つかりません。検出列: ${headers.slice(0,12).join(' / ')}`);
+      if (idxStock < 0) throw new Error(`在庫数列が見つかりません。検出列: ${headers.slice(0,12).join(' / ')}`);
+
+      const stockMap = new Map();
+      const rawMap   = new Map();
+      let totalRows = 0, elcoRows = 0;
+
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i]; if (!r || r.length < 2) continue;
+        totalRows++;
+        const rawPn = (r[idxSku] || '').trim();
+        const stock = parseInt(r[idxStock]) || 0;
+        if (!rawPn.startsWith('elco-')) continue;
+        elcoRows++;
+        const partCode = resolvePartCode(rawPn);
+        if (!partCode) continue;
+        stockMap.set(partCode, (stockMap.get(partCode) || 0) + stock);
+        if (!rawMap.has(partCode)) rawMap.set(partCode, rawPn);
+      }
+
+      csvData = { stockMap, rawMap, totalRows, elcoRows, filename: file.name };
+      setStatus('statusCSV', 'ok',
+        `✅ 読み込み完了：全${totalRows}行 / elco- ${elcoRows}行 / 変換後 ${stockMap.size}品番`);
+      showPreviewCSV(stockMap);
+      checkReady();
+    } catch(err) {
+      setStatus('statusCSV', 'err', `❌ エラー：${err.message}`);
+      csvData = null; checkReady();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// =====================================================
+// Step2: 商品データ XLSX 読み込み
+// =====================================================
+function loadXLSX(input) {
+  const file = input.files[0]; if (!file) return;
+  setStatus('statusXLSX', 'loading', `📂 読み込み中... ${file.name}`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const sheetName = wb.SheetNames.includes('商品データ') ? '商品データ' : wb.SheetNames[0];
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
+
+      let headerRow = -1;
+      for (let i = 0; i < Math.min(10, raw.length); i++) {
+        const row = raw[i].map(v => String(v || '').trim());
+        if (row.includes('品番') && row.includes('ロット')) { headerRow = i; break; }
+      }
+      if (headerRow < 0) throw new Error('ヘッダー行（「品番」「ロット」が両方ある行）が見つかりません');
+
+      const headers   = raw[headerRow].map(v => String(v || '').trim());
+      const idxHinban = headers.indexOf('品番');
+      const idxLot    = headers.indexOf('ロット');
+      const idxHinmei = headers.findIndex(h => h.includes('品名'));
+      const idxHaiban = headers.indexOf('廃盤');
+      const idxJodai  = headers.indexOf('上代');
+      if (idxHinban < 0) throw new Error('「品番」列が見つかりません');
+      if (idxLot    < 0) throw new Error('「ロット」列が見つかりません');
+
+      const productMap = new Map();
+      let totalProducts = 0;
+      for (let i = headerRow + 1; i < raw.length; i++) {
+        const row    = raw[i];
+        const hinban = String(row[idxHinban] || '').trim();
+        if (!hinban || hinban === 'None') continue;
+        const lot    = parseInt(row[idxLot]) || 1;
+        const haiban = String(row[idxHaiban] || '').trim();
+        const hinmei = idxHinmei >= 0 ? String(row[idxHinmei] || '').trim().replace(/^\s+/, '') : '';
+        const jodai  = idxJodai  >= 0 ? (parseInt(row[idxJodai]) || '') : '';
+        if (!productMap.has(hinban))
+          productMap.set(hinban, { lot, haiban, hinmei, jodai });
+        totalProducts++;
+      }
+
+      xlsxData = { productMap, totalProducts, sheetName, filename: file.name };
+      setStatus('statusXLSX', 'ok',
+        `✅ 読み込み完了：${totalProducts.toLocaleString()}件（シート:「${sheetName}」）`);
+      showPreviewXLSX(productMap);
+      checkReady();
+    } catch(err) {
+      setStatus('statusXLSX', 'err', `❌ エラー：${err.message}`);
+      xlsxData = null; checkReady();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// =====================================================
+// Step3: 注文データ CSV 読み込み
+// =====================================================
+function loadSales(input) {
+  const file = input.files[0]; if (!file) return;
+  setStatus('statusSales', 'loading', `📂 読み込み中... ${file.name}`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = decodeBuffer(e.target.result);
+      const rows = parseCSVText(text);
+      if (!rows.length) throw new Error('データが空です');
+      const headers = rows[0].map(h => h.replace(/^﻿/, '').trim());
+
+      const idxPn   = findColIdx(headers, ['商品番号','商品コード']);
+      const idxQty  = findColIdx(headers, ['個数','数量']);
+      const idxDate = findColIdx(headers, ['注文日時','注文日','受注日時','受注日']);
+      if (idxPn   < 0) throw new Error(`商品番号列が見つかりません。検出列: ${headers.slice(0,10).join(' / ')}`);
+      if (idxQty  < 0) throw new Error(`個数列が見つかりません。検出列: ${headers.slice(0,10).join(' / ')}`);
+      if (idxDate < 0) throw new Error(`注文日時列が見つかりません。検出列: ${headers.slice(0,10).join(' / ')}`);
+
+      // 品番ごとに販売記録（日時＋数量）を集約
+      const salesMap = new Map();  // partCode -> [{t: Date, qty}]
+      let totalRows = 0, elcoRows = 0, minT = null, maxT = null;
+
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i]; if (!r || r.length < 3) continue;
+        totalRows++;
+        const rawPn = (r[idxPn] || '').trim();
+        if (!rawPn.startsWith('elco-')) continue;
+        const partCode = resolvePartCode(rawPn);
+        if (!partCode) continue;
+        const qty = parseInt(r[idxQty]) || 0;
+        if (qty <= 0) continue;
+        const t = new Date((r[idxDate] || '').replace(/\//g, '-'));
+        if (isNaN(t.getTime())) continue;
+        elcoRows++;
+        if (!minT || t < minT) minT = t;
+        if (!maxT || t > maxT) maxT = t;
+        if (!salesMap.has(partCode)) salesMap.set(partCode, []);
+        salesMap.get(partCode).push({ t, qty });
+      }
+
+      if (!minT) throw new Error('elco- 商品の販売データが見つかりません');
+      const periodDays = Math.max(1, (maxT - minT) / 86400000);
+
+      salesData = { salesMap, totalRows, elcoRows, minT, maxT, periodDays, filename: file.name };
+      setStatus('statusSales', 'ok',
+        `✅ 読み込み完了：全${totalRows}行 / elco- ${elcoRows}行 / ${salesMap.size}品番<br>` +
+        `<span style="font-size:11px">期間：${fmtDate(minT)} 〜 ${fmtDate(maxT)}（${periodDays.toFixed(1)}日間）</span>`);
+      showPreviewSales(salesMap);
+      checkReady();
+    } catch(err) {
+      setStatus('statusSales', 'err', `❌ エラー：${err.message}`);
+      salesData = null; checkReady();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// =====================================================
+// プレビュー
+// =====================================================
+function showPreviewCSV(stockMap) {
+  const el = document.getElementById('previewCSV');
+  const entries = [...stockMap.entries()].slice(0, 5);
+  if (!entries.length) { el.innerHTML = ''; return; }
+  let html = '<div class="preview-wrap"><table class="preview-table"><thead><tr><th>変換後品番</th><th>在庫数</th></tr></thead><tbody>';
+  entries.forEach(([k, v]) => {
+    const color = v <= 0 ? 'var(--red)' : v <= 5 ? '#D97706' : 'var(--gray-800)';
+    html += `<tr><td>${esc(k)}</td><td style="color:${color};font-weight:600;">${v}</td></tr>`;
+  });
+  if (stockMap.size > 5) html += `<tr><td colspan="2" style="color:var(--gray-400);font-size:11px;">…他 ${stockMap.size-5} 品番</td></tr>`;
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+function showPreviewXLSX(productMap) {
+  const el = document.getElementById('previewXLSX');
+  const entries = [...productMap.entries()].slice(0, 5);
+  if (!entries.length) { el.innerHTML = ''; return; }
+  let html = '<div class="preview-wrap"><table class="preview-table"><thead><tr><th>品番</th><th>ロット</th><th>廃盤</th></tr></thead><tbody>';
+  entries.forEach(([k, v]) => {
+    const badge = v.haiban ? '<span class="badge badge-red">廃番</span>' : '<span class="badge badge-gray">現行</span>';
+    html += `<tr><td>${esc(k)}</td><td>${v.lot}</td><td>${badge}</td></tr>`;
+  });
+  if (productMap.size > 5) html += `<tr><td colspan="3" style="color:var(--gray-400);font-size:11px;">…他 ${productMap.size-5} 件</td></tr>`;
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+function showPreviewSales(salesMap) {
+  const el = document.getElementById('previewSales');
+  const agg = [...salesMap.entries()].map(([k, v]) => [k, v.reduce((s, x) => s + x.qty, 0)]);
+  agg.sort((a, b) => b[1] - a[1]);
+  const entries = agg.slice(0, 5);
+  if (!entries.length) { el.innerHTML = ''; return; }
+  let html = '<div class="preview-wrap"><table class="preview-table"><thead><tr><th>品番（販売数上位）</th><th>期間販売数</th></tr></thead><tbody>';
+  entries.forEach(([k, v]) => {
+    html += `<tr><td>${esc(k)}</td><td style="font-weight:600;">${v}</td></tr>`;
+  });
+  if (agg.length > 5) html += `<tr><td colspan="2" style="color:var(--gray-400);font-size:11px;">…他 ${agg.length-5} 品番</td></tr>`;
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+// =====================================================
+// 欠品調整平均の計算
+// =====================================================
+/**
+ * 販売記録と現在庫から、欠品期間を除外した1日あたり平均販売数を算出する。
+ * 返り値: { totalQty, effectiveDays, excludedDays, avgPerDay, lastSaleT, gapNote }
+ */
+function calcAdjustedAvg(records, currentStock, minT, maxT, periodDays) {
+  const totalQty = records.reduce((s, x) => s + x.qty, 0);
+  if (totalQty <= 0)
+    return { totalQty: 0, effectiveDays: periodDays, excludedDays: 0, avgPerDay: 0, lastSaleT: null, gapNote: '' };
+
+  // 日単位に集約して販売日リストを作成
+  const sorted = [...records].sort((a, b) => a.t - b.t);
+  const lastSaleT = sorted[sorted.length - 1].t;
+  const saleDays = [...new Set(sorted.map(x => Math.floor(x.t / 86400000)))].sort((a, b) => a - b);
+
+  // 平均販売間隔（日）：販売日ベース
+  const startDay = Math.floor(minT / 86400000);
+  const endDay   = Math.floor(maxT / 86400000);
+
+  // 欠品ギャップ検出のしきい値：平均間隔の3倍以上 かつ 3日以上
+  const avgInterval = periodDays / saleDays.length;
+  const gapThreshold = Math.max(3, avgInterval * 3);
+
+  let excludedDays = 0;
+  const gaps = [];
+
+  // 販売日間のギャップ（売れ筋商品の途中欠品を検出）
+  for (let i = 1; i < saleDays.length; i++) {
+    const gap = saleDays[i] - saleDays[i-1] - 1;
+    if (gap >= gapThreshold) { excludedDays += gap; gaps.push(gap); }
+  }
+  // 現在庫0：最終販売日から期間終了までも欠品とみなす
+  if (currentStock <= 0) {
+    const tailGap = endDay - Math.floor(lastSaleT / 86400000);
+    if (tailGap >= 1) { excludedDays += tailGap; gaps.push(tailGap); }
+  }
+
+  // 除外は期間全体の70%まで
+  const maxExclude = periodDays * 0.7;
+  if (excludedDays > maxExclude) excludedDays = maxExclude;
+
+  const effectiveDays = Math.max(1, periodDays - excludedDays);
+  const avgPerDay = totalQty / effectiveDays;
+  const gapNote = excludedDays > 0 ? `欠品補正${Math.round(excludedDays)}日除外` : '';
+
+  return { totalQty, effectiveDays, excludedDays, avgPerDay, lastSaleT, gapNote };
+}
+
+// =====================================================
+// 発注書生成
+// =====================================================
+function doGenerate() {
+  if (!csvData || !xlsxData || !salesData) return;
+  const btn = document.getElementById('actionBtn');
+  const btnLabel = document.getElementById('actionBtnLabel');
+  btn.disabled = true;
+  btnLabel.textContent = '⏳ 処理中...';
+  setTimeout(() => {
+    _doGenerateMain();
+    btn.disabled = false;
+    btnLabel.textContent = '📈 発注書Excelを生成する';
+  }, 50);
+}
+
+function _doGenerateMain() {
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('logBox').classList.add('show');
+  document.getElementById('resultSection').classList.remove('show');
+
+  const forecastDays = parseInt(document.getElementById('forecastDays').value) || 7;
+  const staleDays    = parseInt(document.getElementById('staleDays').value) || 7;
+  const { minT, maxT, periodDays, salesMap } = salesData;
+
+  log('🚀 発注書生成開始...', 'log-info');
+  log(`📋 在庫: ${csvData.filename} / 商品: ${xlsxData.filename} / 注文: ${salesData.filename}`, 'log-info');
+  log(`📅 販売期間: ${fmtDate(minT)} 〜 ${fmtDate(maxT)}（${periodDays.toFixed(1)}日間）→ 今後${forecastDays}日分を発注`, 'log-info');
+  log('──────────────────────────────', 'log-sep');
+
+  const wb = XLSX.utils.book_new();
+  const orderRows = [['品番','品名','上代','現在庫','ロット','発注数','備考']];
+  const notFoundList = [];
+
+  let needOrder = 0, skipOk = 0, haibanCount = 0, notFound = 0, manualCount = 0;
+
+  // 対象品番：在庫CSVに含まれる品番のみ（発注対象は在庫CSVベース）
+  const sorted = [...csvData.stockMap.keys()].sort((a, b) => a.localeCompare(b));
+
+  const endDay = Math.floor(maxT / 86400000);
+
+  for (const partCode of sorted) {
+    if (/^XEC-/.test(partCode)) continue; // XEC-系は発注対象外
+
+    const currentStock = csvData.stockMap.has(partCode) ? csvData.stockMap.get(partCode) : 0;
+    const prod = xlsxData.productMap.get(partCode);
+    if (!prod) {
+      notFound++;
+      notFoundList.push({ partCode, currentStock, rawPn: csvData.rawMap.get(partCode) || '' });
+      log(`⚠️ 未発見: ${partCode}　在庫:${currentStock}`, 'log-warn');
+      continue;
+    }
+
+    const { lot, hinmei, jodai } = prod;
+    const haiban = /^MSJ-/.test(partCode) ? '' : prod.haiban; // MSJ-系は廃番扱いしない
+    const lotNum = lot > 0 ? lot : 1;
+    const records = salesMap.get(partCode) || [];
+
+    const adj = calcAdjustedAvg(records, currentStock, minT, maxT, periodDays);
+    const forecast = adj.avgPerDay * forecastDays;
+
+    // 仮1ロット判定：在庫が0になってから staleDays 日以上経過している商品
+    // （在庫履歴は無いため、現在庫0の商品は「最終販売日＝在庫が0になった日」とみなして推定。販売実績が無い在庫0商品も対象）
+    const daysSinceLastSale = adj.lastSaleT ? endDay - Math.floor(adj.lastSaleT / 86400000) : Infinity;
+    const isManual = currentStock <= 0 && daysSinceLastSale >= staleDays;
+
+    if (haiban) haibanCount++;
+
+    let orderQty;
+    let manualNote = '';
+    if (isManual) {
+      // 長期欠品（在庫0が続き予測不可）：個別ルールの発注数があればそれを採用、なければ仮1ロット
+      manualCount++;
+      const ruleQty = evalThresholdRules(partCode, hinmei, currentStock, lotNum);
+      if (ruleQty > 0) {
+        orderQty = ruleQty;
+        manualNote = '長期欠品・個別ルール適用';
+      } else {
+        orderQty = lotNum;
+        manualNote = '長期欠品・仮1ロット';
+      }
+      log(`✍️ 長期欠品: ${partCode}  在庫:0  最終販売から${isFinite(daysSinceLastSale) ? daysSinceLastSale + '日' : '販売実績なし'} → ${orderQty}個（${manualNote}）${haiban ? '【廃番】' : ''}`, 'log-purple');
+    } else {
+      // 通常商品：販売実績の平均ベースのみ（予測 − 現在庫 をロット単位に切り上げ）
+      const shortage = forecast - currentStock;
+      orderQty = shortage > 0 ? Math.ceil(shortage / lotNum) * lotNum : 0;
+      if (orderQty <= 0) {
+        skipOk++;
+        log(`✅ 充足: ${partCode}  在庫:${currentStock} ≥ 予測:${forecast.toFixed(1)}（日販${adj.avgPerDay.toFixed(2)}）`, 'log-ok');
+        continue;
+      }
+      log(`📦 発注: ${partCode}  在庫:${currentStock} < 予測:${forecast.toFixed(1)} → ${orderQty}個（日販${adj.avgPerDay.toFixed(2)}×${forecastDays}日）${haiban ? '【廃番】' : ''}`,
+          (haiban || currentStock <= 0) ? 'log-warn' : 'log-info');
+    }
+
+    // 備考：在庫切れ・廃番のみ（＋長期欠品商品の目印）
+    const bikoParts = [];
+    if (haiban) { bikoParts.push('廃番'); }
+    if (currentStock <= 0) bikoParts.push('在庫切れ');
+    if (manualNote) bikoParts.push(manualNote);
+    const biko = bikoParts.join('＋');
+
+    needOrder++;
+    orderRows.push([partCode, hinmei, jodai, currentStock, lotNum, orderQty, biko]);
+  }
+
+  log('──────────────────────────────', 'log-sep');
+  log(`📊 完了 | 発注:${needOrder}（うち長期欠品:${manualCount}）/ 充足:${skipOk} / 廃番:${haibanCount} / 未発見:${notFound}`, 'log-info');
+
+  // 発注書シート
+  const wsOrder = XLSX.utils.aoa_to_sheet(orderRows);
+  wsOrder['!cols'] = [{wch:18},{wch:30},{wch:8},{wch:9},{wch:7},{wch:9},{wch:24}];
+  XLSX.utils.book_append_sheet(wb, wsOrder, '発注書');
+
+  // 未発見シート
+  if (notFoundList.length) {
+    const wsNF = XLSX.utils.aoa_to_sheet([
+      ['変換後品番','元のSKU番号','現在庫'],
+      ...notFoundList.map(({ partCode, currentStock, rawPn }) => [partCode, rawPn, currentStock])
+    ]);
+    wsNF['!cols'] = [{wch:22},{wch:36},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, wsNF, '未発見商品');
+  }
+
+  const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const fname = `${today}-EC発注分.xlsx`;
+  XLSX.writeFile(wb, fname);
+  document.getElementById('dlBtn').onclick = () => XLSX.writeFile(wb, fname);
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat"><div class="num">${sorted.length}</div><div class="label">対象品番数</div></div>
+    <div class="stat"><div class="num" style="color:var(--red)">${needOrder}</div><div class="label">発注必要</div></div>
+    <div class="stat"><div class="num" style="color:var(--purple)">${manualCount}</div><div class="label">長期欠品</div></div>
+    <div class="stat"><div class="num" style="color:var(--green)">${skipOk}</div><div class="label">在庫充足</div></div>
+    <div class="stat"><div class="num">${haibanCount}</div><div class="label">廃番品</div></div>
+    <div class="stat"><div class="num" style="color:${notFound ? 'var(--red)' : 'var(--gray-400)'}">${notFound}</div><div class="label">紐づけエラー</div></div>
+  `;
+
+  // 紐づけエラー（在庫CSVにあるが商品データに存在しない品番）を画面に表示
+  const alertEl = document.getElementById('notFoundAlert');
+  if (notFoundList.length) {
+    const items = notFoundList.map(({ partCode, currentStock }) => `${esc(partCode)}（在庫:${currentStock}）`).join('、');
+    alertEl.innerHTML = `<strong>⚠️ 商品データに紐づかない品番が ${notFoundList.length} 件あります（発注書には含まれていません）</strong><br>` +
+      `${items}<br>` +
+      `<span style="font-size:12px;">→ 商品データXLSXに品番が未登録か、品番変換の対象外です。詳細はExcelの「未発見商品」シートを確認してください。</span>`;
+    alertEl.style.display = 'block';
+  } else {
+    alertEl.style.display = 'none';
+  }
+
+  document.getElementById('resultSection').classList.add('show');
+}
+
+// =====================================================
+// ユーティリティ
+// =====================================================
+function toggleRuleGuide() {
+  const body = document.getElementById('ruleGuideBody');
+  const icon = document.getElementById('ruleGuideIcon');
+  const open = body.style.display === 'none' || body.style.display === '';
+  body.style.display = open ? 'block' : 'none';
+  icon.textContent   = open ? '▲' : '▼';
+}
+function setStatus(id, type, msg) {
+  const el  = document.getElementById(id);
+  const cls = { loading:'loading', ok:'ok', err:'err' }[type] || '';
+  el.innerHTML = `<div class="file-status ${cls}">${msg}</div>`;
+}
+function checkReady() {
+  document.getElementById('actionBtn').disabled = !(csvData && xlsxData && salesData);
+}
+function log(msg, cls='') {
+  const box = document.getElementById('logBox');
+  box.classList.add('show');
+  box.innerHTML += `<div class="${cls}">${msg}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtDate(d) {
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+</script>
+</body>
+</html>
