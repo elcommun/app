@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>楽天→Shopify変換 | EL COMMUN</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<style>
+  /* === EL COMMUN UI デザインシステム === */
+  :root {
+    --primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;
+    --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;
+    --gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;
+    --green:#10B981;--green-light:#ECFDF5;
+    --red:#EF4444;--red-light:#FEF2F2;
+    --yellow-light:#FFFBEB;--blue-light:#EFF6FF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
+  header{background:white;border-bottom:3px solid var(--primary);padding:16px 32px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;}
+  header h1{font-size:18px;font-weight:700;}
+  header span{font-size:12px;color:var(--gray-400);margin-left:4px;}
+  .container{max-width:860px;margin:0 auto;padding:32px 16px;}
+  .info-box{background:var(--yellow-light);border:1px solid #FDE68A;border-radius:10px;padding:14px 18px;margin-bottom:24px;font-size:13px;color:#92400E;line-height:1.6;}
+  .info-box strong{color:#78350F;}
+  .card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden;}
+  .card-header{padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px;}
+  .step{width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;}
+  .card-header h2{font-size:15px;font-weight:700;}
+  .sub{font-size:12px;color:var(--gray-400);margin-left:4px;}
+  .card-body{padding:20px;}
+  .upload-zone{border:2px dashed var(--gray-200);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50);position:relative;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--primary);background:var(--primary-light);}
+  .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .upload-icon{font-size:36px;margin-bottom:10px;}
+  .upload-zone p{font-size:14px;color:var(--gray-600);margin-bottom:4px;font-weight:600;}
+  .upload-zone small{font-size:12px;color:var(--gray-400);}
+  .file-status{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px;}
+  .file-status.ok{background:var(--green-light);color:#065F46;}
+  .file-status.err{background:var(--red-light);color:#991B1B;}
+  .rule-box{background:var(--blue-light);border:1px solid #BFDBFE;border-radius:8px;padding:14px 16px;font-size:13px;color:#1E40AF;line-height:1.9;}
+  .rule-box ul{margin-left:18px;}
+  .primary-btn{width:100%;padding:15px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .primary-btn:hover:not(:disabled){background:var(--primary-dark);}
+  .primary-btn:disabled{background:var(--gray-400);cursor:not-allowed;}
+  .log-box{margin-top:16px;background:var(--gray-800);color:#D1FAE5;border-radius:8px;padding:16px;font-size:12px;font-family:'Courier New',monospace;line-height:1.8;max-height:280px;overflow-y:auto;display:none;}
+  .log-box.show{display:block;}
+  .log-ok{color:#6EE7B7;}.log-warn{color:#FCD34D;}.log-err{color:#FCA5A5;}.log-info{color:#93C5FD;}
+  .log-sep{color:#374151;margin:2px 0;}
+  .result-section{display:none;background:var(--green-light);border:1px solid #6EE7B7;border-radius:12px;padding:24px;margin-top:20px;text-align:center;}
+  .result-section.show{display:block;}
+  .result-section h3{color:#065F46;font-size:17px;margin-bottom:14px;}
+  .dl-btn{display:inline-flex;align-items:center;gap:8px;padding:13px 32px;background:var(--green);color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;}
+  .dl-btn:hover{background:#059669;}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+  .stat{background:white;border-radius:8px;padding:14px;text-align:center;border:1px solid var(--gray-200);}
+  .stat .num{font-size:26px;font-weight:800;color:var(--primary);}
+  .stat .label{font-size:11px;color:var(--gray-600);margin-top:3px;}
+
+  /* プレビューテーブル */
+  .preview-wrap{margin-top:16px;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);}
+  .preview-scroll{overflow-x:auto;max-height:260px;overflow-y:auto;}
+  .data-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .data-table th{background:var(--gray-100);padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);position:sticky;top:0;white-space:nowrap;}
+  .data-table td{padding:8px 12px;border-bottom:1px solid var(--gray-200);white-space:normal;word-break:break-word;min-width:160px;max-width:360px;vertical-align:top;}
+  .data-table tr:last-child td{border-bottom:none;}
+  .data-table tr:hover td{background:var(--gray-50);}
+  .preview-caption{font-size:11px;color:var(--gray-400);padding:8px 12px;background:var(--gray-50);border-top:1px solid var(--gray-200);}
+  .option-row{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--primary-light);border:1px solid #FCCBAF;border-radius:8px;margin-top:12px;font-size:13px;color:#92400E;}
+  .option-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;}
+  .option-row label{cursor:pointer;font-weight:600;line-height:1.4;}
+  .option-row .opt-sub{font-weight:400;color:var(--gray-600);margin-left:4px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">EC</div>
+  <div><h1>楽天 RMS → Shopify 変換 <span>EL COMMUN</span></h1></div>
+</header>
+
+<div class="container">
+
+  <div class="info-box">
+    <strong>処理概要：</strong>楽天RMSからダウンロードしたCSVファイルを、Shopifyのインポート形式に変換します。商品管理番号ごとにバリエーション展開し、画像URLも自動で完全形式に変換します。
+  </div>
+
+  <!-- Step 1 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step">1</div>
+      <h2>ファイルを選択 <span class="sub">楽天RMSのCSVファイル</span></h2>
+    </div>
+    <div class="card-body">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" accept=".csv" id="fileInput">
+        <div class="upload-icon">📄</div>
+        <p>商品情報（normal-item.csv）をアップロード</p>
+        <small>dl-normal-item〜.csv</small>
+      </div>
+      <div id="fileStatus"></div>
+
+      <div style="margin-top:20px;">
+        <div class="upload-zone" id="catZone">
+          <input type="file" accept=".csv" id="catInput">
+          <div class="upload-icon">🗂️</div>
+          <p>カテゴリ（item-cat.csv）をアップロード</p>
+          <small>dl-item-cat〜.csv</small>
+        </div>
+        <div id="catStatus"></div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="upload-zone" id="regZone">
+          <input type="file" accept=".csv" id="regInput">
+          <div class="upload-icon">🛍️</div>
+          <p>Shopify登録済み商品CSV（任意）をアップロード</p>
+          <small>products_export〜.csv（説明文内リンクの生存判定に使用）</small>
+        </div>
+        <div id="regStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step">2</div>
+      <h2>変換仕様を確認</h2>
+    </div>
+    <div class="card-body">
+      <div class="rule-box">
+        <ul>
+          <li>商品管理番号ごとにグループ化してバリエーション展開</li>
+          <li>商品画像パス1〜20を自動収集・URL形式に変換</li>
+          <li>画像パス（/〜）を完全なRakuten CDN URLに自動変換</li>
+          <li>SKU管理番号がある行のみバリエーション情報を出力</li>
+          <li>ベンダー名は「EL COMMUN online shop」で統一</li>
+          <li>カテゴリCSV（dl-item-cat）をアップすると「表示先カテゴリ」の最後の階層を「Type」に自動設定（「メーカー・ブランド」「作家シリーズ」「セール商品」を含むカテゴリは除外し、階層が最も深いものを優先）</li>
+        </ul>
+      </div>
+      <div class="option-row">
+        <input type="checkbox" id="linkCleanChk" checked>
+        <label for="linkCleanChk">説明文のリンク切れブロックを削除<span class="opt-sub">（Shopify登録済み商品CSVのHandleに無い商品や楽天専用ページへのリンクを含むブロックを除去。登録済みCSV未アップ時は今回のCSV内の商品で判定）</span></label>
+      </div>
+      <div class="option-row">
+        <input type="checkbox" id="titleSplitChk" checked>
+        <label for="titleSplitChk">タイトルを分解してタグ・SEOタイトルに振り分ける<span class="opt-sub">（「商品名｜キーワード｜ブランド」形式を自動解析）</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step">3</div>
+      <h2>変換を実行</h2>
+    </div>
+    <div class="card-body">
+      <button class="primary-btn" id="convertBtn" disabled onclick="runConvert()">
+        ⚙️ Shopify形式に変換する
+      </button>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-section" id="resultSection">
+    <h3>✅ 変換完了！</h3>
+    <button class="dl-btn" id="dlBtn" onclick="downloadCSV()">⬇️ Shopify用CSVをダウンロード</button>
+    <div class="stats-grid" id="statsGrid"></div>
+  </div>
+
+  <!-- プレビュー -->
+  <div id="previewWrap"></div>
+
+</div>
+
+<script>
+  let selectedFile = null;
+  let catFile = null;
+  let typeMap = {}; // 商品管理番号 -> Type
+  let tagsMap = {}; // 商品管理番号 -> Tags
+  let calendarCollectionMap = {}; // 商品管理番号 -> カレンダー用Collection名
+  let convertedData = null;
+
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput  = document.getElementById('fileInput');
+  const fileStatus = document.getElementById('fileStatus');
+  const convertBtn = document.getElementById('convertBtn');
+
+  const catZone   = document.getElementById('catZone');
+  const catInput  = document.getElementById('catInput');
+  const catStatus = document.getElementById('catStatus');
+
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  catInput.addEventListener('change', e => handleCatFile(e.target.files[0]));
+  catZone.addEventListener('dragover', e => { e.preventDefault(); catZone.classList.add('drag'); });
+  catZone.addEventListener('dragleave', () => catZone.classList.remove('drag'));
+  catZone.addEventListener('drop', e => {
+    e.preventDefault();
+    catZone.classList.remove('drag');
+    handleCatFile(e.dataTransfer.files[0]);
+  });
+
+  const regZone   = document.getElementById('regZone');
+  const regInput  = document.getElementById('regInput');
+  const regStatus = document.getElementById('regStatus');
+  let registeredHandles = new Set(); // Shopify登録済み商品のHandle（末尾ハイフン除去済み）
+
+  regInput.addEventListener('change', e => handleRegFile(e.target.files[0]));
+  regZone.addEventListener('dragover', e => { e.preventDefault(); regZone.classList.add('drag'); });
+  regZone.addEventListener('dragleave', () => regZone.classList.remove('drag'));
+  regZone.addEventListener('drop', e => {
+    e.preventDefault();
+    regZone.classList.remove('drag');
+    handleRegFile(e.dataTransfer.files[0]);
+  });
+
+  async function handleRegFile(file) {
+    if (!file) return;
+    if (!file.name.endsWith('.csv')) {
+      regStatus.innerHTML = '<div class="file-status err">❌ CSVファイルを選択してください</div>';
+      return;
+    }
+    try {
+      const buf = await file.arrayBuffer();
+      let text;
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+      catch { text = new TextDecoder('shift-jis').decode(buf); }
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+      if (!parsed.data || parsed.data.length === 0) throw new Error('データが見つかりませんでした');
+      registeredHandles = new Set(
+        parsed.data.map(r => normalizeHandle((r['Handle'] || '').trim())).filter(Boolean)
+      );
+      if (registeredHandles.size === 0) throw new Error('Handle列が見つかりませんでした（Shopifyのproducts_exportファイルか確認してください）');
+      regStatus.innerHTML = `<div class="file-status ok">✅ ${file.name} を読み込み、登録済み ${registeredHandles.size} 商品を判定に使用します</div>`;
+    } catch (err) {
+      registeredHandles = new Set();
+      regStatus.innerHTML = `<div class="file-status err">❌ エラー：${err.message}</div>`;
+    }
+  }
+
+  // Shopifyはハンドル登録時に末尾のハイフンを削除する（楽天「cal-01-」→ Shopify「cal-01」）
+  function normalizeHandle(slug) {
+    return (slug || '').replace(/-+$/, '');
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!file.name.endsWith('.csv')) {
+      fileStatus.innerHTML = '<div class="file-status err">❌ CSVファイルを選択してください</div>';
+      return;
+    }
+    selectedFile = file;
+    fileStatus.innerHTML = `<div class="file-status ok">✅ ファイル選択済み：${file.name}（${(file.size/1024).toFixed(1)} KB）</div>`;
+    convertBtn.disabled = false;
+    document.getElementById('resultSection').classList.remove('show');
+    document.getElementById('previewWrap').innerHTML = '';
+    document.getElementById('logBox').innerHTML = '';
+    document.getElementById('logBox').classList.remove('show');
+    convertedData = null;
+  }
+
+  async function handleCatFile(file) {
+    if (!file) return;
+    if (!file.name.endsWith('.csv')) {
+      catStatus.innerHTML = '<div class="file-status err">❌ CSVファイルを選択してください</div>';
+      return;
+    }
+    catFile = file;
+    try {
+      const buf = await file.arrayBuffer();
+      let text;
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+      catch { text = new TextDecoder('shift-jis').decode(buf); }
+
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+      if (!parsed.data || parsed.data.length === 0) throw new Error('データが見つかりませんでした');
+
+      typeMap = buildTypeMap(parsed.data);
+      tagsMap = buildTagsMap(parsed.data);
+      calendarCollectionMap = buildCalendarCollectionMap(parsed.data);
+      const count = Object.keys(typeMap).length;
+      catStatus.innerHTML = `<div class="file-status ok">✅ ${file.name} を読み込み、${count} 商品のType・Tagsを判定しました</div>`;
+    } catch (err) {
+      typeMap = {};
+      tagsMap = {};
+      calendarCollectionMap = {};
+      catStatus.innerHTML = `<div class="file-status err">❌ エラー：${err.message}</div>`;
+    }
+  }
+
+  // Type → Shopify標準Product Categoryへのマッピング（必要に応じて追加）
+  // 値はShopify公式タクソノミーの「カテゴリID」（例：os-1-1 = Office Supplies > Book Accessories > Book Covers）
+  // ※ 英語の breadcrumb 文字列だと「無効な商品カテゴリー」警告が出ることがあるため、IDを使用
+  const PRODUCT_CATEGORY_MAP = {
+    // ステーショナリー系
+    'ブックカバー':      'os-1-1',      // Office Supplies > Book Accessories > Book Covers
+    'ブックマーク・しおり': 'os-1-4',   // Office Supplies > Book Accessories > Bookmarks
+    'ノート・メモ帳':    'os-4-9-9',    // Office Supplies > General Office Supplies > Paper Products > Notebooks & Notepads
+    'ペンケース':        'os-3-16',     // Office Supplies > Filing & Organization > Pen & Pencil Cases
+    'ペン':             'os-11-11-7-3', // Office Supplies > Office Instruments > Writing & Drawing Instruments > Pens & Pencils > Pens
+    'クリアファイル':    'os-3-12',     // Office Supplies > Filing & Organization > File Folders
+    'マスキングテープ': 'ae-2-1-2-5-3', // Arts & Entertainment > Hobbies & Creative Arts > Arts & Crafts > ... > Decorative Tape
+    'レターセット':      'os-4-9-13',   // Office Supplies > General Office Supplies > Paper Products > Stationery
+    // バッグ・ポーチ系
+    'トートバッグ':      'aa-5-4-18',   // Apparel & Accessories > Handbags, Wallets & Cases > Handbags > Shopper Bags
+    'エコバッグ':        'aa-5-4-18',   // Apparel & Accessories > Handbags, Wallets & Cases > Handbags > Shopper Bags
+    'ポーチ・ケース':    'lb-3',        // Luggage & Bags > Cosmetic & Toiletry Bags
+    // キッチン・食器系
+    'マグカップ・グラス': 'hg-11-10-5', // Home & Garden > Kitchen & Dining > Tableware > Drinkware
+    'プレート・ボウル':  'hg-11-10-4',  // Home & Garden > Kitchen & Dining > Tableware > Dinnerware
+    '食器':             'hg-11-10',    // Home & Garden > Kitchen & Dining > Tableware
+    'お弁当グッズ':      'hg-11-3-7-5', // Home & Garden > Kitchen & Dining > Food & Beverage Carriers > Lunch Boxes & Totes > Bento Boxes
+    // 電子機器系
+    'モバイルバッテリー': 'el-7-15-5-1', // Electronics > Electronics Accessories > Power > Power Adapters & Chargers > Power Banks
+    'ガジェット':        'el',           // Electronics
+    // インテリア・雑貨系
+    '壁掛け時計':        'hg-3-17-4',   // Home & Garden > Decor > Clocks > Wall Clocks
+    '置き時計':          'hg-3-17-2-1', // Home & Garden > Decor > Clocks > Desk & Shelf Clocks > Desk Clocks
+    '収納用品':          'hg-10-16',    // Home & Garden > Household Supplies > Storage & Organization
+    'デコレーション用品': 'hg-3',        // Home & Garden > Decor
+    'ギフト用品':        'ae-3-1-5',    // Arts & Entertainment > Party & Celebration > Gift Giving > Gift Wrapping
+    // バッグ追加
+    'ショッピングバッグ': 'aa-5-4-18',  // Apparel & Accessories > Handbags, Wallets & Cases > Handbags > Shopper Bags
+    'ランチバッグ':      'hg-11-3-7-1', // Home & Garden > Kitchen & Dining > Food & Beverage Carriers > Lunch Boxes & Totes > Lunch Bags
+    // ペーパー・カード系
+    'ミニポスター':      'hg-3-4-2-1',  // Home & Garden > Decor > Artwork > Posters, Prints, & Visual Artwork > Posters
+    '祝儀袋・ポチ袋':   'os-4-9-7',    // Office Supplies > General Office Supplies > Paper Products > Envelopes
+    'ふせん':           'os-4-9-14',   // Office Supplies > General Office Supplies > Paper Products > Sticky Notes
+    'グリーティングカード': 'ae-3-1-6-2', // Arts & Entertainment > Party & Celebration > Gift Giving > Greeting & Note Cards > Greeting Cards
+    'ステーショナリー':  'os-4-9-13',   // Office Supplies > General Office Supplies > Paper Products > Stationery
+    // デスク・雑貨系
+    'デスクトップ':      'os-3-10-1',   // Office Supplies > Filing & Organization > Desk Organizers > Desktop Organizers
+    'キーホルダー':      'aa-4-1',      // Apparel & Accessories > Handbag & Wallet Accessories > Keychains
+    'キッチンファブリック': 'hg-15-2',  // Home & Garden > Linens & Bedding > Kitchen Linens Sets
+    '衛生用品':          'hb-3',        // Health & Beauty > Personal Care
+    // バッグ・財布・服飾雑貨系
+    'ショルダーバッグ':  'aa-5-4-19',   // Apparel & Accessories > Handbags, Wallets & Cases > Handbags > Shoulder Bags
+    '財布':             'aa-5-5-7',    // Apparel & Accessories > Handbags, Wallets & Cases > Wallets & Money Clips > Wallets
+    '手帳・ダイアリー': 'os-3-5-3',    // Office Supplies > Filing & Organization > Calendars, Organizers & Planners > Planners
+    'ブローチ・ワッペン': 'aa-6-4',    // Apparel & Accessories > Jewelry > Brooches & Lapel Pins
+    'スポーツ用品':      'sg',         // Sporting Goods
+    'フレーム（額縁）':  'hg-3-52',    // Home & Garden > Decor > Picture Frames
+    'レジャーシート':   'hg-12-2-5-2', // Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Blankets > Picnic Blankets
+    '照明':            'bi-24-3-2',   // Business & Industrial > Signage > Electric Signs > Neon Signs（ネオンライト用）
+  };
+
+  // Shopifyコレクション一覧（Collection列はここに含まれる文言のみ出力する、139件）
+  const COLLECTION_SET = new Set([
+    "ステーショナリー",
+    "MATOKA｜マトカ",
+    "手帳・ダイアリー",
+    "MATOKA 2026年10月始まりダイアリー",
+    "ワンポイント",
+    "MATOKA 2026年4月始まりダイアリー",
+    "限定商品",
+    "ギフト用品",
+    "ポーチ・小物入れ",
+    "ペンケース",
+    "2026年10月始まり【B6】マンスリー｜ フルカラー（背景色や飾り枠が毎月変化）",
+    "マスターピース",
+    "2026年10月始まり【新書】マンスリー",
+    "ファッション雑貨",
+    "2026年10月始まり【B6】ウィークリー｜ブロック式（日記 や ToDoリストに最適）",
+    "作家シリーズ",
+    "レターセット",
+    "ブックカバー",
+    "2026年10月始まり【B6】マンスリー｜スタンダード（B6サイズの定番マンスリー）",
+    "新商品",
+    "2026年4月始まり【B6】ウィークリー｜ブロック式（日記 や ToDoリストに最適）",
+    "グリーティングカード",
+    "バッグ",
+    "2026年4月始まり【B6】マンスリー｜ フルカラー（背景色や飾り枠が毎月変化）",
+    "2026年10月始まり【B6】ウィークリー｜レフト式（17時間ホリゾンタル表記）",
+    "SUVANT",
+    "LEAFLETS｜リーフレッツ",
+    "2026年4月始まり【新書】マンスリー",
+    "ノート・メモ帳",
+    "OBAKE｜おばけ",
+    "2026年10月始まり【ミニサイズ】ブロック式",
+    "デコレーション用品",
+    "レジャーバッグ",
+    "保冷グッズ",
+    "LAURIER｜ローリエ",
+    "2026年4月始まり【B6】ウィークリー｜レフト式（17時間ホリゾンタル表記）",
+    "Break Time｜ブレイクタイム",
+    "アート・美術",
+    "松尾ミユキ",
+    "シール・ステッカー",
+    "ショッピングバッグ",
+    "アウトドア雑貨",
+    "お弁当グッズ",
+    "エコバッグ",
+    "クリアファイル",
+    "KIGURUMI｜着ぐるみ",
+    "2026年4月始まり【B6】マンスリー｜スタンダード（B6サイズの定番マンスリー）",
+    "祝儀袋・ポチ袋",
+    "DOODLE｜ドゥードゥル",
+    "AH LA LA｜アララ",
+    "キッチン雑貨",
+    "インテリア",
+    "ブックマーク・しおり",
+    "TICKLE｜ティックル",
+    "お気に入り",
+    "エジプシャン",
+    "mois et fleurs｜モワ・エ・フルール",
+    "マスキングテープ",
+    "ふせん",
+    "goyururi｜ごゆるり",
+    "joyeux｜ジョワイユ",
+    "いわしまあゆ",
+    "ミニポスター",
+    "PETIT ET GRAND｜プティ・エ・グラン",
+    "Plaisir｜プレジール",
+    "食器",
+    "RECIPE｜レシピ",
+    "BONHEUR｜ボヌール",
+    "SUCRE｜シュクレ",
+    "デスクトップ",
+    "COTOMO｜コトモ",
+    "キーホルダー",
+    "CLAIR｜クレール",
+    "Lucia｜ルチア",
+    "ショルダーバッグ",
+    "プレート・ボウル",
+    "CHARME｜シャルム",
+    "ハンカチ",
+    "時計",
+    "マグカップ・ティーカップ",
+    "LEO LIONNI｜レオ・レオニ",
+    "PRINTEMPS｜プランタン",
+    "アーティストクロック",
+    "マグカップ",
+    "メガネケース",
+    "アートフレーム",
+    "LINDEN｜リンデン",
+    "カトラリー",
+    "NORDLYS｜ノールリス",
+    "壁掛け時計",
+    "ポストカード",
+    "piilo｜ピーロ",
+    "トートバッグ",
+    "アクセサリー",
+    "ブローチ・ワッペン",
+    "PETRA BOASE｜ペトラボーズ",
+    "RESFEBER｜レースフェーベル",
+    "ペン",
+    "エリックカール",
+    "置き時計",
+    "プレート",
+    "収納小物",
+    "MITE｜ミーテ",
+    "KOTELO｜コテロ",
+    "衛生用品",
+    "Placid｜プラシド",
+    "FENSTER｜フェンスター",
+    "ボウル",
+    "キッチンファブリック",
+    "FISH CASE｜フィッシュケース",
+    "RECHERCHE｜ルシェルシェ",
+    "AMPERSAND FACTORY｜アンパサンドファクトリー",
+    "TRONCO｜トロンコ",
+    "レジャーシート",
+    "フレーム（額縁）",
+    "HYGGE｜ヒュッゲ",
+    "TRAFFIC｜トラフィック",
+    "NeXtime｜ネクスタイム",
+    "Bijou｜ビジュー",
+    "SORTIR｜ソルティール",
+    "財布",
+    "BAUHAUS｜バウハウス",
+    "SYLVAN｜シルヴァン",
+    "CARVING｜カービング",
+    "照明",
+    "PEANUTS",
+    "リュック",
+    "minimini｜ミニミニ",
+    "壁掛けカレンダー・マンスリー｜リングタイプ",
+    "卓上カレンダー・マンスリー｜リングタイプ",
+    "カレンダー",
+    "壁掛けカレンダー・マンスリー｜タンザックタイプ",
+    "gr?ce｜グラース",
+    "卓上カレンダー",
+    "卓上カレンダー・マンスリー｜木製スタンドタイプ",
+    "卓上カレンダー・ウィークリー｜リングタイプ",
+    "壁掛けカレンダー",
+    "MY Darlin｜マイダーリン",
+    "クリップボード",
+  ]);
+  // Type名がコレクション一覧と表記違いの場合の読み替え
+  const COLLECTION_ALIAS = {
+    'ポーチ・ケース': 'ポーチ・小物入れ',
+    'マグカップ・グラス': 'マグカップ・ティーカップ',
+    '収納用品': '収納小物',
+  };
+  // Collection列はコレクション一覧に含まれる文言のみ出力（一致しなければ空欄）
+  function resolveCollection(type) {
+    if (!type) return '';
+    if (COLLECTION_SET.has(type)) return type;
+    return COLLECTION_ALIAS[type] || '';
+  }
+
+  // 楽天ジャンルID → Shopify Product Category 対応表（id-henkan.csv由来、135件）
+  const GENRE_CATEGORY_MAP = {
+    '100487':'aa-6-9','100636':'hg-3-57','100663':'hb-3-10-12-2','100976':'hb-3-2-5-1','101238':'hg-3-4-2-1','101845':'hg-10-16','101846':'lb','101872':'os-11',
+    '110934':'aa-5-4','110942':'aa-5-4-19','110950':'lb-13','110976':'lb-1','111029':'aa-6-8','111145':'os-4-9-14','111163':'ae-2-1-2-8-4','111167':'os-3-5-3',
+    '111177':'os-11-5','111377':'hg-3-52','111388':'hg-3-67','112756':'aa-5-4','112816':'hg-3','112938':'ae-2-2','113074':'aa-6-4-1','201632':'tg-5-8-11',
+    '201886':'hg-12-2-5-2','202535':'hg-12-1-14','205161':'hg-11-3-7-1','205611':'hg-15-1-4','205718':'hg-3-64','205835':'ae-3-1-5','205880':'hg-3-52','207052':'aa-2-14-6',
+    '207288':'aa-4-1','207328':'aa-2-26','207530':'tg-5-12','208375':'hg-9-1-6','210194':'ae-3-1-5','210271':'ae-2-1-2-14-2','215884':'hg-11-10-6-3','216058':'os-11-11-7-3-1',
+    '216077':'ae-3-1-5','216132':'aa','300815':'hg-3-15','300823':'hg-3-17-2','300829':'hg-3-17-4','301365':'hg-11-10-6-4','301446':'hg-15-4-3','301570':'hg-1-6',
+    '301594':'os-4-7','301621':'os-4-9-7','301637':'os-4-9-13','301638':'os-4-9-7','301648':'ae-3-1-6-2','301713':'os-3-16','301722':'os-3-10','301728':'os-3-4',
+    '301731':'os-4-12','301745':'os-11','301748':'os-3-12','303261':'hb-2-3-1','400795':'hg-3-47-2','400816':'tg-5-12-3','401526':'hg-15-4-3','401539':'hg-15-3-3',
+    '401550':'hg-11-3-7-5','401619':'hg-3-40-1','401669':'os-4-9-9','401752':'os-11-11-4-1','402260':'ha-15-16','403725':'aa-1-18','403747':'aa-2-16','403753':'aa-2-16',
+    '403809':'aa-5-1','403822':'lb-3-3','404026':'hg-3-2','406431':'hg-10-16-9','406569':'hg-13-10','406605':'hg-3-6','406942':'hg-3-52','407036':'hg-11-10-5-8',
+    '407060':'hg-11-3','408789':'lb-13','408790':'aa-5-4-19','408849':'aa-5-5-3','500333':'hg-3-47-1','501923':'fr-15-6','502368':'aa-5-5-7','502468':'hb-3-2-5-1-6-1',
+    '505526':'hg-1-6','505560':'os-1-1','505564':'ae-3-1-5','505570':'ae-2-1-2-1-5','505578':'os-4-2-3','508289':'hg-3-15','508477':'hg-11-1-8','509176':'lb-11',
+    '509189':'hb-3-19-5-1-1','551228':'hg-3-57','551589':'hg-11-3-7-5','551591':'hg-11-3-11','551736':'hg-15-4','551847':'hg-11-10-6-3','551939':'aa-1-18','552391':'el-7-8-8',
+    '559275':'hg-11','564277':'el-7-15-1','565214':'aa-5-5-2','565218':'hg-16','565222':'aa-4-7','565294':'hg-12-1-7-11-1','565650':'os-4-8','565667':'os-3-12',
+    '565669':'os-3-12','566119':'hg-11-10-6-4','566130':'hg-11-10-4-3','566135':'hg-11-10-4-1','566136':'hg-11-10-4-1','566138':'hg-11-10-4-1','566152':'hg-11-10-5-2','566155':'hg-11-10-5-3',
+    '566157':'hg-11-10-5-5','566194':'hg-3-17-2','567236':'os-3-5','567257':'os-11-11-4-2','567272':'os-4-9-10','567450':'lb','567542':'os-1-4','567560':'hg-3-73-1',
+    '567731':'ae-3-1-5','568234':'os-12-6','568358':'hb-3-2-1-6','568467':'aa-5-4-19','568488':'hg-16','568680':'os-4-9-9-3','568681':'os-4-9-9-5',
+  };
+
+  // 「配送方法セット管理番号」（"含む"で判定）＋「送料区分1」の組み合わせ → ShopifyのTagsに追加するタグ
+  function resolveShippingTag(setNumberRaw, feeCategoryRaw) {
+    const setNumber = (setNumberRaw || '').trim();
+    const feeCategory = (feeCategoryRaw || '').trim();
+    const has = (digit) => setNumber.includes(digit);
+    const isOneOrEmpty = setNumber === '' || has('1');
+
+    if (has('2') && feeCategory === '1') return 'ゆうメールF';
+    if (has('5') && (feeCategory === '5' || feeCategory === '6')) return 'ゆうパケF';
+    if (has('2') && (feeCategory === '2' || feeCategory === '4')) return 'ゆうメールP';
+    if (has('5') && (feeCategory === '2' || feeCategory === '4')) return 'ゆうパケP';
+    if (isOneOrEmpty && feeCategory === '4') return '宅配便P';
+    if (isOneOrEmpty && feeCategory === '6') return '宅配便F';
+    return 'デフォルト'; // どれにも当てはまらない場合
+  }
+
+  // ===== タイトル分解ロジック =====
+
+  const DISCARD = new Set([
+    'おしゃれ','かわいい','可愛い','上品','シンプル','大人','個性的','ユニーク',
+    'カラフル','ポップ','モダン','かっこいい','無骨','レトロ','華やか','気軽',
+    '大きめ','小さめ','コンパクト','大容量','スリム','ミニ','便利',
+    '高校生','中学生','女子','男子','子供','キッズ','メンズ',
+    '仕事','勉強','通勤','通学','入学','メール便対応','定型内','定形内','郵送不可',
+    'デコ',
+  ]);
+  const GIFT_WORDS = new Set(['ギフト','プレゼント','贈り物','お祝い','誕生日','母の日','プチギフト']);
+  const KEEP_EN = new Set(['UFO','UMA']);
+  const BRAND_MAP = {
+    'SERATA セラータ':          ['SERATA','プレジール'],
+    'MATOKA マトカ':            ['マトカ'],
+    'LEAFLETS リーフレッツ':    ['リーフレッツ'],
+    'LEAFLETS':                 ['リーフレッツ'],
+    'EL COMMUN エルコミューン': [],
+    'AMPERSAND FACTORY':        ['アンパサンドファクトリー'],
+  };
+  const MATERIALS = new Set(['美濃焼','瀬戸焼','陶器','磁器','日本製','帆布','刺繍','キャンバス','箔押し','活版印刷','和紙','木製']);
+
+  // ===== 楽天カテゴリリンク → Shopifyコレクションリンク 対応表（cat変換辞書、478件） =====
+  const CATEGORY_LINK_MAP = {
+    "https://item.rakuten.co.jp/elcommun/c/0000000807/": "https://elcommun.com/collections/10月始まり-b6-ウィークリー-ブロック式",
+    "https://item.rakuten.co.jp/elcommun/c/0000000806/": "https://elcommun.com/collections/10月始まり-b6-ウィークリー-レフト式",
+    "https://item.rakuten.co.jp/elcommun/c/0000000809/": "https://elcommun.com/collections/10月始まり-b6-マンスリー-フルカラー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000808/": "https://elcommun.com/collections/10月始まり-b6-マンスリー-スタンダード",
+    "https://item.rakuten.co.jp/elcommun/c/0000001446/": "https://elcommun.com/collections/10月始まり-ミニサイズ-マンスリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000805/": "https://elcommun.com/collections/10月始まり-新書-マンスリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000701/": "https://elcommun.com/collections/4月始まり-b6-ウィークリー-ブロック式",
+    "https://item.rakuten.co.jp/elcommun/c/0000000700/": "https://elcommun.com/collections/4月始まり-b6-ウィークリー-レフト式",
+    "https://item.rakuten.co.jp/elcommun/c/0000000703/": "https://elcommun.com/collections/4月始まり-b6-マンスリー-フルカラー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000702/": "https://elcommun.com/collections/4月始まり-b6-マンスリー-スタンダード",
+    "https://item.rakuten.co.jp/elcommun/c/0000000699/": "https://elcommun.com/collections/4月始まり-新書-マンスリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001115/": "https://elcommun.com/collections/ah-la-la",
+    "https://item.rakuten.co.jp/elcommun/c/0000001077/": "https://elcommun.com/collections/ampersand-factory",
+    "https://item.rakuten.co.jp/elcommun/c/0000001187/": "https://elcommun.com/collections/bauhaus",
+    "https://item.rakuten.co.jp/elcommun/c/0000000920/": "https://elcommun.com/collections/bauhaus",
+    "https://item.rakuten.co.jp/elcommun/c/0000001199/": "https://elcommun.com/collections/bauhaus",
+    "https://item.rakuten.co.jp/elcommun/c/0000001092/": "https://elcommun.com/collections/bonheur",
+    "https://item.rakuten.co.jp/elcommun/c/0000001074/": "https://elcommun.com/collections/bijou",
+    "https://item.rakuten.co.jp/elcommun/c/0000000954/": "https://elcommun.com/collections/break-time",
+    "https://item.rakuten.co.jp/elcommun/c/0000001079/": "https://elcommun.com/collections/carving",
+    "https://item.rakuten.co.jp/elcommun/c/0000001069/": "https://elcommun.com/collections/charme",
+    "https://item.rakuten.co.jp/elcommun/c/0000000929/": "https://elcommun.com/collections/clair",
+    "https://item.rakuten.co.jp/elcommun/c/0000001127/": "https://elcommun.com/collections/cotomo",
+    "https://item.rakuten.co.jp/elcommun/c/0000001173/": "https://elcommun.com/collections/doodle",
+    "https://item.rakuten.co.jp/elcommun/c/0000001088/": "https://elcommun.com/collections/doodle",
+    "https://item.rakuten.co.jp/elcommun/c/0000001100/": "https://elcommun.com/collections/fenster",
+    "https://item.rakuten.co.jp/elcommun/c/0000001104/": "https://elcommun.com/collections/fish-case",
+    "https://item.rakuten.co.jp/elcommun/c/0000000928/": "https://elcommun.com/collections/hygge-ヒュッゲ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001116/": "https://elcommun.com/collections/kigurumi",
+    "https://item.rakuten.co.jp/elcommun/c/0000001170/": "https://elcommun.com/collections/kotelo",
+    "https://item.rakuten.co.jp/elcommun/c/0000001054/": "https://elcommun.com/collections/laurier-ローリエ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000655/": "https://elcommun.com/collections/leaflets",
+    "https://item.rakuten.co.jp/elcommun/c/0000001017/": "https://elcommun.com/collections/leo-lionni",
+    "https://item.rakuten.co.jp/elcommun/c/0000001171/": "https://elcommun.com/collections/linden",
+    "https://item.rakuten.co.jp/elcommun/c/0000001037/": "https://elcommun.com/collections/lucia",
+    "https://item.rakuten.co.jp/elcommun/c/0000000653/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000001101/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000001098/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000001090/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000000961/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000000926/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000000953/": "https://elcommun.com/collections/matoka",
+    "https://item.rakuten.co.jp/elcommun/c/0000000931/": "https://elcommun.com/collections/mite",
+    "https://item.rakuten.co.jp/elcommun/c/0000001089/": "https://elcommun.com/collections/my-darlin",
+    "https://item.rakuten.co.jp/elcommun/c/0000001057/": "https://elcommun.com/collections/nordlys",
+    "https://item.rakuten.co.jp/elcommun/c/0000001137/": "https://elcommun.com/collections/nextime",
+    "https://item.rakuten.co.jp/elcommun/c/0000001117/": "https://elcommun.com/collections/obake",
+    "https://item.rakuten.co.jp/elcommun/c/0000001444/": "https://elcommun.com/collections/peanuts",
+    "https://item.rakuten.co.jp/elcommun/c/0000001443/": "https://elcommun.com/collections/peanuts",
+    "https://item.rakuten.co.jp/elcommun/c/0000001131/": "https://elcommun.com/collections/petit-et-grand",
+    "https://item.rakuten.co.jp/elcommun/c/0000000932/": "https://elcommun.com/collections/petra-boase",
+    "https://item.rakuten.co.jp/elcommun/c/0000001099/": "https://elcommun.com/collections/printemps",
+    "https://item.rakuten.co.jp/elcommun/c/0000001130/": "https://elcommun.com/collections/placid",
+    "https://item.rakuten.co.jp/elcommun/c/0000001132/": "https://elcommun.com/collections/plaisir",
+    "https://item.rakuten.co.jp/elcommun/c/0000001129/": "https://elcommun.com/collections/recherche",
+    "https://item.rakuten.co.jp/elcommun/c/0000001055/": "https://elcommun.com/collections/recipe",
+    "https://item.rakuten.co.jp/elcommun/c/0000000861/": "https://elcommun.com/collections/resfeber",
+    "https://item.rakuten.co.jp/elcommun/c/0000001128/": "https://elcommun.com/collections/sortir",
+    "https://item.rakuten.co.jp/elcommun/c/0000001065/": "https://elcommun.com/collections/sucre",
+    "https://item.rakuten.co.jp/elcommun/c/0000000882/": "https://elcommun.com/collections/sylvan",
+    "https://item.rakuten.co.jp/elcommun/c/0000001020/": "https://elcommun.com/collections/sylvan",
+    "https://item.rakuten.co.jp/elcommun/c/0000000654/": "https://elcommun.com/collections/tickle",
+    "https://item.rakuten.co.jp/elcommun/c/0000001078/": "https://elcommun.com/collections/traffic",
+    "https://item.rakuten.co.jp/elcommun/c/0000001096/": "https://elcommun.com/collections/tronco",
+    "https://item.rakuten.co.jp/elcommun/c/0000000955/": "https://elcommun.com/collections/goyururi",
+    "https://item.rakuten.co.jp/elcommun/c/0000001056/": "https://elcommun.com/collections/grace-グラース",
+    "https://item.rakuten.co.jp/elcommun/c/0000001063/": "https://elcommun.com/collections/joyeux",
+    "https://item.rakuten.co.jp/elcommun/c/0000001522/": "https://elcommun.com/collections/minimini-ミニミニ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001014/": "https://elcommun.com/collections/mois-et-fleurs",
+    "https://item.rakuten.co.jp/elcommun/c/0000001033/": "https://elcommun.com/collections/piilo",
+    "https://item.rakuten.co.jp/elcommun/c/0000001121/": "https://elcommun.com/collections/いわしまあゆ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000555/": "https://elcommun.com/collections/お弁当グッズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000509/": "https://elcommun.com/collections/ふせん",
+    "https://item.rakuten.co.jp/elcommun/c/0000000559/": "https://elcommun.com/collections/アウトdoor雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000000949/": "https://elcommun.com/collections/アウトdoor雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001072/": "https://elcommun.com/collections/アウトdoor雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001068/": "https://elcommun.com/collections/アウトdoor雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001073/": "https://elcommun.com/collections/アウトdoor雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001102/": "https://elcommun.com/collections/アウトdoor雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001172/": "https://elcommun.com/collections/アクセサリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001023/": "https://elcommun.com/collections/アーティストクロック",
+    "https://item.rakuten.co.jp/elcommun/c/0000001178/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001190/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001192/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001188/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001184/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001181/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001189/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001180/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001179/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001193/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001183/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001182/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001186/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001185/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001194/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001217/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001195/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000000908/": "https://elcommun.com/collections/アートフレーム",
+    "https://item.rakuten.co.jp/elcommun/c/0000001111/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001197/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001196/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001198/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001200/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001201/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001202/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001203/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001204/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001206/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001207/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001208/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001209/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001210/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001211/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001218/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000001212/": "https://elcommun.com/collections/アート-美術",
+    "https://item.rakuten.co.jp/elcommun/c/0000000936/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000000940/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000001045/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000000874/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000001035/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000000875/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000000886/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000001044/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000000890/": "https://elcommun.com/collections/インテリア",
+    "https://item.rakuten.co.jp/elcommun/c/0000001013/": "https://elcommun.com/collections/エコバッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000933/": "https://elcommun.com/collections/エジプシャン",
+    "https://item.rakuten.co.jp/elcommun/c/0000001018/": "https://elcommun.com/collections/エリックカール",
+    "https://item.rakuten.co.jp/elcommun/c/0000001213/": "https://elcommun.com/collections/カトラリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000885/": "https://elcommun.com/collections/キッチンファブリック",
+    "https://item.rakuten.co.jp/elcommun/c/0000000941/": "https://elcommun.com/collections/キッチン雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001445/": "https://elcommun.com/collections/キーホルダー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000664/": "https://elcommun.com/collections/ギフト用品",
+    "https://item.rakuten.co.jp/elcommun/c/0000000533/": "https://elcommun.com/collections/クリアファイル",
+    "https://item.rakuten.co.jp/elcommun/c/0000000934/": "https://elcommun.com/collections/グリーティングカード",
+    "https://item.rakuten.co.jp/elcommun/c/0000000524/": "https://elcommun.com/collections/ショッピングバッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000479/": "https://elcommun.com/collections/ショルダーバッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001122/": "https://elcommun.com/collections/シール-ステッカー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000382/": "https://elcommun.com/collections/ステーショナリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000472/": "https://elcommun.com/collections/ステーショナリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001103/": "https://elcommun.com/collections/デコレーション用品",
+    "https://item.rakuten.co.jp/elcommun/c/0000000483/": "https://elcommun.com/collections/デスクトップ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000481/": "https://elcommun.com/collections/トートバッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000915/": "https://elcommun.com/collections/トートバッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000383/": "https://elcommun.com/collections/ノート-メモ帳",
+    "https://item.rakuten.co.jp/elcommun/c/0000000705/": "https://elcommun.com/collections/ハンカチ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000942/": "https://elcommun.com/collections/バッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000457/": "https://elcommun.com/collections/ファッション雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000000557/": "https://elcommun.com/collections/ファッション雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000000963/": "https://elcommun.com/collections/ファッション雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001052/": "https://elcommun.com/collections/ファッション雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000001053/": "https://elcommun.com/collections/ファッション雑貨",
+    "https://item.rakuten.co.jp/elcommun/c/0000000122/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000585/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000587/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000589/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000591/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000584/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000586/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000588/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000590/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000592/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000612/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000611/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000610/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000609/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000608/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000607/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000606/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000605/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000604/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000603/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000602/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000596/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000595/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000601/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000597/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000599/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000594/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000598/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000600/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000593/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000859/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000632/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000633/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000634/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000635/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000858/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000631/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000636/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000857/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000855/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000856/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001157/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000628/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001145/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001148/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001147/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001149/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001146/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001144/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001141/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001142/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001139/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000838/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000853/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000850/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000854/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000845/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000839/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000846/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000840/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000847/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000842/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000848/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000843/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000852/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000849/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000851/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000123/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000412/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000411/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000410/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000409/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000401/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000408/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000400/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000407/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000399/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000398/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000406/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000405/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000397/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000404/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000396/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000395/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000394/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000393/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000403/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000392/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000391/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000402/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001156/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000413/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001155/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000414/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001154/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001153/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000415/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001152/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001151/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000416/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000417/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000418/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000419/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000420/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001158/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000911/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000613/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000624/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000620/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000625/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000614/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000621/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000615/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000616/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000626/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000622/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000617/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000623/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000627/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000618/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000629/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000619/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000797/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000793/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000798/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000787/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000794/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000788/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000789/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000799/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000795/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000790/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000796/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000800/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000791/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000792/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000369/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000453/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000452/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000451/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000450/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000449/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000444/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000448/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000443/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000447/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000446/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000442/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000441/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000440/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000439/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000438/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000445/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000529/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000436/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000435/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000434/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000433/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000428/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000432/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000427/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000431/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000430/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000426/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000425/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000424/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000423/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000422/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000421/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000429/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000676/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000677/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000678/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000679/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000675/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000671/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000530/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000674/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000673/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000668/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000667/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000670/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000666/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000669/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000771/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000765/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000772/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000766/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000767/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000773/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000768/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000774/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000769/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000770/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000712/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000751/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000745/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000752/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000746/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000753/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000748/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000754/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000749/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000750/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000741/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000735/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000742/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000736/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000737/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000743/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000738/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000744/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000739/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000740/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000731/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000725/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000732/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000726/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000727/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000733/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000728/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000734/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000729/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000730/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000781/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000775/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000782/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000776/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000777/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000783/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000778/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000784/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000779/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000780/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000721/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000715/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000722/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000716/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000717/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000723/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000718/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000724/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000719/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000720/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001166/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001160/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001167/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001161/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001162/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001168/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001163/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001169/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001164/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000001165/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000761/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000755/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000762/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000756/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000757/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000763/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000758/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000764/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000759/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000760/": "https://elcommun.com/collections/フレーム-額縁",
+    "https://item.rakuten.co.jp/elcommun/c/0000000964/": "https://elcommun.com/collections/ブックカバー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001114/": "https://elcommun.com/collections/ブックマーク-しおり",
+    "https://item.rakuten.co.jp/elcommun/c/0000000692/": "https://elcommun.com/collections/ブローチ-ワッペン",
+    "https://item.rakuten.co.jp/elcommun/c/0000001134/": "https://elcommun.com/collections/プレート",
+    "https://item.rakuten.co.jp/elcommun/c/0000000884/": "https://elcommun.com/collections/プレート-ボウル",
+    "https://item.rakuten.co.jp/elcommun/c/0000000935/": "https://elcommun.com/collections/ペン",
+    "https://item.rakuten.co.jp/elcommun/c/0000000471/": "https://elcommun.com/collections/ペンケース",
+    "https://item.rakuten.co.jp/elcommun/c/0000001135/": "https://elcommun.com/collections/ボウル",
+    "https://item.rakuten.co.jp/elcommun/c/0000001058/": "https://elcommun.com/collections/ポストカード",
+    "https://item.rakuten.co.jp/elcommun/c/0000000962/": "https://elcommun.com/collections/ポーチ-ケース",
+    "https://item.rakuten.co.jp/elcommun/c/0000000662/": "https://elcommun.com/collections/ポーチ-ケース",
+    "https://item.rakuten.co.jp/elcommun/c/0000001133/": "https://elcommun.com/collections/マグカップ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000883/": "https://elcommun.com/collections/マグカップ-グラス",
+    "https://item.rakuten.co.jp/elcommun/c/0000000862/": "https://elcommun.com/collections/マスキングテープ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001118/": "https://elcommun.com/collections/マスターピース",
+    "https://item.rakuten.co.jp/elcommun/c/0000000938/": "https://elcommun.com/collections/ミニポスター",
+    "https://item.rakuten.co.jp/elcommun/c/0000000950/": "https://elcommun.com/collections/メガネケース",
+    "https://item.rakuten.co.jp/elcommun/c/0000000554/": "https://elcommun.com/collections/リュック",
+    "https://item.rakuten.co.jp/elcommun/c/0000000946/": "https://elcommun.com/collections/レジャーシート",
+    "https://item.rakuten.co.jp/elcommun/c/0000000947/": "https://elcommun.com/collections/レジャーバッグ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000665/": "https://elcommun.com/collections/レターセット",
+    "https://item.rakuten.co.jp/elcommun/c/0000001060/": "https://elcommun.com/collections/ワンポイント",
+    "https://item.rakuten.co.jp/elcommun/c/0000001015/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001067/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001022/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001080/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001048/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001051/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001021/": "https://elcommun.com/collections/作家シリーズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000945/": "https://elcommun.com/collections/保冷グッズ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001119/": "https://elcommun.com/collections/卓上カレンダー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001120/": "https://elcommun.com/collections/卓上カレンダー-ウィークリー-リングタイプ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001449/": "https://elcommun.com/collections/卓上カレンダー-マンスリー-リングタイプ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001450/": "https://elcommun.com/collections/卓上カレンダー-マンスリー-木製スタンドタイプ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000513/": "https://elcommun.com/collections/収納用品",
+    "https://item.rakuten.co.jp/elcommun/c/0000000534/": "https://elcommun.com/collections/収納用品",
+    "https://item.rakuten.co.jp/elcommun/c/0000001448/": "https://elcommun.com/collections/壁掛けカレンダー-マンスリー-タンザックタイプ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001447/": "https://elcommun.com/collections/壁掛けカレンダー-マンスリー-リングタイプ",
+    "https://item.rakuten.co.jp/elcommun/c/0000001075/": "https://elcommun.com/collections/壁掛け時計",
+    "https://item.rakuten.co.jp/elcommun/c/0000000474/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000868/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000871/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000869/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000872/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000873/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001109/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000866/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000867/": "https://elcommun.com/collections/手帳-ダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000802/": "https://elcommun.com/collections/新商品",
+    "https://item.rakuten.co.jp/elcommun/c/0000000921/": "https://elcommun.com/collections/時計",
+    "https://item.rakuten.co.jp/elcommun/c/0000001016/": "https://elcommun.com/collections/松尾ミユキ",
+    "https://item.rakuten.co.jp/elcommun/c/0000000937/": "https://elcommun.com/collections/照明",
+    "https://item.rakuten.co.jp/elcommun/c/0000000801/": "https://elcommun.com/collections/祝儀袋-ポチ袋",
+    "https://item.rakuten.co.jp/elcommun/c/0000001076/": "https://elcommun.com/collections/置き時計",
+    "https://item.rakuten.co.jp/elcommun/c/0000000944/": "https://elcommun.com/collections/衛生用品",
+    "https://item.rakuten.co.jp/elcommun/c/0000000181/": "https://elcommun.com/collections/財布",
+    "https://item.rakuten.co.jp/elcommun/c/0000001126/": "https://elcommun.com/collections/限定商品",
+    "https://item.rakuten.co.jp/elcommun/c/0000001036/": "https://elcommun.com/collections/食器",
+    "https://item.rakuten.co.jp/elcommun/c/0000001124/": "https://elcommun.com/collections/10月始まりダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001125/": "https://elcommun.com/collections/4月始まりダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000001123/": "https://elcommun.com/collections/1月始まりダイアリー",
+    "https://item.rakuten.co.jp/elcommun/c/0000000860/": "https://elcommun.com/collections/カレンダー",
+  };
+  const CATEGORY_LINK_RE = /https?:\/\/item\.rakuten\.co\.jp\/elcommun\/c\/[0-9]+\/?/g;
+
+  // ===== 楽天GOLDページ → Shopifyリンク 対応表 =====
+  // ここに登録されたGOLDページはリンク切れ扱いせず変換して残す（未登録のGOLDページは従来通り削除）
+  const GOLD_LINK_MAP = {
+    "https://www.rakuten.ne.jp/gold/elcommun/event/decoration_item/": "https://elcommun.com/collections/デコレーション用品",
+    "https://www.rakuten.ne.jp/gold/elcommun/event/calendar/":        "https://elcommun.com/collections/カレンダー",
+    "https://www.rakuten.ne.jp/gold/elcommun/event/resfeber/":        "https://elcommun.com/collections/resfeber",
+  };
+  const GOLD_LINK_RE = /https?:\/\/www\.rakuten\.ne\.jp\/gold\/elcommun\/[^"'\s<>]*/g;
+  // ダイアリー特集ページ（event/diary{年}_{月}）は年に関わらず「N月始まりダイアリー」コレクションへ
+  function resolveGoldLink(url) {
+    const normalized = url.replace(/^http:/, 'https:').replace(/\/?$/, '/');
+    if (GOLD_LINK_MAP[normalized]) return GOLD_LINK_MAP[normalized];
+    const m = normalized.match(/\/event\/diary\d{4}_(01|04|10)\/$/);
+    if (m) return `https://elcommun.com/collections/${parseInt(m[1], 10)}月始まりダイアリー`;
+    return null;
+  }
+
+  // ===== 商品説明文の書式統一 =====
+  // 商品ページのフォーマットがバラつかないよう、見出しと余白を統一する。
+  // ・見出しは太字20px固定（<font size="4">でもテーマやShopifyエディタ由来の<span>でも同じ見た目に）
+  // ・見出し直後の<br>と、テーマの<hr>上下マージンによる空きすぎを抑える
+  // ・セクション間の<br>3連続以上は2つに詰める
+  const HEADING_STYLE = 'font-size:20px;font-weight:bold;color:#2F2724;';
+  const HR_STYLE = 'margin:10px 0 16px;';
+  function normalizeBodyFormat(html) {
+    return html
+      // <font size="4">見出し</font><br><hr> → 統一スタイルの見出し＋hr（brは除去）
+      .replace(/<font size="4"[^>]*>([\s\S]*?)<\/font>\s*(?:<br\s*\/?>)?\s*<hr\s*\/?>/gi,
+        `<span style="${HEADING_STYLE}">$1</span><hr style="${HR_STYLE}">`)
+      // hrを伴わない<font size="4">見出し → スタイルだけ統一
+      .replace(/<font size="4"[^>]*>([\s\S]*?)<\/font>/gi,
+        `<span style="${HEADING_STYLE}">$1</span>`)
+      // Shopifyエディタ等で書き換えられた小さい見出し（span font-size:large）も統一
+      .replace(/<span style="[^"]*font-size:\s*large;?[^"]*">([\s\S]*?)<\/span>/gi,
+        `<span style="${HEADING_STYLE}">$1</span>`)
+      // 画像下キャプション（グレー背景テーブル）の文字を16pxに（テーマ標準13pxでは小さいため）
+      .replace(/<table width="100%" bgcolor="#F7F7F7" cellspacing="10"><tr><td>/gi,
+        '<table width="100%" bgcolor="#F7F7F7" cellspacing="10"><tr><td style="font-size:16px;">')
+      // <br>3連続以上（空白・改行を挟む場合も含む）→ 2つに
+      .replace(/(?:<br\s*\/?>\s*){3,}/gi, '<br><br>');
+  }
+
+  // ===== Excel通貨誤変換の検出・復元 =====
+  // 例：型番「BND-001」がExcel/Numbersで開かれると通貨コード（ブルネイドル）と誤認識され
+  //     「-BND 1.00」「-BND?1.00」のような形に化けてしまう。楽天CSVがExcel等で
+  //     開いて保存されたことがある場合にこの現象が起きるため、パターン検知して復元する。
+  const CURRENCY_MANGLE_RE = /^-\s*([A-Za-z]{3})[^0-9]*([0-9]+)(?:\.[0-9]+)?$/;
+  function repairCurrencyMangledCode(raw) {
+    const s = (raw || '').trim();
+    const m = s.match(CURRENCY_MANGLE_RE);
+    if (!m) return null;
+    const code = m[1].toUpperCase();
+    const digits = m[2].padStart(3, '0');
+    return { original: s, repaired: `${code}-${digits}` };
+  }
+
+  // デザイン名『』を含むタイトルは『』の閉じ括弧までが商品を区別する情報のため、
+  // 通常の「最初の｜まで」ではなく「最初の』まで」をTitleとして残す（全Type対象）
+  function splitTitleAtClosingBracket(raw) {
+    const closeIdx = raw.indexOf('』');
+    if (closeIdx === -1) return null;
+    const title = raw.slice(0, closeIdx + 1).trim();
+    const remainder = raw.slice(closeIdx + 1).trim();
+    const keywords = remainder.split(/[\s　]+/).filter(Boolean);
+    return { title, keywords, brand: '', brandRaw: '' };
+  }
+
+  function splitProductTitle(raw) {
+    // 『』内の｜を保護してから分割
+    const protected_ = raw.replace(/『([^』]*)』/g, (m, inner) =>
+      `『${inner.replace(/[｜|]/g, '／')}』`);
+    const blocks = protected_.split(/[｜|]/).map(s => s.trim()).filter(Boolean);
+    if (blocks.length === 1) return { title: raw.trim(), keywords: [], brand: '', brandRaw: '' };
+    const title = blocks[0];
+    const lastRaw = blocks[blocks.length - 1].replace(/【[^】]*】/g, '').trim();
+    const isBrand = blocks.length >= 3 || Object.prototype.hasOwnProperty.call(BRAND_MAP, lastRaw);
+    const brandRaw = isBrand ? lastRaw : '';
+    const kwBlocks = blocks.slice(1, isBrand ? -1 : undefined);
+    const keywords = kwBlocks.join(' ').split(/[\s　]+/).filter(Boolean);
+    return { title, keywords, brand: brandRaw, brandRaw };
+  }
+
+  function classifyKeywords(keywords, existingTags) {
+    const tags = [];
+    const seen = new Set(existingTags);
+    let hasGift = false;
+    for (let kw of keywords) {
+      kw = kw.normalize('NFKC').trim();
+      kw = kw.replace(/[()（）]/g, '').trim(); // カッコは中身だけ残し記号は除去
+      if (!kw || DISCARD.has(kw)) continue;
+      if (/^\d+(ml|l|mm|cm|g)$/i.test(kw)) continue;
+      if (/^[0-9]+$/.test(kw)) continue; // 数字のみの羅列
+      if (/^[A-Za-z]+$/.test(kw) && !KEEP_EN.has(kw.toUpperCase())) continue; // アルファベットのみの羅列
+      if (GIFT_WORDS.has(kw)) { hasGift = true; continue; }
+      if (!seen.has(kw)) { seen.add(kw); tags.push(kw); }
+    }
+    if (hasGift && !seen.has('ギフト')) tags.push('ギフト');
+    return tags;
+  }
+
+  function buildSeoTitle(title, newTags, brandRaw) {
+    const mats = newTags.filter(t => MATERIALS.has(t)).slice(0, 2);
+    const catTag = newTags.find(t => !MATERIALS.has(t)) || '';
+    const parts = [title, ...mats, catTag].filter(Boolean);
+    let seo = parts.join(' ') + (brandRaw ? `｜${brandRaw}` : '');
+    if (seo.length > 60) seo = (title + (brandRaw ? `｜${brandRaw}` : '')).slice(0, 60);
+    return seo;
+  }
+
+  // 「表示先カテゴリ」からTypeを判定するマップを作成
+  function buildTypeMap(rows) {
+    const byHandle = _.groupBy(rows, r => (r['商品管理番号（商品URL）'] || '').trim());
+    const map = {};
+
+    Object.entries(byHandle).forEach(([handle, items]) => {
+      if (!handle) return;
+
+      // 除外対象を取り除く
+      const candidates = items
+        .map(r => (r['表示先カテゴリ'] || '').trim())
+        .filter(cat => cat && !cat.includes('メーカー・ブランド') && !cat.includes('作家シリーズ') && !cat.includes('セール商品'));
+
+      if (candidates.length === 0) return;
+
+      // 半角・全角どちらのバックスラッシュにも対応して正規化
+      const normalize = s => s.replace(/＼/g, '\\');
+      // 階層が最も深い（\の数が多い）ものを優先
+      candidates.sort((a, b) => (normalize(b).split('\\').length - normalize(a).split('\\').length));
+      const best = normalize(candidates[0]);
+      const segments = best.split('\\');
+      map[handle] = segments[segments.length - 1].trim();
+    });
+
+    return map;
+  }
+
+  // カレンダー商品は表示先カテゴリのフルパスから専用のCollection名を組み立てる
+  // （末端カテゴリ「リングタイプ」等だけではコレクション一覧と一致しないため）
+  function calendarCollectionFromPath(path) {
+    if (path.includes('壁掛けカレンダー')) {
+      if (path.includes('タンザックタイプ')) return '壁掛けカレンダー・マンスリー｜タンザックタイプ';
+      if (path.includes('リングタイプ')) return '壁掛けカレンダー・マンスリー｜リングタイプ';
+      return '';
+    }
+    if (path.includes('卓上カレンダー')) {
+      if (path.includes('ウィークリー')) return '卓上カレンダー・ウィークリー｜リングタイプ';
+      if (path.includes('木製スタンドタイプ')) return '卓上カレンダー・マンスリー｜木製スタンドタイプ';
+      if (path.includes('マンスリー')) return '卓上カレンダー・マンスリー｜リングタイプ';
+      return '';
+    }
+    return '';
+  }
+
+  function buildCalendarCollectionMap(rows) {
+    const byHandle = _.groupBy(rows, r => (r['商品管理番号（商品URL）'] || '').trim());
+    const map = {};
+    Object.entries(byHandle).forEach(([handle, items]) => {
+      if (!handle) return;
+      const paths = items
+        .map(r => (r['表示先カテゴリ'] || '').trim().replace(/＼/g, '\\'))
+        .filter(p => p.includes('カレンダー'));
+      // 階層が深いパスを優先して判定
+      paths.sort((a, b) => b.split('\\').length - a.split('\\').length);
+      for (const p of paths) {
+        const col = calendarCollectionFromPath(p);
+        if (col) { map[handle] = col; break; }
+      }
+    });
+    return map;
+  }
+
+  function buildTagsMap(rows) {
+    const byHandle = _.groupBy(rows, r => (r['商品管理番号（商品URL）'] || '').trim());
+    const map = {};
+
+    Object.entries(byHandle).forEach(([handle, items]) => {
+      if (!handle) return;
+
+      const tags = [];
+      const seen = new Set();
+
+      items
+        .map(r => (r['表示先カテゴリ'] || '').trim())
+        .filter(cat => cat)
+        .forEach(cat => {
+          // 全角バックスラッシュ（＼）を半角に正規化してから分割
+          cat.replace(/＼/g, '\\').split('\\').forEach(seg => {
+            let word = seg.trim();
+            if (!word) return;
+            if (word === 'メーカー・ブランド') return; // 「メーカー・ブランド」は除外
+            if (word.includes('｜')) {
+              const parts = word.split('｜');
+              word = parts[parts.length - 1].trim(); // 「｜」区切りは最後の要素のみ採用
+            }
+            if (word && !seen.has(word)) {
+              seen.add(word);
+              tags.push(word);
+            }
+          });
+        });
+
+      if (tags.length > 0) map[handle] = tags.join(', ');
+    });
+
+    return map;
+  }
+
+  async function runConvert() {
+    if (!selectedFile) return;
+    convertBtn.disabled = true;
+    document.getElementById('resultSection').classList.remove('show');
+    document.getElementById('previewWrap').innerHTML = '';
+    clearLog();
+
+    log('📂 ファイル読み込み中...', 'log-info');
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      let csvText;
+      try {
+        csvText = new TextDecoder('utf-8', { fatal: true }).decode(arrayBuffer);
+      } catch {
+        csvText = new TextDecoder('shift-jis').decode(arrayBuffer);
+      }
+
+      const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      if (!parsed.data || parsed.data.length === 0) throw new Error('CSVにデータが見つかりませんでした');
+
+      log(`✅ ${parsed.data.length} 行を読み込みました`, 'log-ok');
+      log('──────────────────────────────────', 'log-sep');
+      log('🔄 変換処理を開始します...', 'log-info');
+
+      const grouped = _.groupBy(parsed.data, item =>
+        item['商品管理番号（商品URL）'] || item['商品管理番号(商品URL)'] || ''
+      );
+
+      const shopifyData = [];
+      let productCount = 0;
+      let variantCount = 0;
+      let imageCount = 0;
+      let skipCount = 0;
+      let titleSplitCount = 0;
+      let titleTagTotal = 0;
+      const categoryIssues = []; // Type未設定 または Product Category未対応の商品
+      const skuRepairs = []; // Excel通貨誤変換から自動復元したSKU
+      const categoryLinkIssues = []; // 対応表に無い楽天カテゴリリンク
+      const collectionMissing = new Set(); // コレクション一覧に無いType（Collection空欄）
+      const doTitleSplit = document.getElementById('titleSplitChk').checked;
+      const doLinkClean = document.getElementById('linkCleanChk').checked;
+      let removedBlockCount = 0;
+      let linkCleanedProducts = 0;
+      const removedLinkTargets = new Set(); // 削除したリンク先（確認用）
+      const gramsIssues = []; // 配送区分が不明でVariant Gramsを設定できない商品
+
+      // リンク生存判定用（末尾ハイフン除去で比較）：
+      // Shopify登録済み商品CSVがあればそのHandle列のみを正とする。無ければ今回のCSV内の商品で判定。
+      const validHandles = new Set(registeredHandles);
+      if (validHandles.size === 0) {
+        Object.keys(grouped).forEach(h => { if (h) validHandles.add(normalizeHandle(h.trim())); });
+      }
+
+      // リンク切れ判定：楽天GOLDページ、またはHandle一覧に無い商品へのリンク
+      function isBrokenUrl(u) {
+        if (/rakuten\.ne\.jp\/gold\//.test(u)) return true;
+        const m = u.match(/^https?:\/\/item\.rakuten\.co\.jp\/elcommun\/(?!c\/)([^/?#"]+)/);
+        return !!m && !validHandles.has(normalizeHandle(m[1]));
+      }
+      // 削除したリンク先を記録（後でログに一覧表示して誤削除に気付けるようにする）
+      function recordBroken(urls) {
+        urls.filter(isBrokenUrl).forEach(u => {
+          const m = u.match(/^https?:\/\/item\.rakuten\.co\.jp\/elcommun\/(?!c\/)([^/?#"]+)/);
+          removedLinkTargets.add(m ? normalizeHandle(m[1]) : '楽天GOLDページ');
+        });
+      }
+
+      // 説明文を <font size="4"> 見出し単位のブロックに分割し、
+      // Handle一覧に無い商品・楽天GOLDページへのリンクだけを商品単位で削除する。
+      // ブロック内の全リンクが切れている場合のみブロックごと削除。
+      function removeBrokenBlocks(html) {
+        // 見出し（書式統一後のspan、未統一のfontどちらも）を区切りにブロック分割
+        const blocks = html.split(/(?=<span style="font-size:20px;font-weight:bold)|(?=<font size="4")/);
+        let removed = 0;
+        const kept = blocks.map(block => {
+          const urls = [...block.matchAll(/href="(https?:\/\/[^"]+)"/g)].map(mm => mm[1]);
+          if (urls.length === 0) return block;
+          const brokenCount = urls.filter(isBrokenUrl).length;
+          if (brokenCount === 0) return block;
+          removed += brokenCount;
+          recordBroken(urls);
+          if (brokenCount === urls.length) return ''; // 有効リンクが残らないブロックは丸ごと削除
+          // 混在ブロック：関連商品グリッド（全セルがバナーリンク<a><img>のtable）は
+          // 壊れたセルだけ除去して3列で組み直す
+          let out = block.replace(/<table([^>]*)>([\s\S]*?)<\/table>/g, (tableMatch, attrs, inner) => {
+            const cells = inner.match(/<td[^>]*>[\s\S]*?<\/td>/g) || [];
+            const isGrid = cells.length >= 2 && cells.every(c => /<a href="https?:\/\/[^"]+"[^>]*>\s*<img/.test(c));
+            if (!isGrid) return tableMatch;
+            const keptCells = cells.filter(c => {
+              const cu = [...c.matchAll(/href="(https?:\/\/[^"]+)"/g)].map(mm => mm[1]);
+              return !cu.some(isBrokenUrl);
+            });
+            if (keptCells.length === 0) return '';
+            const rows = [];
+            for (let i = 0; i < keptCells.length; i += 3) {
+              const row = keptCells.slice(i, i + 3);
+              while (row.length < 3) row.push('<td width="33%"></td>');
+              rows.push('<tr>' + row.join('') + '</tr>');
+            }
+            return '<table' + attrs + '>' + rows.join('') + '</table>';
+          });
+          // グリッド外の壊れたアンカー（単独バナー・テキストリンク等）を個別に除去
+          out = out.replace(/<a href="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<\/a>/g, (mm, u) =>
+            isBrokenUrl(u) ? '' : mm);
+          return out;
+        });
+        return { html: kept.join(''), removed };
+      }
+
+      Object.entries(grouped).forEach(([handleKey, items]) => {
+        if (!handleKey) { skipCount++; return; }
+        const first = items[0];
+        // 「＼P2倍＋クーポン／」「【7月下旬 新色入荷！】」等のキャンペーン装飾を除去
+        // （Metafield: custom.original_titleにもTitleにも含めない）
+        const originalTitle = (first['商品名'] || '').trim()
+          .replace(/＼[^／]*／/g, '')
+          .replace(/【dc】/gi, '')
+          .replace(/【[^】]*(?:入荷|新色|新作|セール|SALE|予約|キャンペーン|クーポン|ポイント|増量|数量限定|期間限定|送料無料|先着|割引|OFF|%)[^】]*】/gi, '')
+          .trim();
+        const productName = originalTitle;
+        if (!productName) { skipCount++; return; }
+
+        const handle = handleKey.trim();
+        // ⓪ 書式統一（見出し太字20px・キャプション16px・余白の詰め）→ GOLDページ変換（リンク切れ削除より必ず先に行う）
+        let bodySource = normalizeBodyFormat(first['スマートフォン用商品説明文'] || '')
+          .replace(GOLD_LINK_RE, (url) => resolveGoldLink(url) || url);
+        // ① リンク切れブロック（未登録商品・対応表に無い楽天GOLDページへのリンクを含む）を削除
+        if (doLinkClean && bodySource) {
+          const cleaned = removeBrokenBlocks(bodySource);
+          if (cleaned.removed > 0) {
+            removedBlockCount += cleaned.removed;
+            linkCleanedProducts++;
+          }
+          bodySource = cleaned.html;
+        }
+        // ② 楽天カテゴリリンク（/c/）を対応表でShopifyコレクションリンクに変換（商品リンク変換より必ず先に行う）
+        const bodyAfterCategory = bodySource
+          .replace(CATEGORY_LINK_RE, (url) => {
+            // http→https・末尾スラッシュ補完で表記ゆれを吸収してから照合
+            const normalized = url.replace(/^http:/, 'https:').replace(/\/?$/, '/');
+            const mapped = CATEGORY_LINK_MAP[normalized];
+            if (mapped) return mapped;
+            categoryLinkIssues.push(`${productName}（${handle}）：対応表に無いカテゴリリンク「${url}」`);
+            return url;
+          });
+        // ③ 楽天商品ページリンクをShopify商品ページリンクに変換（カテゴリリンク/c/は対象外）
+        //    Shopifyのハンドルは末尾ハイフンが削除されるため、リンク側も揃える（cal-01- → cal-01）
+        const bodyHTML = bodyAfterCategory
+          .replace(/https?:\/\/item\.rakuten\.co\.jp\/elcommun\/(?!c\/)([^/?#"'\s<>]+)/g,
+            (m, slug) => 'https://elcommun.com/products/' + normalizeHandle(slug));
+        const option1Name = first['バリエーション項目名定義'] || 'Title';
+
+        // ジャンルID「111167」は表示先カテゴリに関わらずType「手帳・ダイアリー」（Product Category: os-3-5-3）に固定
+        const genreId = (first['ジャンルID'] || '').trim();
+        if (genreId === '111167') {
+          typeMap[handle] = '手帳・ダイアリー';
+        }
+
+        // ジャンルID → Product Category（対応表優先、無ければType由来のマップにフォールバック）
+        const genreCategory = GENRE_CATEGORY_MAP[genreId] || '';
+
+        // Type未設定 または Product Category未対応のチェック
+        const productType = typeMap[handle] || '';
+        if (!productType) {
+          categoryIssues.push(`${productName}（${handle}）：Typeが空欄です`);
+        } else if (!genreCategory && !PRODUCT_CATEGORY_MAP[productType]) {
+          categoryIssues.push(`${productName}（${handle}）：ジャンルID「${genreId}」が対応表に無く、Type「${productType}」もProduct Categoryに未対応です`);
+        }
+        if (productType && !calendarCollectionMap[handle] && !resolveCollection(productType)) {
+          collectionMissing.add(productType);
+        }
+
+        const validVariants = items.filter(item => (item['SKU管理番号'] || '').trim() !== '');
+
+        // 配送方法セット管理番号＋送料区分1 から配送タグを判定し、Tagsの末尾に追加
+        const shippingSource = validVariants[0] || first;
+        const shippingTag = resolveShippingTag(shippingSource['配送方法セット管理番号'], shippingSource['送料区分1']);
+        // 配送区分に応じてVariant Gramsを設定（ゆうメール:30 / ゆうパケ:300 / 宅配便:3000）
+        const shippingGrams = shippingTag.startsWith('ゆうメール') ? '30'
+          : shippingTag.startsWith('ゆうパケ') ? '300'
+          : shippingTag.startsWith('宅配便') ? '3000' : '';
+        if (!shippingGrams) {
+          gramsIssues.push(`${productName}（${handle}）：配送区分が不明のためVariant Gramsを設定できません（配送方法セット管理番号「${(shippingSource['配送方法セット管理番号'] || '').trim()}」・送料区分1「${(shippingSource['送料区分1'] || '').trim()}」）`);
+        }
+        const baseTagsStr = (() => {
+          const base = tagsMap[handle] || '';
+          return base ? `${base}, ${shippingTag}` : shippingTag;
+        })();
+
+        // タイトル分解
+        let finalTitle = productName;
+        let finalTags = baseTagsStr;
+        let seoTitle = '';
+        if (doTitleSplit) {
+          const { title, keywords, brandRaw } =
+            splitTitleAtClosingBracket(productName) || splitProductTitle(productName);
+          finalTitle = title;
+          const existingSet = new Set(baseTagsStr.split(',').map(t => t.trim()).filter(Boolean));
+          const newKwTags = classifyKeywords(keywords, existingSet);
+          // ブランドタグを解決
+          const brandTags = brandRaw
+            ? (Object.prototype.hasOwnProperty.call(BRAND_MAP, brandRaw)
+                ? BRAND_MAP[brandRaw]
+                : [brandRaw])
+            : [];
+          const brandTagsFiltered = brandTags.filter(t => t && !existingSet.has(t) && !new Set(newKwTags).has(t));
+          const allNewTags = [...newKwTags, ...brandTagsFiltered];
+          // タグ総数30上限
+          const existingCount = existingSet.size;
+          const trimmed = allNewTags.slice(0, Math.max(0, 30 - existingCount));
+          finalTags = [...existingSet, ...trimmed].join(', ');
+          seoTitle = buildSeoTitle(title, [...newKwTags], brandRaw);
+          if (keywords.length > 0 || brandRaw) {
+            titleSplitCount++;
+            titleTagTotal += trimmed.length;
+          }
+        }
+
+        const images = [];
+        for (let i = 1; i <= 20; i++) {
+          let p = (first[`商品画像パス${i}`] || '').trim();
+          if (!p) continue;
+          if (p.startsWith('/')) p = 'https://image.rakuten.co.jp/elcommun/cabinet' + p;
+          images.push(p);
+        }
+
+        const totalRows = Math.max(validVariants.length, images.length);
+        for (let i = 0; i < totalRows; i++) {
+          const isFirst = i === 0;
+          const item = i < validVariants.length ? validVariants[i] : null;
+          const imageUrl = i < images.length ? images[i] : '';
+          const option1Value = item ? (item['バリエーション項目選択肢1'] || '').trim() : '';
+          // Variant SKU：メーカー型番があればそれを使用、なければSKU管理番号
+          const sku = (() => {
+            if (!item) return '';
+            let raw = '';
+            for (let n = 1; n <= 100; n++) {
+              if ((item[`商品属性（項目）${n}`] || '').trim() === 'メーカー型番') {
+                raw = (item[`商品属性（値）${n}`] || '').trim();
+                break;
+              }
+            }
+            if (!raw) raw = (item['SKU管理番号'] || '');
+            const repair = repairCurrencyMangledCode(raw);
+            if (repair) {
+              skuRepairs.push(`${productName}（${handle}）：「${repair.original}」→「${repair.repaired}」`);
+              return repair.repaired;
+            }
+            return raw;
+          })();
+          const price = item ? (item['通常購入販売価格'] || '') : '';
+          const barcode = item ? (item['カタログID'] || '') : '';
+          // Variant Image：SKU画像パスに画像ベースURLを付与
+          const variantImage = (() => {
+            if (!item) return '';
+            const path = (item['SKU画像パス'] || '').trim();
+            if (!path) return '';
+            return `https://image.rakuten.co.jp/elcommun/cabinet${path}`;
+          })();
+
+          shopifyData.push({
+            'Handle': normalizeHandle(handle), // Shopify登録後のハンドル表記（末尾ハイフン無し）に揃える
+            'Title': isFirst ? finalTitle : '',
+            'Body (HTML)': isFirst ? bodyHTML : '',
+            'Vendor': isFirst ? 'EL COMMUN online shop' : '',
+            'Product Category': isFirst ? (genreCategory || PRODUCT_CATEGORY_MAP[typeMap[handle]] || '') : '',
+            'Type': isFirst ? (typeMap[handle] || '') : '',
+            'Tags': isFirst ? finalTags : '',
+            'Published': isFirst ? 'TRUE' : '',
+            'Option1 Name': isFirst ? option1Name : '',
+            'Option1 Value': option1Value,
+            'Option1 Linked To': '',
+            'Option2 Name': '', 'Option2 Value': '', 'Option2 Linked To': '',
+            'Option3 Name': '', 'Option3 Value': '', 'Option3 Linked To': '',
+            'Variant SKU': sku,
+            'Variant Grams': sku ? shippingGrams : '',
+            'Variant Inventory Tracker': sku ? 'shopify' : '',
+            'Variant Inventory Qty': sku ? '0' : '',
+            'Variant Inventory Policy': sku ? 'deny' : '',
+            'Variant Fulfillment Service': sku ? 'manual' : '',
+            'Variant Price': price,
+            'Variant Compare At Price': '',
+            'Variant Requires Shipping': sku ? 'TRUE' : '',
+            'Variant Taxable': sku ? 'TRUE' : '',
+            'Variant Barcode': barcode,
+            'Image Src': imageUrl,
+            'Image Position': imageUrl ? (i + 1).toString() : '',
+            'Image Alt Text': '',
+            'Gift Card': isFirst ? 'FALSE' : '',
+            'SEO Title': isFirst ? seoTitle : '',
+            'SEO Description': '',
+            'Variant Image': variantImage,
+            'Variant Weight Unit': sku ? 'g' : '',
+            'Variant Tax Code': '',
+            'Cost per item': '',
+            'Status': isFirst ? 'active' : '',
+            'Collection': isFirst ? (calendarCollectionMap[handle] || resolveCollection(typeMap[handle] || '')) : '',
+            'Metafield: custom.original_title [single_line_text_field]': isFirst ? originalTitle : '',
+          });
+          if (imageUrl) imageCount++;
+        }
+        variantCount += validVariants.length;
+        productCount++;
+      });
+
+      const csv = Papa.unparse(shopifyData);
+      convertedData = { data: shopifyData, csv };
+
+      if (productCount > 0 && shopifyData.length === 0) {
+        log('──────────────────────────────────', 'log-sep');
+        log('❌ 出力データが0件です。「商品情報（normal-item.csv）」と「カテゴリ（item-cat.csv）」のファイルが入れ替わっていないか確認してください。', 'log-err');
+        convertedData = null;
+        convertBtn.disabled = false;
+        return;
+      }
+
+      log('──────────────────────────────────', 'log-sep');
+      log(`✅ 変換完了！`, 'log-ok');
+      log(`📦 商品数：${productCount}`, 'log-ok');
+      log(`🎨 バリエーション数：${variantCount}`, 'log-ok');
+      log(`🖼️  画像数：${imageCount}`, 'log-ok');
+      if (skipCount > 0) log(`⚠️ スキップ：${skipCount} 件（商品名なし等）`, 'log-warn');
+      if (doTitleSplit && titleSplitCount > 0) {
+        const avgTags = (titleTagTotal / titleSplitCount).toFixed(1);
+        log(`✂️  タイトル分解：${titleSplitCount} 件 / タグ追加：平均 ${avgTags} 個/商品`, 'log-ok');
+      }
+      if (doLinkClean && removedBlockCount > 0) {
+        log(`🧹 リンク切れブロック削除：${removedBlockCount} ブロック（${linkCleanedProducts} 商品）`, 'log-ok');
+        if (registeredHandles.size === 0) {
+          log('　※Shopify登録済み商品CSV未読み込みのため、今回のCSV内の商品のみ有効リンクと判定しています', 'log-warn');
+        } else {
+          log(`　※登録済み ${registeredHandles.size} 商品のHandleを有効リンクとして判定`, 'log-info');
+        }
+        if (removedLinkTargets.size > 0) {
+          const targets = [...removedLinkTargets].sort();
+          const shown = targets.slice(0, 40);
+          log(`　削除したリンク先（${removedLinkTargets.size} 種）※誤って自社商品が含まれていないか確認してください：`, 'log-warn');
+          log(`　　${shown.join(' / ')}${targets.length > 40 ? ` …他${targets.length - 40}件` : ''}`, 'log-warn');
+        }
+      }
+      log(`📋 出力行数：${shopifyData.length} 行`, 'log-info');
+      if (Object.keys(typeMap).length > 0 || Object.keys(tagsMap).length > 0) {
+        const typedCount = shopifyData.filter(r => r.Title && r.Type).length;
+        const taggedCount = shopifyData.filter(r => r.Title && r.Tags).length;
+        log(`🏷️  Type自動設定：${typedCount} 商品`, 'log-info');
+        log(`🔖 Tags自動設定：${taggedCount} 商品`, 'log-info');
+      } else {
+        log(`ℹ️  カテゴリCSV未読み込みのため Type・Tags は空欄です`, 'log-warn');
+      }
+
+      if (categoryIssues.length > 0) {
+        log('──────────────────────────────────', 'log-sep');
+        log(`❌ Type・Product Category 未対応：${categoryIssues.length} 件`, 'log-err');
+        categoryIssues.forEach(msg => log(`　・${msg}`, 'log-err'));
+      }
+
+      if (skuRepairs.length > 0) {
+        log('──────────────────────────────────', 'log-sep');
+        log(`⚠️ Variant SKUをExcel通貨変換の誤りとみなし自動復元：${skuRepairs.length} 件（必ず内容を確認してください）`, 'log-warn');
+        skuRepairs.forEach(msg => log(`　・${msg}`, 'log-warn'));
+        log('　※元の楽天CSVがExcel/Numbers等で開かれ通貨として誤変換された可能性があります。可能であれば元データを再取得してください。', 'log-warn');
+      }
+
+      if (categoryLinkIssues.length > 0) {
+        log('──────────────────────────────────', 'log-sep');
+        log(`❌ 対応表に無い楽天カテゴリリンク：${categoryLinkIssues.length} 件（Shopifyコレクションリンクに変換できていません）`, 'log-err');
+        categoryLinkIssues.forEach(msg => log(`　・${msg}`, 'log-err'));
+      }
+
+      if (collectionMissing.size > 0) {
+        log('──────────────────────────────────', 'log-sep');
+        log(`⚠️ コレクション一覧に無いType：${collectionMissing.size} 種（Collection列は空欄になります）`, 'log-warn');
+        collectionMissing.forEach(t => log(`　・${t}`, 'log-warn'));
+      }
+
+      if (gramsIssues.length > 0) {
+        log('──────────────────────────────────', 'log-sep');
+        log(`❌ Variant Grams未設定：${gramsIssues.length} 件（配送区分が判定できません）`, 'log-err');
+        gramsIssues.forEach(msg => log(`　・${msg}`, 'log-err'));
+      }
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat"><div class="num">${productCount}</div><div class="label">商品数</div></div>
+        <div class="stat"><div class="num">${variantCount}</div><div class="label">バリエーション数</div></div>
+        <div class="stat"><div class="num">${shopifyData.length}</div><div class="label">出力行数</div></div>
+      `;
+      document.getElementById('resultSection').classList.add('show');
+
+      showPreview(shopifyData);
+
+    } catch (err) {
+      log(`❌ エラー：${err.message}`, 'log-err');
+    }
+
+    convertBtn.disabled = false;
+  }
+
+  function downloadCSV() {
+    if (!convertedData) return;
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, convertedData.csv], { type: 'text/csv;charset=utf-8;' });
+    const now = new Date();
+    const ts = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0')
+              + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+    const filename = `shopify_products_${ts}.csv`;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+  }
+
+  function showPreview(data) {
+    const rows = data.slice(0, 8);
+    if (rows.length === 0) { document.getElementById('previewWrap').innerHTML = ''; return; }
+
+    const columns = Object.keys(rows[0]);
+    const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    let html = `
+      <div class="card" style="margin-top:0;">
+        <div class="card-header">
+          <div class="step" style="background:var(--gray-600);">👁</div>
+          <h2>変換後プレビュー <span class="sub">先頭8行・全${columns.length}列（横スクロールで全項目を確認できます）</span></h2>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="preview-wrap">
+            <div class="preview-scroll">
+              <table class="data-table">
+                <thead><tr>
+                  ${columns.map(col => `<th>${esc(col)}</th>`).join('')}
+                </tr></thead>
+                <tbody>
+    `;
+    rows.forEach(row => {
+      html += `<tr>${columns.map(col => {
+        const v = row[col];
+        return `<td title="${esc(v)}">${v !== '' && v != null ? esc(v) : '—'}</td>`;
+      }).join('')}</tr>`;
+    });
+    html += `</tbody></table></div>
+      <div class="preview-caption">先頭8行を表示（全 ${data.length} 行 / 全 ${columns.length} 列）</div>
+    </div></div></div>`;
+    document.getElementById('previewWrap').innerHTML = html;
+  }
+
+  function log(msg, cls = '') {
+    const box = document.getElementById('logBox');
+    box.classList.add('show');
+    box.innerHTML += `<div class="${cls}">${msg}</div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+  function clearLog() {
+    const box = document.getElementById('logBox');
+    box.innerHTML = '';
+    box.classList.remove('show');
+  }
+</script>
+</body>
+</html>

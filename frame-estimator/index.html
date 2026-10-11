@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フレーム見積 | EL COMMUN</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@200;300;400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+/* ========== FIT FRAME（アルミ） ========== */
+const FF_SHORT=[150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900];
+const FF_LONG=[150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,1150,1200];
+const FF_PT=[
+  [2100,2400,2600,2900,3100,3300,3700,3900,4100,4200,4600,4800,4900,5100,5500,6100],
+  [2400,2600,2900,3100,3300,3700,3900,4100,4200,4600,4800,4900,5100,5500,6100,6500],
+  [2600,2900,3100,3300,3700,3900,4100,4200,4600,4800,4900,5100,5500,6100,6500,7300],
+  [2900,3100,3300,3700,3900,4100,4200,4600,4800,4900,5100,5500,6100,6500,7300,8100],
+  [3100,3300,3700,3900,4100,4200,4600,4800,4900,5100,5500,6100,6500,7300,8100,8300],
+  [3300,3700,3900,4100,4200,4600,4800,4900,5100,5500,6100,6500,7300,8100,8300,8600],
+  [3700,3900,4100,4200,4600,4800,4900,5100,5500,6100,6500,7300,8100,8300,8600,9000],
+  [3900,4100,4200,4600,4800,4900,5100,5500,6100,6500,7300,8100,8300,8600,9000,9300],
+  [4100,4200,4600,4800,4900,5100,5500,6100,6500,7300,8100,8300,8600,9000,9300,9600],
+  [4200,4600,4800,4900,5100,5500,6100,6500,7300,8100,8300,8600,9000,9300,9600,9800],
+  [4600,4800,4900,5100,5500,6100,6500,7300,8100,8300,8600,9000,9300,9600,9800,10100],
+  [4800,4900,5100,5500,6100,6500,7300,8100,8300,8600,9000,9300,9600,9800,10100,10400],
+  [4900,5100,5500,6100,6500,7300,8100,8300,8600,9000,9300,9600,9800,10100,10400,10600],
+  [5100,5500,6100,6500,7300,8100,8300,8600,9000,9300,9600,9800,10100,10400,10600,10800],
+  [5500,6100,6500,7300,8100,8300,8600,9000,9300,9600,9800,10100,10400,10600,10800,11200],
+  [6100,6500,7300,8100,8300,8600,9000,9300,9600,9800,10100,10400,10600,10800,11200,11400],
+  [6500,7300,8100,8300,8600,9000,9300,9600,9800,10100,10400,10600,10800,11200,11400,11800],
+  [7300,8100,8300,8600,9000,9300,9600,9800,10100,10400,10600,10800,11200,11400,11800,12400],
+  [8100,8300,8600,9000,9300,9600,9800,10100,10400,10600,10800,11200,11400,11800,12400,12900],
+  [8300,8600,9000,9300,9600,9800,10100,10400,10600,10800,11200,11400,11800,12400,12900,13400],
+  [8600,9000,9300,9600,9800,10100,10400,10600,10800,11200,11400,11800,12400,12900,13400,13700],
+  [9000,9300,9600,9800,10100,10400,10600,10800,11200,11400,11800,12400,12900,13400,13700,13900],
+];
+const FF_STD=[
+  {name:"B1",w:728,h:1030,kg:2.3,priceWBS:5500,priceGD:5830,urlKey:"af72_103"},
+  {name:"輸入菊全",w:680,h:990,kg:2.1,priceWBS:5500,priceGD:5830,urlKey:"af68_99"},
+  {name:"変形菊全",w:600,h:900,kg:1.7,priceWBS:4840,priceGD:5170,urlKey:"af60_90"},
+  {name:"A1",w:594,h:841,kg:1.6,priceWBS:4290,priceGD:4620,urlKey:"af59_84"},
+  {name:"B2",w:515,h:728,kg:1.2,priceWBS:3410,priceGD:3630,urlKey:"af51_72"},
+  {name:"A2",w:420,h:594,kg:0.88,priceWBS:2970,priceGD:3190,urlKey:"af42_59"},
+  {name:"B3",w:364,h:515,kg:0.69,priceWBS:2750,priceGD:2970,urlKey:"af36_51"},
+  {name:"A3",w:297,h:420,kg:0.51,priceWBS:2090,priceGD:2310,urlKey:"af29_42"},
+  {name:"B4",w:257,h:364,kg:0.46,priceWBS:1980,priceGD:2090,urlKey:"af25_36"},
+  {name:"A4",w:210,h:297,kg:0.31,priceWBS:1650,priceGD:1760,urlKey:"af21_29"},
+  {name:"B5",w:182,h:257,kg:0.26,priceWBS:1540,priceGD:1650,urlKey:"af18_25"},
+  {name:"全紙",w:545,h:727,kg:1.3,priceWBS:4400,priceGD:4730,urlKey:"af54_72"},
+  {name:"三々",w:454,h:606,kg:0.93,priceWBS:3630,priceGD:3960,urlKey:"af45_60ss"},
+  {name:"半切",w:424,h:545,kg:0.8,priceWBS:3300,priceGD:3520,urlKey:"af42_54"},
+  {name:"大衣",w:394,h:509,kg:0.71,priceWBS:2970,priceGD:3190,urlKey:"af39_50"},
+  {name:"四ツ切",w:348,h:424,kg:0.54,priceWBS:2310,priceGD:2530,urlKey:"af34_42"},
+  {name:"太子",w:288,h:379,kg:0.42,priceWBS:1980,priceGD:2090,urlKey:"af28_37"},
+  {name:"八ツ切",w:242,h:303,kg:0.31,priceWBS:1760,priceGD:1870,urlKey:"af24_30"},
+  {name:"インチ",w:203,h:255,kg:0.23,priceWBS:1650,priceGD:1760,urlKey:"af20_25"},
+  {name:"700×1000",w:700,h:1000,kg:2.1,priceWBS:5500,priceGD:5830,urlKey:"af70_100"},
+  {name:"685×990",w:685,h:990,kg:2.0,priceWBS:5500,priceGD:5830,urlKey:"af68_99kz"},
+  {name:"680×980",w:680,h:980,kg:1.95,priceWBS:5500,priceGD:5830,urlKey:"af68_98"},
+  {name:"640×900",w:640,h:900,kg:1.8,priceWBS:4730,priceGD:5060,urlKey:"af64_90"},
+  {name:"610×915",w:610,h:915,kg:1.8,priceWBS:4730,priceGD:5060,urlKey:"af61_91"},
+  {name:"610×864",w:610,h:864,kg:1.7,priceWBS:4620,priceGD:4950,urlKey:"af61_86"},
+  {name:"600×800",w:600,h:800,kg:1.5,priceWBS:4290,priceGD:4620,urlKey:"af60_80"},
+  {name:"500×700",w:500,h:700,kg:1.2,priceWBS:3300,priceGD:3520,urlKey:"af50_70"},
+  {name:"450×600",w:450,h:600,kg:0.93,priceWBS:2860,priceGD:3080,urlKey:"af45_60"},
+  {name:"400×500",w:400,h:500,kg:0.73,priceWBS:2420,priceGD:2640,urlKey:"af40_50"},
+  {name:"300×400",w:300,h:400,kg:0.5,priceWBS:1980,priceGD:2200,urlKey:"af30_40"},
+];
+
+/* ========== STAIN PANEL（木製） ========== */
+const SP_SHORT=[150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900];
+const SP_LONG=[150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050];
+const SP_PT=[
+  [3600,3600,3600,3600,3600,3800,4100,4100,4800,4900,5100,5500,5700,5900,6000,6400],
+  [3600,3600,3600,3800,3800,4100,4100,4800,4900,5100,5500,5700,5900,6000,6400,6700],
+  [3600,3600,3800,3800,4100,4100,4800,4900,5100,5500,5700,5900,6000,6400,6700,7100],
+  [3600,3800,3800,4100,4100,4800,4900,5100,5500,5700,5900,6000,6400,6700,7100,7500],
+  [3800,3800,4100,4100,4800,4900,5100,5500,5700,5900,6000,6400,6700,7100,7500,7900],
+  [3800,4100,4100,4800,4900,5100,5500,5700,5900,6000,6400,6700,7100,7500,7900,8300],
+  [4100,4100,4800,4900,5100,5500,5700,5900,6000,6400,6700,7100,7500,7900,8300,8700],
+  [4100,4800,4900,5100,5500,5700,5900,6000,6400,6700,7100,7500,7900,8300,8700,8900],
+  [4800,4900,5100,5500,5700,5900,6000,6400,6700,7100,7500,7900,8300,8700,8900,9200],
+  [4900,5100,5500,5700,5900,6000,6400,6700,7100,7500,7900,8300,8700,8900,9200,10300],
+  [5100,5500,5700,5900,6000,6400,6700,7100,7500,7900,8300,8700,8900,9200,10300,11500],
+  [5500,5700,5900,6000,6400,6700,7100,7500,7900,8300,8700,8900,9200,10300,11500,12800],
+  [5700,5900,6000,6400,6700,7100,7500,7900,8300,8700,8900,9200,10300,11500,12800,13700],
+  [5900,6000,6400,6700,7100,7500,7900,8300,8700,8900,9200,10300,11500,12800,13700,14400],
+  [6000,6400,6700,7100,7500,7900,8300,8700,8900,9200,10300,11500,12800,13700,14400,14900],
+  [6400,6700,7100,7500,7900,8300,8700,8900,9200,10300,11500,12800,13700,14400,14900,15700],
+  [6700,7100,7500,7900,8300,8700,8900,9200,10300,11500,12800,13700,14400,14900,15700,16500],
+  [7100,7500,7900,8300,8700,8900,9200,10300,11500,12800,13700,14400,14900,15700,16500,17500],
+  [7500,7900,8300,8700,8900,9200,10300,11500,12800,13700,14400,14900,15700,16500,17500,18600],
+];
+const SP_STD=[
+  {name:"B1",w:728,h:1030,kg:3.5,priceTax:11110,priceEx:10100,urlKey:"wf72_103"},
+  {name:"A1",w:594,h:841,kg:2.3,priceTax:7150,priceEx:6500,urlKey:"wf59_84"},
+  {name:"B2",w:515,h:728,kg:1.9,priceTax:6270,priceEx:5700,urlKey:"wf51_72"},
+  {name:"A2",w:420,h:594,kg:1.4,priceTax:4620,priceEx:4200,urlKey:"wf42_59"},
+  {name:"B3",w:364,h:515,kg:1.05,priceTax:4180,priceEx:3800,urlKey:"wf36_51"},
+  {name:"A3",w:297,h:420,kg:0.8,priceTax:3300,priceEx:3000,urlKey:"wf29_42"},
+  {name:"B4",w:257,h:364,kg:0.64,priceTax:2860,priceEx:2600,urlKey:"wf25_36"},
+  {name:"A4",w:210,h:297,kg:0.47,priceTax:2420,priceEx:2200,urlKey:"wf21_29"},
+  {name:"B5",w:182,h:257,kg:0.41,priceTax:2090,priceEx:1900,urlKey:"wf18_25"},
+  {name:"680×990",w:680,h:990,kg:3.1,priceTax:10890,priceEx:9900,urlKey:"wf68_99"},
+  {name:"640×900",w:640,h:900,kg:2.7,priceTax:8470,priceEx:7700,urlKey:"wf64_90"},
+  {name:"610×915",w:610,h:915,kg:2.65,priceTax:7370,priceEx:6700,urlKey:"wf61_91"},
+  {name:"610×864",w:610,h:864,kg:2.5,priceTax:7590,priceEx:6900,urlKey:"wf61_86"},
+  {name:"600×900",w:600,h:900,kg:2.6,priceTax:7480,priceEx:6800,urlKey:"wf60_90"},
+  {name:"600×800",w:600,h:800,kg:2.3,priceTax:7150,priceEx:6500,urlKey:"wf60_80"},
+  {name:"500×700",w:500,h:700,kg:1.75,priceTax:6490,priceEx:5900,urlKey:"wf50_70"},
+  {name:"400×500",w:400,h:500,kg:1.1,priceTax:4510,priceEx:4100,urlKey:"wf40_50"},
+];
+
+const FT={
+  fit:{id:"fit",label:"アルミ",full:"FIT FRAME",spec:"透明シート0.8mm／厚み調整材1.5mm／裏段3mm",
+    short:FF_SHORT,long:FF_LONG,pt:FF_PT,std:FF_STD,maxS:900,maxL:1200,
+    mailLabel:"アルミフレーム",
+    stdPrice:m=>`WH/BK/SV ¥${fmt(m.priceWBS)}　GD ¥${fmt(m.priceGD)}（税込）`,
+    color:"#2563EB",colorLight:"#EFF6FF",colorBorder:"#BFDBFE",colorText:"#1D4ED8",
+    colorDark:"#60A5FA",colorDarkBg:"#1E3A5F",colorDarkBorder:"#2D5A8E",
+  },
+  stain:{id:"stain",label:"木製",full:"STAIN PANEL",spec:"透明シート1mm／厚み調整材3mm／裏段3mm",
+    short:SP_SHORT,long:SP_LONG,pt:SP_PT,std:SP_STD,maxS:900,maxL:1050,
+    mailLabel:"木製フレーム",
+    stdPrice:m=>`¥${fmt(m.priceTax)}（税込）　税抜 ¥${fmt(m.priceEx)}`,
+    color:"#D97706",colorLight:"#FFFBEB",colorBorder:"#FDE68A",colorText:"#92400E",
+    colorDark:"#FBBF24",colorDarkBg:"#3D2C10",colorDarkBorder:"#6B4C1A",
+  },
+};
+
+function calcPrice(f,a,b){
+  const s=Math.min(a,b),l=Math.max(a,b);
+  if(s<150||l<150)return{error:"各辺 150mm 以上で入力してください"};
+  if(s>f.maxS)return{error:`短辺が ${f.maxS}mm を超えています`};
+  if(l>f.maxL)return{error:`長辺が ${f.maxL}mm を超えています`};
+  const ci=f.short.findIndex(v=>v>=s),ri=f.long.findIndex(v=>v>=l);
+  if(ci===-1||ri===-1)return{error:"範囲外です"};
+  return{price:f.pt[ri][ci],aShort:f.short[ci],aLong:f.long[ri]};
+}
+function findNearStd(f,s,l){
+  const m=[];
+  for(const x of f.std){const sS=Math.min(x.w,x.h),sL=Math.max(x.w,x.h),dS=sS-s,dL=sL-l;
+    if(dS>=0&&dS<=5&&dL>=0&&dL<=5)m.push({...x,diffS:dS,diffL:dL});}return m;
+}
+function buildReg(std){const a=std.map(s=>s.w*s.h),k=std.map(s=>s.kg),n=a.length;
+  const sX=a.reduce((s,v)=>s+v,0),sY=k.reduce((s,v)=>s+v,0),sXY=a.reduce((s,x,i)=>s+x*k[i],0),sXX=a.reduce((s,x)=>s+x*x,0);
+  return{sl:(n*sXY-sX*sY)/(n*sXX-sX*sX),ic:(sY-((n*sXY-sX*sY)/(n*sXX-sX*sX))*sX)/n};}
+const FF_R=buildReg(FF_STD),SP_R=buildReg(SP_STD);
+function estWeight(f,s,l){
+  for(const x of f.std){const sS=Math.min(x.w,x.h),sL=Math.max(x.w,x.h);
+    if(Math.abs(s-sS)<=5&&Math.abs(l-sL)<=5)return{kg:x.kg,exact:true};}
+  const r=f.id==="fit"?FF_R:SP_R,w=r.sl*s*l+r.ic;
+  return{kg:Math.max(0.1,Math.round(w*100)/100),exact:false};
+}
+
+const SHOPS={
+  elcommun:{name:"EL COMMUN online shop 楽天市場店",shortName:"EL COMMUN",shopId:"elcommun",
+    links:{fit:"https://item.rakuten.co.jp/elcommun/af00_00/",stain:"https://item.rakuten.co.jp/elcommun/wf00_00/"},
+    sig:`---------------------------------------------------------------\n　EL COMMUN online shop 楽天市場店\n\n【住所】468-0007 愛知県名古屋市天白区植田本町2-1006\n【電話】052-807-0299\n【URL】https://www.rakuten.co.jp/elcommun/\n【E-mail】rakuten-ec@elcommun.co.jp\n\n＊土日／祝日はお休みを頂いております＊\n（営業時間：平日／AM10時～PM17時）\n---------------------------------------------------------------`},
+  laikle:{name:"LAIKLE 楽天市場店",shortName:"LAIKLE",shopId:"laikle",
+    links:{fit:"https://item.rakuten.co.jp/laikle/af00_00/",stain:"https://item.rakuten.co.jp/laikle/wf00_00/"},
+    sig:`---------------------------------------------------------------\n　LAIKLE 楽天市場店\n\n【住所】468-0007 愛知県名古屋市天白区植田本町2-1006\n【電話】052-807-0299\n【URL】https://www.rakuten.co.jp/laikle/\n【E-mail】laikle@elcommun.co.jp\n\n＊土日／祝日はお休みを頂いております＊\n（営業時間：平日／AM10時～PM17時）\n---------------------------------------------------------------`},
+};
+
+function buildMail(shop,validRows,grandTotalEx){
+  const s=SHOPS[shop];
+  const hasFit=validRows.some(c=>c.ft==="fit");
+  const hasStain=validRows.some(c=>c.ft==="stain");
+  const lines=validRows.map(c=>{
+    const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
+    return `${FT[c.ft].mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalEx)}（税抜）`;
+  }).join("\n・");
+  const totalLine=validRows.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　合計：¥${fmt(grandTotalEx)}（税抜）`:"";
+  const maxThickness=hasFit&&hasStain?"約2mm厚（アルミ）／約3mm厚（木製）":hasFit?"約2mm厚":"約3mm厚";
+  const deliveryLine=hasFit&&hasStain
+    ?"・納期（アルミフレーム）：ご決済確認から商品の発送まで「約7～10営業日」\n・納期（木製フレーム）：ご決済確認から商品の発送まで「約9～12営業日」"
+    :hasFit?"・納期：ご決済確認から商品の発送まで「約7～10営業日」"
+    :"・納期：ご決済確認から商品の発送まで「約9～12営業日」";
+  // 規格サイズ案内（近いサイズがある行のみ）
+  const stdLines=validRows.flatMap(c=>{
+    if(!c.nearStd||c.nearStd.length===0)return[];
+    const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
+    const ftd=FT[c.ft];
+    return c.nearStd.map(m=>{
+      const mSh=Math.min(m.w,m.h),mLo=Math.max(m.w,m.h);
+      const diffNote=(m.diffS>0||m.diffL>0)?`（ご依頼サイズより短辺+${m.diffS}mm／長辺+${m.diffL}mmのサイズです）`:"（ぴったり同サイズです）";
+      const url=`https://item.rakuten.co.jp/${s.shopId}/${m.urlKey}/`;
+      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm に近い規格品です`;
+    });
+  });
+  const stdSection=stdLines.length>0
+    ?`\n\n\n【規格サイズのご案内】\n\nご依頼のサイズに近い規格品がございます。\n規格品は別注品と比べて価格が安く、納期も短い場合がございますので、もしよろしければそちらもご検討くださいませ。\n\n${stdLines.join("\n\n")}\n\n※ 下記【別注サイズのご購入方法】は、上記お見積もりの別注サイズをご注文いただく場合の手順です。`
+    :"";
+  let urlSection;
+  if(hasFit&&hasStain){urlSection=`■ アルミフレーム別注ページ：${s.links.fit}\n■ 木製フレーム別注ページ：${s.links.stain}`;}
+  else if(hasFit){urlSection=`■ 商品URL：${s.links.fit}`;}
+  else{urlSection=`■ 商品URL：${s.links.stain}`;}
+  return `この度は当店へお問い合わせを頂き、誠にありがとうございます。\n${s.name}の 真田と申します。\n\nご依頼を頂いておりました、別注フレーム本体のお見積もりについてご案内いたします。\n\n\n【お見積もり内容】\n\n・${lines}${totalLine}\n${deliveryLine}${stdSection}\n\n　- 商品の特長 -\n・縦 横どちらにも掛けられます。\n・額縁内の中敷ダンボールの調整で「${maxThickness}」の内容物まで対応可能。\n　＊その他の仕様につきましては 商品ページをご確認ください。\n\n\n【別注サイズのご購入方法】\n\n${urlSection}\n\n　① 上記リンク先の額縁別注ページよりご希望の「フレームカラー」「数量」を選んでいただき「購入手続きへ」ボタンを押してください。\n　② ご注文確定前の「注文確認」画面下方にある「備考欄」の「▼【ポスターフレーム(額縁)】をご注文のお客様へ ▼」に、以下の情報をご記入ください。\n\n　○ ご希望の「ポスターサイズ」\n　○ 今回の「お見積もり金額（税抜）」\n\n\n【ご注文後の流れ】\n\n　① ご注文の確認が出来次第、仮金額（3,000円）を 今回のお見積もり金額に修正いたします。\n　② 変更内容と発送までの納期が記載されたメールが送付されます。\n　③ メーカーにてご注文商品の製作が開始。\n　④ メーカーから商品が発送され次第、当店より発送メールを送付いたします。\n\n\n【ご注意事項】\n\n・土日・祝日は 弊社・メーカー共にお休みをいただいております。\n・ご注文時、備考欄にご入力いただいたサイズが正式な製作サイズとなります。\n・受注生産品のため、ご注文後のキャンセルおよびサイズ・カラー等の変更は承ることができません。\n・見積もり有効期限：本日より1週間\n\n\n以上をご確認の上、ご検討の程 よろしくお願い申し上げます。\n\n\n${s.sig}`;
+}
+
+const TH={
+  light:{
+    bg:"#F3F4F6",card:"#FFFFFF",cardSub:"#F9FAFB",border:"#E5E7EB",
+    text:"#111827",textSub:"#6B7280",textMuted:"#9CA3AF",
+    input:"#F9FAFB",inputBorder:"#E5E7EB",
+    shadow:"0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+    shadowMd:"0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04)",
+    stdBg:"#ECFDF5",stdBorder:"#6EE7B7",stdTitle:"#065F46",stdText:"#047857",stdNote:"#6B7280",
+    stdPriceBg:"#F0FDF4",stdPriceBorder:"#A7F3D0",
+    errBg:"#FEF2F2",errBorder:"#FCA5A5",errText:"#DC2626",
+    hl:"#F9FAFB",
+    totalBg:"linear-gradient(135deg,#E85D26,#F97316)",
+  },
+  dark:{
+    bg:"#0F172A",card:"#1E293B",cardSub:"#162032",border:"#334155",
+    text:"#F1F5F9",textSub:"#94A3B8",textMuted:"#64748B",
+    input:"#0F172A",inputBorder:"#334155",
+    shadow:"0 1px 3px rgba(0,0,0,0.4)",
+    shadowMd:"0 4px 6px rgba(0,0,0,0.4)",
+    stdBg:"#0D2B1F",stdBorder:"#1A4A34",stdTitle:"#6EE7B7",stdText:"#34D399",stdNote:"#166534",
+    stdPriceBg:"#0A1F16",stdPriceBorder:"#14532D",
+    errBg:"#1F0A0A",errBorder:"#7F1D1D",errText:"#FCA5A5",
+    hl:"#162032",
+    totalBg:"linear-gradient(135deg,#C2461B,#E85D26)",
+  },
+};
+
+const fmt=n=>n.toLocaleString("ja-JP");
+let _id=1;
+const makeRow=()=>({id:_id++,sizeA:"",sizeB:"",qty:1,ft:"fit"});
+
+function SizeInput({t,label,value,onChange}){
+  const [focused,setFocused]=useState(false);
+  return(
+    <div style={{flex:1,minWidth:0}}>
+      <label style={{display:"block",fontSize:11,fontWeight:600,color:t.textMuted,marginBottom:6,letterSpacing:1,textTransform:"uppercase"}}>{label}</label>
+      <div style={{position:"relative"}}>
+        <input type="number" value={value} onChange={e=>onChange(e.target.value)} placeholder="—"
+          style={{width:"100%",padding:"11px 38px 11px 14px",fontSize:22,fontWeight:300,
+            background:t.input,border:`1.5px solid ${focused?"#E85D26":t.inputBorder}`,borderRadius:8,
+            color:t.text,outline:"none",fontFamily:"'Noto Sans JP',sans-serif",
+            MozAppearance:"textfield",appearance:"textfield",transition:"border-color 0.15s"}}
+          onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
+        />
+        <span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+          fontSize:12,fontWeight:500,color:t.textMuted,pointerEvents:"none"}}>mm</span>
+      </div>
+    </div>
+  );
+}
+
+function QtyBtn({t,children,onClick}){
+  const [hov,setHov]=useState(false);
+  return(
+    <button onClick={onClick}
+      style={{width:32,height:32,borderRadius:6,border:`1.5px solid ${hov?"#E85D26":t.inputBorder}`,
+        background:t.input,color:hov?"#E85D26":t.textSub,fontSize:16,
+        cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}
+      onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+    >{children}</button>
+  );
+}
+
+function App(){
+  const [rows,setRows]=useState([makeRow()]);
+  const [shop,setShop]=useState("elcommun");
+  const [copied,setCopied]=useState(false);
+  const [tab,setTab]=useState("estimate");
+  const [mode,setMode]=useState("light");
+  const t=TH[mode];
+  const dark=mode==="dark";
+
+  const updateRow=useCallback((id,key,val)=>setRows(p=>p.map(r=>r.id===id?{...r,[key]:val}:r)),[]);
+  const addRow=()=>setRows(p=>[...p,makeRow()]);
+  const removeRow=id=>setRows(p=>p.length>1?p.filter(r=>r.id!==id):p);
+
+  const computed=rows.map(r=>{
+    const f=FT[r.ft],a=parseInt(r.sizeA),b=parseInt(r.sizeB);
+    if(!a||!b||a<=0||b<=0)return{...r,result:null,nearStd:[],wi:null,f};
+    const res=calcPrice(f,a,b);
+    if(res.error)return{...r,result:{error:res.error},nearStd:[],wi:null,f};
+    const tax=Math.floor(res.price*1.1),sh=Math.min(a,b),lo=Math.max(a,b);
+    return{...r,result:{...res,tax,subtotalEx:res.price*r.qty,subtotalIn:tax*r.qty},
+      nearStd:findNearStd(f,sh,lo),wi:estWeight(f,sh,lo),f};
+  });
+
+  const valid=computed.filter(c=>c.result&&!c.result.error);
+  const gTotalEx=valid.reduce((s,c)=>s+c.result.subtotalEx,0);
+  const gTotalIn=valid.reduce((s,c)=>s+c.result.subtotalIn,0);
+  const tQty=valid.reduce((s,c)=>s+c.qty,0);
+  const tWeight=valid.reduce((s,c)=>s+(c.wi?c.wi.kg:0)*c.qty,0);
+  const mailText=valid.length>0?buildMail(shop,valid,gTotalEx):"";
+
+  const handleCopy=async()=>{
+    try{await navigator.clipboard.writeText(mailText)}
+    catch{const ta=document.createElement("textarea");ta.value=mailText;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);}
+    setCopied(true);setTimeout(()=>setCopied(false),2500);
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:t.bg,fontFamily:"'Noto Sans JP',sans-serif",color:t.text,transition:"background 0.3s,color 0.3s"}}>
+      <style>{`
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+        input[type=number]{-moz-appearance:textfield;appearance:textfield}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .item-card{animation:fadeUp 0.25s ease both}
+        .tab-panel{animation:fadeUp 0.2s ease both}
+        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+      `}</style>
+
+      {/* Header */}
+      <header style={{background:t.card,borderBottom:"3px solid #E85D26",padding:"0 24px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",height:60,
+        boxShadow:t.shadow,position:"sticky",top:0,zIndex:100,transition:"background 0.3s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:34,height:34,background:"#E85D26",borderRadius:8,display:"flex",alignItems:"center",
+            justifyContent:"center",color:"white",fontWeight:700,fontSize:13,flexShrink:0}}>EF</div>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:t.text,lineHeight:1.2}}>フレーム見積</div>
+            <div style={{fontSize:11,color:t.textMuted,letterSpacing:1}}>FRAME ESTIMATOR</div>
+          </div>
+        </div>
+        <button onClick={()=>setMode(m=>m==="dark"?"light":"dark")}
+          style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",
+            padding:"6px 12px",borderRadius:8,transition:"background 0.2s",color:t.textMuted,
+            fontFamily:"'Noto Sans JP',sans-serif",fontSize:12}}
+          onMouseEnter={e=>e.currentTarget.style.background=t.border}
+          onMouseLeave={e=>e.currentTarget.style.background="none"}>
+          <span style={{fontSize:14}}>{dark?"🌙":"☀️"}</span>
+          {dark?"ダーク":"ライト"}
+        </button>
+      </header>
+
+      <div style={{maxWidth:660,margin:"0 auto",padding:"28px 16px 60px"}}>
+
+        {/* Shop selector */}
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          {Object.entries(SHOPS).map(([k,s])=>{
+            const active=shop===k;
+            return(
+              <button key={k} onClick={()=>setShop(k)}
+                style={{flex:1,padding:"11px 12px",borderRadius:8,cursor:"pointer",
+                  fontFamily:"'Noto Sans JP',sans-serif",fontSize:12,fontWeight:active?600:400,
+                  letterSpacing:0.3,transition:"all 0.15s",
+                  background:active?"#E85D26":t.card,
+                  color:active?"#FFFFFF":t.textSub,
+                  border:`1.5px solid ${active?"#E85D26":t.border}`,
+                  boxShadow:active?"0 2px 8px rgba(232,93,38,0.3)":t.shadow}}
+              >{s.shortName}</button>
+            );
+          })}
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",gap:0,marginBottom:20,background:t.card,borderRadius:10,
+          padding:4,boxShadow:t.shadow,border:`1px solid ${t.border}`}}>
+          {[["estimate","見積入力"],["mail","メール文面"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setTab(k)}
+              style={{flex:1,padding:"9px 12px",borderRadius:7,border:"none",cursor:"pointer",
+                fontFamily:"'Noto Sans JP',sans-serif",fontSize:13,fontWeight:tab===k?600:400,
+                letterSpacing:1,transition:"all 0.15s",
+                background:tab===k?"#E85D26":"none",
+                color:tab===k?"#FFFFFF":t.textSub,
+                boxShadow:tab===k?"0 1px 4px rgba(232,93,38,0.3)":"none"}}
+            >{l}</button>
+          ))}
+        </div>
+
+        {/* Estimate Tab */}
+        {tab==="estimate"&&(
+          <div className="tab-panel">
+            {computed.map((c,idx)=>{
+              const ftd=FT[c.ft];
+              const accentColor=dark?ftd.colorDark:ftd.color;
+              const tagBg=dark?ftd.colorDarkBg:ftd.colorLight;
+              const tagBorder=dark?ftd.colorDarkBorder:ftd.colorBorder;
+              const tagText=dark?ftd.colorDark:ftd.colorText;
+              return(
+                <div key={c.id} className="item-card"
+                  style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:12,
+                    marginBottom:14,overflow:"hidden",boxShadow:t.shadow,animationDelay:`${idx*0.04}s`}}>
+
+                  <div style={{padding:"14px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:22,height:22,borderRadius:6,background:"#E85D26",display:"flex",
+                        alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"white"}}>
+                        {String(idx+1).padStart(2,"0")}
+                      </div>
+                      <span style={{fontSize:11,fontWeight:600,color:t.textMuted,letterSpacing:1.5}}>ITEM</span>
+                    </div>
+                    {rows.length>1&&(
+                      <button onClick={()=>removeRow(c.id)}
+                        style={{background:"none",border:"none",color:t.textMuted,fontSize:12,
+                          cursor:"pointer",fontFamily:"'Noto Sans JP',sans-serif",
+                          padding:"4px 10px",borderRadius:6,transition:"all 0.15s"}}
+                        onMouseEnter={e=>{e.currentTarget.style.background=t.errBg;e.currentTarget.style.color=t.errText}}
+                        onMouseLeave={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=t.textMuted}}
+                      >削除</button>
+                    )}
+                  </div>
+
+                  <div style={{padding:"12px 20px 18px"}}>
+                    {/* Frame type */}
+                    <div style={{display:"flex",gap:6,marginBottom:16}}>
+                      {Object.entries(FT).map(([k,v])=>{
+                        const active=c.ft===k;
+                        return(
+                          <button key={k} onClick={()=>updateRow(c.id,"ft",k)}
+                            style={{flex:1,padding:"10px 12px",
+                              background:active?(dark?v.colorDarkBg:v.colorLight):t.cardSub,
+                              border:`1.5px solid ${active?(dark?v.colorDarkBorder:v.colorBorder):t.border}`,
+                              borderRadius:8,cursor:"pointer",fontFamily:"'Noto Sans JP',sans-serif",
+                              transition:"all 0.15s",textAlign:"left"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:active?(dark?v.colorDark:v.colorText):t.textMuted,letterSpacing:0.5,marginBottom:2}}>{v.full}</div>
+                            <div style={{fontSize:10,color:active?(dark?v.colorDark:v.colorText):t.textMuted}}>{v.label}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Size + Qty */}
+                    <div style={{display:"flex",alignItems:"flex-end",gap:10}}>
+                      <SizeInput t={t} label="サイズ A" value={c.sizeA} onChange={v=>updateRow(c.id,"sizeA",v)}/>
+                      <div style={{fontSize:20,color:t.textMuted,paddingBottom:11,fontWeight:200,flexShrink:0}}>×</div>
+                      <SizeInput t={t} label="サイズ B" value={c.sizeB} onChange={v=>updateRow(c.id,"sizeB",v)}/>
+                      <div style={{width:1,alignSelf:"stretch",background:t.border,margin:"0 4px",flexShrink:0}}/>
+                      <div style={{flexShrink:0,width:104}}>
+                        <label style={{display:"block",fontSize:11,fontWeight:600,color:t.textMuted,marginBottom:6,letterSpacing:1,textTransform:"uppercase"}}>数量</label>
+                        <div style={{display:"flex",alignItems:"center",gap:4}}>
+                          <QtyBtn t={t} onClick={()=>updateRow(c.id,"qty",Math.max(1,c.qty-1))}>−</QtyBtn>
+                          <input type="number" value={c.qty} min="1"
+                            onChange={e=>updateRow(c.id,"qty",Math.max(1,parseInt(e.target.value)||1))}
+                            style={{width:42,padding:"7px 4px",fontSize:18,fontWeight:400,textAlign:"center",
+                              background:t.input,border:`1.5px solid ${t.inputBorder}`,borderRadius:7,
+                              color:t.text,outline:"none",fontFamily:"'Noto Sans JP',sans-serif",
+                              MozAppearance:"textfield",appearance:"textfield"}}
+                          />
+                          <QtyBtn t={t} onClick={()=>updateRow(c.id,"qty",c.qty+1)}>＋</QtyBtn>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Spec tag */}
+                    <div style={{marginTop:8,fontSize:11,padding:"5px 10px",
+                      background:tagBg,border:`1px solid ${tagBorder}`,borderRadius:6,
+                      color:tagText,display:"inline-block",letterSpacing:0.3}}>{ftd.spec}</div>
+
+                    {/* Near standard */}
+                    {c.nearStd.length>0&&(
+                      <div style={{marginTop:12,padding:"12px 14px",background:t.stdBg,
+                        border:`1px solid ${t.stdBorder}`,borderRadius:8}}>
+                        <div style={{fontSize:12,fontWeight:600,color:t.stdTitle,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                          <span>💡</span><span>規格サイズに近いです</span>
+                        </div>
+                        {c.nearStd.map((m,i)=>(
+                          <div key={i} style={{marginBottom:6}}>
+                            <div style={{fontSize:13,color:t.stdText,lineHeight:1.6}}>
+                              <span style={{fontWeight:600}}>「{m.name}」</span>
+                              <span style={{fontSize:12}}> 内寸 {Math.min(m.w,m.h)}×{Math.max(m.w,m.h)}mm</span>
+                              {(m.diffS>0||m.diffL>0)&&<span style={{fontSize:11}}> （+{m.diffS}/{m.diffL}mm）</span>}
+                            </div>
+                            <div style={{fontSize:12,marginTop:3,padding:"4px 10px",
+                              background:t.stdPriceBg,border:`1px solid ${t.stdPriceBorder}`,
+                              borderRadius:5,display:"inline-block",color:t.stdText}}>{ftd.stdPrice(m)}</div>
+                          </div>
+                        ))}
+                        <div style={{fontSize:11,color:t.stdNote,marginTop:4}}>※ 規格品なら別注より安価・短納期の場合があります</div>
+                      </div>
+                    )}
+
+                    {/* Result */}
+                    {c.result&&!c.result.error&&(
+                      <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${t.border}`}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                          <span style={{fontSize:12,color:t.textMuted}}>適用：<span style={{fontWeight:500,color:t.textSub}}>{c.result.aShort}×{c.result.aLong}mm</span></span>
+                          <span style={{fontSize:12,color:t.textMuted}}>単価 <span style={{fontWeight:500,color:t.textSub}}>¥{fmt(c.result.price)}</span>（税抜）</span>
+                        </div>
+                        <div style={{background:t.hl,borderRadius:10,padding:"14px 16px",border:`1px solid ${t.border}`}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                            <span style={{fontSize:12,color:t.textSub,fontWeight:500,letterSpacing:0.5}}>小計（税抜）</span>
+                            <span style={{fontSize:26,fontWeight:700,color:accentColor,letterSpacing:0.5}}>¥{fmt(c.result.subtotalEx)}</span>
+                          </div>
+                          {c.wi&&(
+                            <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                              <span style={{fontSize:11,color:t.textMuted}}>{c.wi.exact?"重量":"推定重量"}</span>
+                              <span style={{fontSize:13,color:t.textMuted}}>約{c.wi.kg}kg{c.qty>1?` × ${c.qty}個 ＝ 約${Math.round(c.wi.kg*c.qty*100)/100}kg`:""}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {c.result?.error&&(
+                      <div style={{marginTop:12,fontSize:12,color:t.errText,padding:"10px 14px",
+                        background:t.errBg,border:`1px solid ${t.errBorder}`,borderRadius:7,
+                        display:"flex",alignItems:"center",gap:6}}>
+                        <span>⚠️</span>{c.result.error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add / Reset */}
+            <div style={{display:"flex",gap:10,marginBottom:20}}>
+              <button onClick={addRow}
+                style={{flex:1,padding:"13px",background:"none",border:`1.5px dashed ${t.border}`,
+                  borderRadius:10,color:t.textSub,fontSize:13,fontFamily:"'Noto Sans JP',sans-serif",
+                  letterSpacing:1,cursor:"pointer",transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="#E85D26";e.currentTarget.style.color="#E85D26"}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=t.border;e.currentTarget.style.color=t.textSub}}
+              >＋　アイテム追加</button>
+              <button onClick={()=>{_id=1;setRows([makeRow()]);setTab("estimate");setCopied(false)}}
+                style={{padding:"13px 20px",background:"none",border:`1.5px dashed ${t.border}`,
+                  borderRadius:10,color:t.textSub,fontSize:13,fontFamily:"'Noto Sans JP',sans-serif",
+                  letterSpacing:1,cursor:"pointer",transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=t.errBorder;e.currentTarget.style.color=t.errText}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=t.border;e.currentTarget.style.color=t.textSub}}
+              >リセット</button>
+            </div>
+
+            {/* Total */}
+            {valid.length>0&&(
+              <div style={{borderRadius:12,overflow:"hidden",boxShadow:t.shadowMd,marginBottom:20}}>
+                <div style={{background:t.totalBg,padding:"18px 22px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.75)",letterSpacing:2,marginBottom:4}}>TOTAL</div>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{valid.length}件 ／ {tQty}個</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.75)",marginBottom:2}}>合計（税抜）</div>
+                      <div style={{fontSize:32,fontWeight:800,color:"#FFFFFF",letterSpacing:1,lineHeight:1}}>¥{fmt(gTotalEx)}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{background:t.card,border:`1px solid ${t.border}`,borderTop:"none",
+                  padding:"14px 22px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                  <div style={{display:"flex",gap:20}}>
+                    <div>
+                      <div style={{fontSize:11,color:t.textMuted,marginBottom:2}}>税込</div>
+                      <div style={{fontSize:15,fontWeight:600,color:t.textSub}}>¥{fmt(gTotalIn)}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,color:t.textMuted,marginBottom:2}}>推定総重量</div>
+                      <div style={{fontSize:15,fontWeight:600,color:t.textSub}}>約{Math.round(tWeight*100)/100}kg</div>
+                    </div>
+                  </div>
+                  <button onClick={()=>setTab("mail")}
+                    style={{padding:"11px 22px",background:"#E85D26",border:"none",borderRadius:8,
+                      color:"white",fontSize:13,fontFamily:"'Noto Sans JP',sans-serif",letterSpacing:1.5,
+                      cursor:"pointer",fontWeight:600,transition:"background 0.15s",
+                      boxShadow:"0 2px 8px rgba(232,93,38,0.35)"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="#C2461B"}
+                    onMouseLeave={e=>e.currentTarget.style.background="#E85D26"}
+                  >メール文面を作成 →</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mail Tab */}
+        {tab==="mail"&&(
+          <div className="tab-panel">
+            {valid.length===0?(
+              <div style={{textAlign:"center",padding:"60px 20px",color:t.textMuted,fontSize:14,letterSpacing:1}}>
+                <div style={{fontSize:32,marginBottom:12}}>📋</div>
+                見積入力タブでサイズを入力してください
+              </div>
+            ):(
+              <>
+                <div style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:12,
+                  overflow:"hidden",marginBottom:14,boxShadow:t.shadow}}>
+                  <div style={{padding:"14px 20px",borderBottom:`1px solid ${t.border}`,
+                    display:"flex",justifyContent:"space-between",alignItems:"center",background:t.cardSub}}>
+                    <span style={{fontSize:11,fontWeight:600,color:t.textMuted,letterSpacing:2}}>MAIL PREVIEW</span>
+                    <span style={{fontSize:11,padding:"3px 10px",
+                      background:dark?"#2D1A0A":"#FFF3EE",border:`1px solid ${dark?"#5A3010":"#FED7AA"}`,
+                      borderRadius:20,color:dark?"#FB923C":"#C2410C",fontWeight:600,letterSpacing:0.5}}>
+                      {SHOPS[shop].shortName}
+                    </span>
+                  </div>
+                  <pre style={{padding:"20px",fontSize:12.5,lineHeight:2,color:t.textSub,
+                    whiteSpace:"pre-wrap",wordBreak:"break-all",maxHeight:500,overflowY:"auto",
+                    fontFamily:"'Noto Sans JP',sans-serif",fontWeight:300,background:t.card,margin:0}}>
+                    {mailText}
+                  </pre>
+                </div>
+                <button onClick={handleCopy}
+                  style={{width:"100%",padding:"16px",borderRadius:10,border:"none",cursor:"pointer",
+                    fontFamily:"'Noto Sans JP',sans-serif",fontSize:15,letterSpacing:3,fontWeight:600,
+                    transition:"all 0.25s",
+                    background:copied?(dark?"#0D2B1F":"#ECFDF5"):t.totalBg,
+                    color:copied?(dark?"#6EE7B7":"#065F46"):"#FFFFFF",
+                    border:copied?`1px solid ${dark?"#1A4A34":"#6EE7B7"}`:"1px solid transparent",
+                    boxShadow:copied?"none":"0 3px 12px rgba(232,93,38,0.35)"}}>
+                  {copied?"✓　コピーしました":"メール文面をコピー"}
+                </button>
+                <button onClick={()=>setTab("estimate")}
+                  style={{width:"100%",marginTop:10,padding:"13px",background:"none",
+                    border:`1.5px solid ${t.border}`,borderRadius:8,color:t.textSub,
+                    fontSize:13,fontFamily:"'Noto Sans JP',sans-serif",letterSpacing:1.5,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor="#E85D26"}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}
+                >← 見積入力に戻る</button>
+              </>
+            )}
+          </div>
+        )}
+
+        <footer style={{textAlign:"center",fontSize:11,color:t.textMuted,marginTop:32,
+          letterSpacing:0.5,lineHeight:2,borderTop:`1px solid ${t.border}`,paddingTop:20}}>
+          ※ 内寸・税抜価格　※ 税率 10%　※ 短辺・長辺は自動判定　※ 重量は推定値です
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

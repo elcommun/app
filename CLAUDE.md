@@ -60,6 +60,12 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - カタログPDF・画像（JPG/PNG/WebP）の品番・JAN・バリエーション名・価格をExcelマスタとOCR照合する校正チェックアプリ。容量制限なし（50MB超のPDFも動作確認済み）
 - ライブラリは `catalog-check/lib/` に同梱（SheetJS / Tesseract.js + traineddata / ZXing バーコード読取）。pdf.js は `design-preview/lib/` を共用しているため、design-preview の lib を移動・削除する場合は注意
 
+### 他リポジトリから移したアプリ（2026-10-11）
+- `sales-order-tool/` `frame-estimator/` `apj-order/` `shopify-converter/` `raffinart-stock-tool/` `goq-order-tool/` は、旧リポジトリ（`elcommun-◯◯` など）から移した単体HTMLアプリ。公開URLは `https://elcommun.github.io/app/フォルダ名/`
+- `apj-order/`（発注書作成のHTML）は `apj-auto/`（GoQ自動化のPython）とは別物
+- `raffinart-stock-tool/` は `raffinart-order/`（発注書作成）とは別物。オフライン版 `raffinart-stock-tool-offline.html` は `build-offline.py` で作り直す
+- バージョン番号の自動更新（`APP_VERSION`）は付けていない（作業中の自動リロードで入力が消えるのを避けるため）
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
