@@ -1,0 +1,45 @@
+{
+  "groups": [
+    {"id": "sales", "title": "📊 販売データ・ランキング", "apps": [
+      {"dir": "ranking", "name": "EC 販売ランキング（自社商品）", "desc": "自社商品の売上ランキング"},
+      {"dir": "supplier-ranking", "name": "EC 販売ランキング（メーカー商品）", "desc": "仕入れ（メーカー）商品の売上ランキング"},
+      {"dir": "ec-sales-split", "name": "EC販売データ振り分け（販売数確認App取込用）", "desc": "自社／メーカー変換データを同時生成"},
+      {"dir": "ec-category", "name": "ECカテゴリ別販売数"},
+      {"dir": "ec-monthly", "name": "EC月次販売データ"}
+    ]},
+    {"id": "stock", "title": "📦 在庫・発注", "apps": [
+      {"dir": "sales-order-tool", "name": "ECプロパー週次発注ツール（販売実績版）"},
+      {"dir": "apj-order", "name": "APJ発注書作成"},
+      {"dir": "frame-estimator", "name": "APJフレーム見積"},
+      {"dir": "raffinart-order", "name": "Raffinart発注書作成"},
+      {"dir": "raffinart-stock-tool", "name": "Raffinart 在庫更新ツール"},
+      {"dir": "inventory-convert", "name": "GoQプロパー在庫変換", "desc": "入荷xlsx → SKU・総在庫数CSV"},
+      {"dir": "ec-inventory", "name": "EC棚卸し（自社／メーカー振り分け）"}
+    ]},
+    {"id": "mall", "title": "🛒 モール・商品データ変換", "apps": [
+      {"dir": "shopify-converter", "name": "楽天 → Shopify 変換", "desc": "楽天RMSのデータをShopify用に変換"},
+      {"dir": "rakuten-yahoo", "name": "楽天 → Yahoo 商品データ作成"},
+      {"dir": "rakuten-aupay", "name": "楽天 → auPAY 商品データ作成"},
+      {"dir": "aupay-convert", "name": "楽天 → auPAY 変換ツール"},
+      {"dir": "laikle-convert", "name": "楽天 店舗間 商品データ変換（EL COMMUN → LAIKLE）"},
+      {"dir": "rakuten-filter", "name": "楽天データ絞り込みフィルター"},
+      {"dir": "rakuten-image-dl", "name": "楽天画像ダウンローダー"},
+      {"dir": "qoo10-data-add", "name": "Qoo10 商品データ補完ツール"},
+      {"dir": "yahoo-data-add", "name": "Yahoo data_add 配送補完ツール"}
+    ]},
+    {"id": "files", "title": "🖼 画像・ファイル", "apps": [
+      {"dir": "catalog-check", "name": "カタログ校正チェック"},
+      {"dir": "design-preview", "name": "デザインプレビュー（PSD/AI/PDF）"},
+      {"dir": "image-resize", "name": "画像かんたん縮小"},
+      {"dir": "zip-tool", "name": "ZIP圧縮ツール"}
+    ]},
+    {"id": "other", "title": "🎬 その他", "apps": [
+      {"dir": "animation", "name": "ほしのおとしもの（60秒の2Dアニメーション）"}
+    ]},
+    {"id": "unused", "title": "💤 未使用アプリ", "apps": [
+      {"dir": "item-data", "name": "EC 販売データ集計（自社商品）", "desc": "ranking 取込用データの更新に使う資産。削除しないこと"},
+      {"dir": "ec-maker-only", "name": "メーカー商品のみ抽出（プロパー除外）"},
+      {"dir": "goq-order-tool", "name": "ECプロパー発注書作成ツール（在庫版）"}
+    ]}
+  ]
+}
