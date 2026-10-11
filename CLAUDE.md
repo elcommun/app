@@ -66,6 +66,13 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - `raffinart-stock-tool/` は `raffinart-order/`（発注書作成）とは別物。オフライン版 `raffinart-stock-tool-offline.html` は `build-offline.py` で作り直す
 - バージョン番号の自動更新（`APP_VERSION`）は付けていない（作業中の自動リロードで入力が消えるのを避けるため）
 
+### トップページ（アプリ一覧）`index.html`（2026-10-11 ユーザー指示）
+- `https://elcommun.github.io/app/` のトップページ。全アプリの一覧を表示する。ID・パスワードのログインあり（一度入るとブラウザが記憶）。ID/パスワードはこのファイルには書かない（ユーザーが管理）
+- **`app` にアプリ（フォルダ）を追加・名前変更・削除したら、必ず `python3 tools/build-index.py` を実行して `index.html` を作り直し、同じコミットに含めること**（ユーザー指示：アプリを追加するごとに一覧を更新）。`index.html` は自動生成物なので直接編集しない
+- 一覧の元データは `tools/index-apps.json`（グループ・表示名・説明）。新しいアプリはここに追記する。追記を忘れても「🆕 未分類」に自動で出る（`<title>` から名前を取る）が、必ず正しいグループに入れ直すこと。使っていないアプリは「未使用アプリ」グループへ
+- 一覧は暗号化して `index.html` に埋め込む（ページのソースを見ても読めない）。`tools/index-auth.json`（暗号化済みの鍵と公開鍵。パスワードは含まない）を使うため、ビルドにパスワードは要らない。ID/パスワードを変えるときだけ `INDEX_ID=… INDEX_PW=… python3 tools/setup-index-auth.py` → `python3 tools/build-index.py`
+- **注意**: これは静的ページの簡易ログインで、一覧を見せないためのもの。各アプリの個別URLを直接開けば（知っていれば）ログイン無しで使える。強い保護が必要なら GitHub Pages ではなく別の仕組みが要る
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）

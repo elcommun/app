@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>EL COMMUN アプリ一覧</title>
+<style>
+:root{--pri:#E85D26;--bg:#f6f4f1;--card:#fff;--text:#2b2b2b;--sub:#777;--line:#e6e1da}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;line-height:1.5}
+header{background:#fff;border-bottom:3px solid var(--pri);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:18px}
+header h1 span{color:var(--pri)}
+header .sp{flex:1}
+header button{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--sub);cursor:pointer}
+main{max-width:1000px;margin:0 auto;padding:20px}
+#login{max-width:340px;margin:12vh auto 0;background:var(--card);border-radius:12px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+#login h2{margin:0 0 4px;font-size:17px}
+#login p{margin:0 0 18px;font-size:12px;color:var(--sub)}
+#login label{display:block;font-size:12px;color:var(--sub);margin:12px 0 4px}
+#login input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px}
+#login button{width:100%;margin-top:20px;padding:11px;background:var(--pri);color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+#login button:disabled{opacity:.6}
+#err{color:#c0392b;font-size:13px;min-height:20px;margin-top:12px}
+#q{width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:8px;font-size:15px;margin-bottom:8px;background:#fff}
+.grp{margin-top:24px}
+.grp h2{font-size:15px;margin:0 0 10px;padding-left:10px;border-left:4px solid var(--pri)}
+.grp.unused h2{border-color:#bbb;color:var(--sub)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+a.app{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:inherit;text-decoration:none;transition:.15s}
+a.app:hover{border-color:var(--pri);box-shadow:0 2px 8px rgba(232,93,38,.15);transform:translateY(-1px)}
+a.app b{display:block;font-size:14px}
+a.app small{display:block;color:var(--sub);font-size:11px;margin-top:2px}
+a.app code{display:block;color:var(--pri);font-size:11px;margin-top:4px;word-break:break-all}
+.unused a.app{opacity:.65}
+.hide{display:none!important}
+#none{color:var(--sub);text-align:center;margin-top:40px}
+@media(max-width:600px){main{padding:14px}}
+</style>
+</head>
+<body>
+<header><h1><span>EL COMMUN</span> アプリ一覧</h1><div class="sp"></div><button id="logout" class="hide">ログアウト</button></header>
+
+<div id="login" class="hide">
+  <h2>ログイン</h2>
+  <p>ID とパスワードを入力してください。</p>
+  <form id="f" autocomplete="on">
+    <label for="u">ID</label><input id="u" name="username" autocomplete="username" required>
+    <label for="p">パスワード</label><input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button id="go" type="submit">入る</button>
+  </form>
+  <div id="err"></div>
+</div>
+
+<main id="list" class="hide">
+  <input id="q" type="search" placeholder="アプリ名で絞り込み">
+  <div id="groups"></div>
+  <div id="none" class="hide">該当するアプリがありません</div>
+</main>
+
+<script>
+const D = __DATA__;
+const KEY = 'ec_app_index_key_v1';
+const $ = id => document.getElementById(id);
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const enc = new TextEncoder(), dec = new TextDecoder();
+const store = {
+  get(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } },
+  set(v){ try{ localStorage.setItem(KEY, v); }catch(e){} },
+  del(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+};
+
+async function deriveBits(id, pw){
+  const base = await crypto.subtle.importKey('raw', enc.encode(id + '\n' + pw), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt:b64(D.auth.salt), iterations:D.auth.iter}, base, 256));
+}
+async function openWith(bits){
+  const k = await crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['decrypt']);
+  const der = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(D.auth.iv)}, k, b64(D.auth.priv)); // 間違いならここで失敗
+  const priv = await crypto.subtle.importKey('pkcs8', der, {name:'RSA-OAEP', hash:'SHA-256'}, false, ['decrypt']);
+  const raw = await crypto.subtle.decrypt({name:'RSA-OAEP'}, priv, b64(D.wk));
+  const dk = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+  const json = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(D.iv)}, dk, b64(D.ct));
+  return JSON.parse(dec.decode(json));
+}
+
+let GROUPS = [];
+function render(){
+  const q = $('q').value.trim().toLowerCase();
+  const box = $('groups'); box.textContent = '';
+  let n = 0;
+  for(const g of GROUPS){
+    const apps = g.apps.filter(a => !q || (a.name + ' ' + (a.desc||'') + ' ' + a.dir).toLowerCase().includes(q));
+    if(!apps.length) continue;
+    n += apps.length;
+    const sec = document.createElement('section'); sec.className = 'grp' + (g.id === 'unused' ? ' unused' : '');
+    const h = document.createElement('h2'); h.textContent = g.title + '（' + apps.length + '）'; sec.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'grid';
+    for(const a of apps){
+      const el = document.createElement('a'); el.className = 'app'; el.href = a.dir + '/';
+      const b = document.createElement('b'); b.textContent = a.name; el.appendChild(b);
+      if(a.desc){ const s = document.createElement('small'); s.textContent = a.desc; el.appendChild(s); }
+      const c = document.createElement('code'); c.textContent = location.origin + location.pathname.replace(/[^/]*$/, '') + a.dir + '/'; el.appendChild(c);
+      grid.appendChild(el);
+    }
+    sec.appendChild(grid); box.appendChild(sec);
+  }
+  $('none').classList.toggle('hide', n > 0);
+}
+function show(groups){
+  GROUPS = groups;
+  $('login').classList.add('hide'); $('list').classList.remove('hide'); $('logout').classList.remove('hide');
+  render();
+}
+function showLogin(){
+  $('list').classList.add('hide'); $('logout').classList.add('hide'); $('login').classList.remove('hide');
+}
+$('q').addEventListener('input', render);
+$('logout').addEventListener('click', () => { store.del(); location.reload(); });
+$('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('go').disabled = true; $('err').textContent = '';
+  try{
+    const bits = await deriveBits($('u').value.trim(), $('p').value);
+    const groups = await openWith(bits);
+    store.set(btoa(String.fromCharCode(...bits)));
+    show(groups);
+  }catch(err){
+    $('err').textContent = 'IDまたはパスワードが違います';
+  }
+  $('go').disabled = false;
+});
+(async () => {
+  if(!(window.crypto && crypto.subtle)){ showLogin(); $('err').textContent = 'このブラウザ／接続では利用できません（https で開いてください）'; return; }
+  const saved = store.get();
+  if(saved){
+    try{ show(await openWith(b64(saved))); return; }catch(e){ store.del(); }
+  }
+  showLogin();
+})();
+</script>
+</body>
+</html>
