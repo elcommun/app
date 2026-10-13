@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECプロパー発注書作成ツール（在庫版） | EL COMMUN</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="lib/xlsx.full.min.js"></script>
 <style>
 :root {
   --primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;
@@ -798,8 +798,11 @@ function evaluateRules(partCode, hinmei, currentStock, lot, exactRules, hinmeiRu
 function resolvePartCode(rawPn) {
   if (!rawPn || !rawPn.startsWith('elco-')) return null;
   const pn = rawPn.trim();
-  if (/^elco-(ECL|LLN)-/i.test(pn))
-    return pn.replace(/^elco-/, '').replace(/wf-(brown|natural)/gi, '').trim();
+  if (/^elco-(ECL|LLN)-/i.test(pn)) {
+    // 額縁付き（wf-brown/natural）は別在庫のSKU。ポスター単体と合算すると在庫0を見逃すため対象外
+    if (/wf-/i.test(pn)) return null;
+    return pn.replace(/^elco-/, '').trim();
+  }
   let m = pn.match(/^elco-(WCL-\d+)$/);              if (m) return m[1];
   m = pn.match(/^elco-wcl(\d+)$/i);                  if (m) return 'WCL-' + m[1];
   m = pn.match(/^elco-wcl-\d+(WCL-\d+)$/i);         if (m) return m[1];
