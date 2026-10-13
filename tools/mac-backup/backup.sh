@@ -4,7 +4,7 @@
 set -u
 BASE="$HOME/.elcommun-app-backup"
 REPO="$BASE/repo"
-DEST="$HOME/Desktop/EL COMMUNアプリ バックアップ"
+DEST="$(cat "$BASE/dest" 2>/dev/null || true)"; DEST="${DEST:-$HOME/Desktop/app-backup}"   # install.sh が決めた保存先
 LOG="$BASE/backup.log"
 LOCK="$BASE/lock"
 export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
