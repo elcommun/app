@@ -9,18 +9,23 @@ Mac の「ターミナル」に次の1行を貼って Enter:
 curl -fsSL https://raw.githubusercontent.com/elcommun/app/main/tools/mac-backup/install.sh | bash
 ```
 
-- デスクトップに **「EL COMMUNアプリ バックアップ」** フォルダができる → 中の `index.html` をブラウザで開く（トップの一覧。ID/パスワードは本番と同じ）
+- デスクトップに **「app-backup」** フォルダができる → 中の `index.html` をブラウザで開く（トップの一覧。ID/パスワードは本番と同じ）
 - 初回は約0.5GBの取得とライブラリのダウンロードで数分かかる
 - 以後は **ログイン時と10分ごと**に GitHub を確認し、更新があれば自動で入れ替える（変更が無ければ何もしない）
 - 更新したら通知センターに出る（失敗したときだけ）。経過は `~/.elcommun-app-backup/backup.log`
 - 止めるとき: `bash ~/.elcommun-app-backup/repo/tools/mac-backup/uninstall.sh`（デスクトップのフォルダは消えない）
+
+## フォルダ名を変えたいとき
+- デスクトップの `app-backup` を**手で改名しない**（自動更新が元の名前に新しく作り直し、2つに増えてしまう）
+- 名前を変えたいときは、ターミナルで `BACKUP_DEST="$HOME/Desktop/好きな名前"` を付けて `install.sh` を実行し直す。古いフォルダは手で捨てる
+- 以前の名前（`EL COMMUNアプリ バックアップ`）で入れていた場合も、`install.sh` をもう一度実行すれば `app-backup` に切り替わる。古いフォルダは手で捨てる
 
 ## 仕組み
 ```
 GitHub (main) ──git fetch──▶ ~/.elcommun-app-backup/repo   （全履歴つき。古い版もここに残る）
                                   │ rsync
                                   ▼
-              ~/Desktop/EL COMMUNアプリ バックアップ/        （最新版。ネット無しで開ける形に加工）
+              ~/Desktop/app-backup/        （最新版。ネット無しで開ける形に加工）
 ```
 - 「更新のたび」は GitHub から**定期的に確認**する方式（GitHub から Mac へ直接は送れないため。最大約10分の遅れ）
 - `~/.elcommun-app-backup/repo` に全履歴があるので、デスクトップが最新版で上書きされても過去の版は取り出せる

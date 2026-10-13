@@ -5,7 +5,7 @@
 set -eu
 REPO_URL="${REPO_URL:-https://github.com/elcommun/app.git}"
 BASE="$HOME/.elcommun-app-backup"
-DEST="$HOME/Desktop/EL COMMUNアプリ バックアップ"
+DEST="${BACKUP_DEST:-$HOME/Desktop/app-backup}"
 PLIST="$HOME/Library/LaunchAgents/jp.co.elcommun.app-backup.plist"
 LABEL="jp.co.elcommun.app-backup"
 INTERVAL="${INTERVAL:-600}"
@@ -14,6 +14,7 @@ command -v git >/dev/null 2>&1 || { echo "git が使えません。ターミナ�
 command -v python3 >/dev/null 2>&1 || { echo "python3 が使えません。「コマンドライン・デベロッパ・ツール」のインストールを済ませてから、もう一度実行してください。"; exit 1; }
 
 mkdir -p "$BASE" "$HOME/Library/LaunchAgents"
+printf "%s" "$DEST" > "$BASE/dest"   # backup.sh が読む保存先
 if [ ! -d "$BASE/repo/.git" ]; then
   echo "▶ GitHub から取得します（約0.5GB。初回だけ数分かかります）..."
   git clone ${SHALLOW:+--depth 1} "$REPO_URL" "$BASE/repo"
