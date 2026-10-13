@@ -73,6 +73,11 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - 一覧は暗号化して `index.html` に埋め込む（ページのソースを見ても読めない）。`tools/index-auth.json`（暗号化済みの鍵と公開鍵。パスワードは含まない）を使うため、ビルドにパスワードは要らない。ID/パスワードを変えるときだけ `INDEX_ID=… INDEX_PW=… python3 tools/setup-index-auth.py` → `python3 tools/build-index.py`
 - **注意**: これは静的ページの簡易ログインで、一覧を見せないためのもの。各アプリの個別URLを直接開けば（知っていれば）ログイン無しで使える。強い保護が必要なら GitHub Pages ではなく別の仕組みが要る
 
+### Mac デスクトップ自動バックアップ（2026-10-13 ユーザー指示）
+- `tools/mac-backup/` に、`app` の最新版をユーザーの Mac のデスクトップへ自動保存する仕組みがある（**ネット無しでも開ける形**に加工。10分ごと／ログイン時に GitHub を確認し、更新があれば入れ替え）。使い方・仕組み・制限は `tools/mac-backup/README.md`
+- アプリで**外部ライブラリを新しく読み込む**ときは、CDN は `cdnjs.cloudflare.com` / `cdn.jsdelivr.net` / `unpkg.com` / `code.jquery.com` のどれかにすること（`make-offline.py` が自動で手元に保存して書き換える）。それ以外のホストの外部読み込み（Web フォント以外）は、バックアップがオフラインで動かなくなるので避ける。`fetch()` で同じフォルダ外のファイルを読む作りも `file://` では動かないので、`<script src>` で読む方式にする
+- `backup.sh` / `install.sh` を変更したら、ユーザーに install.sh の再実行を案内する（`make-offline.py` は自動で最新になる）
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
