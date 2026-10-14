@@ -672,9 +672,9 @@ function shippingFor(h, s) {
   if (h === '4' && s === '4') return { w: '2000', p: '4', label: '西濃運輸' };
   return null;
 }
-/* オプション名・選択肢：空白を除き、sub-code の区切り文字（& # = :）は全角にする（Silver&Navy が区切りと誤読されて U-001-0022 エラーになるため） */
+/* オプション名・選択肢：空白を除く。「&」は「-」に置き換え（Silver&Navy → Silver-Navy。sub-code の区切りと混ざって U-001-0022 エラーになるため）、# = : は全角にする */
 function optToken(s) {
-  return String(s || '').replace(/[ 　\t\r\n]+/g, '').replace(/&/g, '＆').replace(/#/g, '＃').replace(/=/g, '＝').replace(/:/g, '：');
+  return String(s || '').replace(/[ 　\t\r\n]+/g, '').replace(/&/g, '-').replace(/#/g, '＃').replace(/=/g, '＝').replace(/:/g, '：');
 }
 function renameOption(t) { var k = optToken(t); return ITEM_OPTION_RENAME[k] || k; }
 
@@ -1039,7 +1039,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 26;
+var APP_VERSION = 27;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',

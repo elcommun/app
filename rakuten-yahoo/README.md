@@ -4,7 +4,7 @@
 
 - 公開先（予定）：https://elcommun.github.io/app/rakuten-yahoo/
 - 構成：`index.html` 1ファイルのみ（HTML／CSS／JSをすべて内包。ビルド不要）
-- 現在のバージョン：`APP_VERSION = 26`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
+- 現在のバージョン：`APP_VERSION = 27`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
 
 このファイルは、Claudeのチャットで作成した初版をClaude Codeに引き継ぐためのメモです。
 
@@ -61,7 +61,7 @@
 
 ### オプション・sub-code の区切り文字（v26）
 
-選択肢に `&`（例：`Silver&Navy`）があると、sub-code の区切り（`&`・`#`・`=`・`:`）と混ざり、Yahooで「オプション（option）のフォーマットが無効です（U-001-0022）」になる。`optToken` で、これらを全角（＆ ＃ ＝ ：）に置き換える（options・sub-code・option.csv で同じ文字列にそろう）。
+選択肢に `&`（例：`Silver&Navy`）があると、sub-code の区切り（`&`・`#`・`=`・`:`）と混ざり、Yahooで「オプション（option）のフォーマットが無効です（U-001-0022）」になる。`optToken` で、`&` は `-`（Silver&Navy → Silver-Navy。ユーザー指示）、`#` `=` `:` は全角（＃ ＝ ：）に置き換える（options・sub-code・option.csv で同じ文字列にそろう）。
 
 ### バリエーションなしの商品（単品）
 
