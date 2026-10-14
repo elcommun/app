@@ -431,7 +431,7 @@
       // ── 出力 ──────────────────────────────────────
       const fname = `APJ発注書_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
       const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/octet-stream' });
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
       const a = Object.assign(document.createElement('a'), { href: url, download: fname });
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
