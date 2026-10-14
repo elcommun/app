@@ -4,7 +4,7 @@
 
 - 公開先（予定）：https://elcommun.github.io/app/rakuten-yahoo/
 - 構成：`index.html` 1ファイルのみ（HTML／CSS／JSをすべて内包。ビルド不要）
-- 現在のバージョン：`APP_VERSION = 25`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
+- 現在のバージョン：`APP_VERSION = 26`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
 
 このファイルは、Claudeのチャットで作成した初版をClaude Codeに引き継ぐためのメモです。
 
@@ -58,6 +58,10 @@
 | 固定値 | — | lead-time-instock=1000、lead-time-outstock=空、keep-stock=0、taxable=1、delivery=0、condition=0、display=1（倉庫指定=1なら0） |
 
 出力するのは上記30列（`OUT_HEADER`）に、設定の「空欄で出力して消す列」を右端に足したもの。上書き登録で以前のセール価格・販売期間が残らないよう、既定は `sale-price`・`sale-period-start`・`sale-period-end` を値なしの列として出力する（v11）。**列名はYahooの一般的な見出しからの推定で、実際のYahooのCSVとの一致は未確認**。違う場合は設定で直す。
+
+### オプション・sub-code の区切り文字（v26）
+
+選択肢に `&`（例：`Silver&Navy`）があると、sub-code の区切り（`&`・`#`・`=`・`:`）と混ざり、Yahooで「オプション（option）のフォーマットが無効です（U-001-0022）」になる。`optToken` で、これらを全角（＆ ＃ ＝ ：）に置き換える（options・sub-code・option.csv で同じ文字列にそろう）。
 
 ### バリエーションなしの商品（単品）
 
