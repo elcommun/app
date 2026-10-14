@@ -344,7 +344,7 @@
     <div class="card-body">
       <div class="grid3">
         <div class="field"><label>Yahooストアアカウント</label><input type="text" id="setStore"></div>
-        <div class="field"><label>バリエーションなし商品の項目名</label><input type="text" id="setSingle"></div>
+        <div class="field"><label>バリエーションなし商品の項目名</label><input type="text" id="setSingle"><small>v25から使いません（単品は sub-code を空欄で出力）</small></div>
         <div class="field"><label>画像ZIPの上限（MB）</label><input type="number" id="setZip" min="1"><small>1つのZIPがこのサイズを超えないように分割します</small></div>
       </div>
       <div class="sec-title">文字数の上限（半角換算）</div>
@@ -760,7 +760,7 @@ function convertAll(rakRows, catRows, cfg) {
     o['sp-additional'] = convSp(raw(it, 'スマートフォン用商品説明文'), ctx);
 
     // オプション・バリエーション
-    var optLines = [], freeOpts = [], varRows = [];
+    var optLines = [], freeOpts = [], varRows = [], single = false;
     G.opts.forEach(function (r) {
       var type = g(r, '選択肢タイプ'), title = renameOption(g(r, '商品オプション項目名'));
       if (type === 'f') { warn(code, 'フリーテキストのオプション「' + title + '」はYahooのoptionsに変換できないため除外'); return; }
@@ -788,10 +788,8 @@ function convertAll(rakRows, catRows, cfg) {
         varRows.push({ sub: sc, axes: keys.map(function (k, i) { return { n: optToken(names[i] || k), v: optToken(s.sel[k]) }; }), imgPath: g(s.r, 'SKU画像パス'), imgType: g(s.r, 'SKU画像タイプ') });
       });
     } else {
-      // バリエーションなし：楽天の商品番号をサブコードに採用
-      var pn = optToken(g(it, '商品番号')) || (G.skus[0] ? optToken(g(G.skus[0], 'SKU管理番号')) : '');
-      if (pn) { optLines.push(cfg.singleOptName + ' ' + pn); subs.push(cfg.singleOptName + ':' + pn + '=' + pn); varRows.push({ sub: pn, axes: [{ n: cfg.singleOptName, v: pn }], imgPath: '', imgType: '' }); }
-      else warn(code, '商品番号が空のため sub-code を設定できません');
+      // バリエーションなし（選択肢別在庫ではない単品）：sub-code は空欄。「デザイン 商品番号」のオプションも作らない
+      single = true;
     }
     o.options = optLines.join('\n\n');
     o['sub-code'] = subs.join('&');
@@ -874,7 +872,7 @@ function convertAll(rakRows, catRows, cfg) {
       res.lib[v.imgName] = imgUrl(v.imgPath, v.imgType);
     });
 
-    res.items.push({ code: code, out: o, notes: notes, srcName: g(it, '商品名'), rakLead: rakLead, specKeys: specKeys, freeOpts: freeOpts, varRows: varRows });
+    res.items.push({ code: code, out: o, notes: notes, srcName: g(it, '商品名'), rakLead: rakLead, specKeys: specKeys, single: single, freeOpts: freeOpts, varRows: varRows });
   });
   return res;
 }
@@ -900,6 +898,7 @@ function buildOptionRows(items, store) {
 function buildQuantityRows(items) {
   var rows = [QTY_HEADER];
   items.forEach(function (it) {
+    if (it.single) rows.push([it.code, it.out.name, '', '0', '0', '0']);
     (it.varRows || []).forEach(function (v) { rows.push([it.code, it.out.name, v.sub, '0', '0', '0']); });
   });
   return rows;
@@ -1037,7 +1036,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 24;
+var APP_VERSION = 25;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',
