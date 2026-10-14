@@ -4,7 +4,7 @@
 
 - 公開先（予定）：https://elcommun.github.io/app/rakuten-yahoo/
 - 構成：`index.html` 1ファイルのみ（HTML／CSS／JSをすべて内包。ビルド不要）
-- 現在のバージョン：`APP_VERSION = 23`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
+- 現在のバージョン：`APP_VERSION = 24`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
 
 このファイルは、Claudeのチャットで作成した初版をClaude Codeに引き継ぐためのメモです。
 
@@ -21,8 +21,8 @@
 
 | 部分 | 内容 |
 |---|---|
-| `LINK_MAP` | 楽天カテゴリ番号 → YahooページID（83件） |
-| `GENRE_MAP` | 楽天ジャンルID → Yahoo product-category と spec_id（129件） |
+| `LINK_MAP` | 楽天カテゴリ番号 → YahooページID（84件） |
+| `GENRE_MAP` | 楽天ジャンルID → Yahoo product-category と spec_id（130件。569310 → 13591 を v24 で追加） |
 | 変換ロジック | `convertAll`、`convName`、`convPcDesc`、`convAdditional`、`convSp`、`convertUrls`、`shippingFor`、`buildRequest`、`parseResponse`、`buildImageScript` など。DOMに依存しない |
 | 画面まわり | `APP_VERSION` 以降。ファイル読み込み、確認画面、設定（localStorage）、ダウンロード |
 
@@ -75,6 +75,8 @@
 |---|---|
 | `item.rakuten.co.jp/elcommun/商品管理番号/` | `store.shopping.yahoo.co.jp/el-market/商品管理番号.html` |
 | `item.rakuten.co.jp/elcommun/c/番号/` | `store.shopping.yahoo.co.jp/el-market/ページID.html`（`LINK_MAP`＋設定の追加分。未登録は楽天URLのまま＋警告） |
+| `soko.rms.rakuten.co.jp/elcommun/…` | `item.rakuten.co.jp/elcommun/…` として扱い、上の商品・カテゴリのリンクと同じ規則で変換（v24） |
+| `search.rakuten.co.jp/search/mall/キーワード/?sid=212778`（`SEARCH_LINKS`） | ネオンライト → `store.shopping.yahoo.co.jp/el-market/bec8ccc0.html`。登録のないキーワードは楽天のURLのまま＋警告 |
 | `www.rakuten.ne.jp/gold/elcommun/event/名前/` | `store.shopping.yahoo.co.jp/el-market/名前.html`（v22） |
 | `www.rakuten.ne.jp/gold/elcommun/event/diary2027_01/`（ダイアリー） | `store.shopping.yahoo.co.jp/el-market/diary-01.html`（年は無視し、月の2桁だけ使う。04・10も同様） |
 | `www.rakuten.ne.jp/gold/elcommun/…`（上記以外） | `shopping.geocities.jp/el-market/…` |
