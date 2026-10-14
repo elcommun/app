@@ -78,7 +78,7 @@
 
 <header>
   <div class="logo">EC</div>
-  <div><h1>楽天 RMS → Shopify 変換 <span>EL COMMUN</span></h1></div>
+  <div><h1>楽天 RMS → Shopify 変換 <span>EL COMMUN</span><span id="appVersion" style="margin-left:8px;font-size:11px;color:#9CA3AF;"></span></h1></div>
 </header>
 
 <div class="container">
@@ -185,6 +185,10 @@
   let tagsMap = {}; // 商品管理番号 -> Tags
   let calendarCollectionMap = {}; // 商品管理番号 -> カレンダー用Collection名
   let convertedData = null;
+
+  // アプリ更新時はこの日付を上げる（キャッシュで旧版を使っていないか画面上で確認できるように）
+  const APP_VERSION = 'v2026-10-14';
+  document.getElementById('appVersion').textContent = APP_VERSION;
 
   const uploadZone = document.getElementById('uploadZone');
   const fileInput  = document.getElementById('fileInput');
@@ -1285,7 +1289,7 @@
 
       log(`✅ ${parsed.data.length} 行を読み込みました`, 'log-ok');
       log('──────────────────────────────────', 'log-sep');
-      log('🔄 変換処理を開始します...', 'log-info');
+      log(`🔄 変換処理を開始します...（アプリ ${APP_VERSION}）`, 'log-info');
 
       const grouped = _.groupBy(parsed.data, item =>
         item['商品管理番号（商品URL）'] || item['商品管理番号(商品URL)'] || ''
@@ -1513,7 +1517,14 @@
             }
             return raw;
           })();
-          const price = item ? (item['通常購入販売価格'] || '') : '';
+          // 価格は税込に変換（楽天の「消費税」が0=税別の場合のみ「消費税率」を掛ける。1=税込ならそのまま）
+          const price = (() => {
+            const raw = item ? (item['通常購入販売価格'] || '').trim() : '';
+            if (raw === '' || isNaN(Number(raw))) return raw;
+            if ((first['消費税'] || '').trim() === '1') return raw; // 既に税込
+            const taxRate = parseFloat((first['消費税率'] || '').trim()) || 0.1;
+            return String(Math.round(Number(raw) * (1 + taxRate)));
+          })();
           const barcode = item ? (item['カタログID'] || '') : '';
           // Variant Image：SKU画像パスに画像ベースURLを付与
           const variantImage = (() => {
