@@ -4,289 +4,680 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Qoo10 トップページ編集 | EL COMMUN</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;--gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;--gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;--green:#10B981;--green-light:#ECFDF5;--red:#EF4444;--red-light:#FEF2F2;--yellow-light:#FFFBEB;--blue-light:#EFF6FF;}
+:root{--primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;--gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;--gray-300:#D1D5DB;--gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;--green:#10B981;--green-light:#ECFDF5;--red:#EF4444;--red-light:#FEF2F2;--yellow-light:#FFFBEB;--blue-light:#EFF6FF;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
-header{background:white;border-bottom:3px solid var(--primary);padding:12px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex-wrap:wrap;}
-.logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;}
-header h1{font-size:18px;font-weight:700;}header h1 span{font-size:12px;color:var(--gray-400);margin-left:4px;}
-.hd-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
-.btn{padding:8px 14px;border-radius:8px;border:1px solid var(--gray-200);background:var(--gray-50);font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;transition:all .15s;}
+body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;font-size:14px;}
+button{font-family:inherit;}
+header{background:white;border-bottom:3px solid var(--primary);padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:sticky;top:0;z-index:20;flex-wrap:wrap;}
+.logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;}
+header h1{font-size:18px;font-weight:700;}header h1 span{font-size:12px;color:var(--gray-400);margin-left:4px;font-weight:400;}
+.hd-r{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.btn{padding:9px 16px;border-radius:8px;border:1px solid var(--gray-300);background:white;font-size:14px;font-weight:600;color:var(--gray-600);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .btn:hover{border-color:var(--primary);color:var(--primary);}
 .btn.pri{background:var(--primary);color:white;border-color:var(--primary);}.btn.pri:hover{background:var(--primary-dark);color:white;}
-.btn.grn{background:var(--green);color:white;border-color:var(--green);}.btn.grn:hover{background:#059669;color:white;}
-.btn.sm{padding:3px 8px;font-size:12px;}
-.info-box{background:var(--yellow-light);border-bottom:1px solid #FDE68A;padding:8px 24px;font-size:12px;color:#92400E;line-height:1.6;}
-.main{display:grid;grid-template-columns:260px 330px 1fr;gap:14px;padding:14px;align-items:start;max-width:1700px;margin:0 auto;}
-.card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;}
-.card-header{padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:8px;}
-.step{width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;}
-.card-header h2{font-size:14px;font-weight:700;}
-.card-body{padding:12px 14px;}
-.add-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
-.add-grid button{padding:8px 4px;border:1px dashed var(--gray-400);border-radius:8px;background:var(--gray-50);font-size:12px;cursor:pointer;line-height:1.3;}
-.add-grid button:hover{border-color:var(--primary);background:var(--primary-light);}
-.blk{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:12px;background:white;}
-.blk.sel{border-color:var(--primary);background:var(--primary-light);}
-.blk .nm{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600;}
-.blk button{border:none;background:none;cursor:pointer;font-size:13px;padding:2px 3px;color:var(--gray-600);}
-.blk button:hover{color:var(--primary);}
-.empty{font-size:12px;color:var(--gray-400);text-align:center;padding:18px 6px;line-height:1.7;}
-.fld{margin-bottom:10px;}
-.fld label{display:block;font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:3px;}
-.fld input[type=text],.fld input[type=number],.fld textarea,.fld select{width:100%;padding:7px 9px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;}
-.fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--primary);}
-.fld textarea{min-height:70px;resize:vertical;}
-.fld input[type=color]{width:100%;height:32px;border:1px solid var(--gray-200);border-radius:6px;padding:2px;background:white;}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.item{border:1px solid var(--gray-200);border-radius:8px;padding:8px;margin-bottom:8px;background:var(--gray-50);}
-.item-h{display:flex;align-items:center;font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:6px;}
-.item-h span{flex:1;}
-.pv-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--gray-200);flex-wrap:wrap;font-size:12px;}
-.pv-bar select{padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;}
-.pv-wrap{background:#e5e7eb;padding:14px;overflow:auto;max-height:calc(100vh - 170px);}
-.pv-frame{margin:0 auto;background:white;box-shadow:0 2px 12px rgba(0,0,0,.15);}
-.warn{margin:10px 14px 0;padding:8px 12px;border-radius:8px;background:var(--red-light);color:#991B1B;font-size:12px;line-height:1.6;display:none;}
+.btn.sm{padding:5px 10px;font-size:12px;}
+.btn.block{width:100%;}
+.btn.dashed{border-style:dashed;background:var(--gray-50);}
+.icon-btn{border:none;background:none;cursor:pointer;font-size:14px;width:28px;height:28px;border-radius:6px;color:var(--gray-600);}
+.icon-btn:hover{background:var(--gray-100);color:var(--primary);}
+select.sel{padding:8px 10px;border:1px solid var(--gray-300);border-radius:8px;font-size:14px;background:white;}
+.menu-wrap{position:relative;}
+.menu{display:none;position:absolute;right:0;top:110%;background:white;border:1px solid var(--gray-200);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:210px;z-index:30;}
+.menu.show{display:block;}
+.menu button{display:block;width:100%;text-align:left;border:none;background:none;padding:10px 12px;border-radius:6px;font-size:14px;cursor:pointer;}
+.menu button:hover{background:var(--primary-light);color:var(--primary);}
+
+.main{display:grid;grid-template-columns:270px 1fr 380px;gap:16px;padding:16px;max-width:1800px;margin:0 auto;align-items:start;}
+.panel{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;}
+.panel+.panel{margin-top:16px;}
+.p-h{padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;}
+.p-h .step{width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.p-h .r{margin-left:auto;font-weight:400;}
+.p-b{padding:14px 16px;}
+.sticky{position:sticky;top:76px;}
+
+/* 商品データ */
+.pd-ok{background:var(--green-light);color:#065F46;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.6;}
+.pd-none{background:var(--yellow-light);color:#92400E;border:1px solid #FDE68A;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.6;}
+
+/* パーツ追加 */
+.add-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.add-grid button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:1px solid var(--gray-200);border-radius:10px;background:var(--gray-50);font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;transition:all .15s;}
+.add-grid button b{font-size:20px;font-weight:400;}
+.add-grid button:hover{border-color:var(--primary);background:var(--primary-light);color:var(--primary);}
+
+/* 構成リスト */
+.blk{display:flex;align-items:center;gap:6px;padding:8px 8px 8px 12px;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:6px;cursor:pointer;background:white;font-size:14px;}
+.blk:hover{border-color:var(--gray-400);}
+.blk.sel{border-color:var(--primary);background:var(--primary-light);box-shadow:inset 3px 0 0 var(--primary);}
+.blk .nm{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.blk .no{color:var(--gray-400);font-size:12px;width:16px;}
+.empty{font-size:13px;color:var(--gray-400);text-align:center;padding:24px 8px;line-height:1.8;}
+
+/* プレビュー */
+.pv-area{background:#d9dce1;padding:20px;min-height:400px;overflow:hidden;}
+.pv-frame{margin:0 auto;background:white;box-shadow:0 4px 18px rgba(0,0,0,.15);transform-origin:top left;}
+.pvb{position:relative;cursor:pointer;outline:2px solid transparent;outline-offset:-2px;transition:outline-color .1s;}
+.pvb:hover{outline-color:rgba(232,93,38,.45);}
+.pvb.sel{outline:3px solid var(--primary);}
+.pvb .tag{display:none;position:absolute;left:0;top:0;background:var(--primary);color:white;font-size:11px;padding:2px 8px;border-radius:0 0 6px 0;z-index:2;}
+.pvb.sel .tag,.pvb:hover .tag{display:block;}
+.pv-ph{background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 10px,#e5e7eb 10px,#e5e7eb 20px);color:var(--gray-600);text-align:center;padding:40px 10px;font-size:14px;}
+.warn{background:var(--red-light);color:#991B1B;font-size:13px;line-height:1.7;padding:10px 16px;border-bottom:1px solid #FECACA;display:none;}
 .warn.show{display:block;}
-.code{display:none;margin:10px 14px 14px;}
-.code.show{display:block;}
-.code textarea{width:100%;height:180px;font-family:'Courier New',monospace;font-size:11px;border:1px solid var(--gray-200);border-radius:8px;padding:8px;}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gray-800);color:white;padding:10px 20px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9;}
+.pv-note{font-size:12px;color:var(--gray-600);}
+
+/* 編集パネル */
+.ed-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;margin-bottom:14px;}
+.fld{margin-bottom:14px;}
+.fld>label{display:block;font-size:13px;font-weight:700;color:var(--gray-600);margin-bottom:5px;}
+.fld input[type=text],.fld input[type=number],.fld textarea,.fld select,.inp{width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:14px;font-family:inherit;background:white;}
+.fld input:focus,.fld textarea:focus,.fld select:focus,.inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(232,93,38,.15);}
+.fld textarea{min-height:90px;resize:vertical;line-height:1.6;}
+.color-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.color-row input[type=color]{width:40px;height:34px;border:1px solid var(--gray-300);border-radius:8px;padding:2px;background:white;cursor:pointer;}
+.sw{width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px var(--gray-300);cursor:pointer;}
+.seg{display:flex;border:1px solid var(--gray-300);border-radius:8px;overflow:hidden;}
+.seg button{flex:1;border:none;background:white;padding:8px 4px;font-size:13px;cursor:pointer;color:var(--gray-600);border-right:1px solid var(--gray-200);}
+.seg button:last-child{border-right:none;}
+.seg button.on{background:var(--primary);color:white;font-weight:700;}
+.link-row{display:flex;gap:6px;}
+.link-row input{flex:1;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sec{font-size:13px;font-weight:700;color:var(--gray-600);margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--gray-200);display:flex;align-items:center;}
+.sec span{margin-left:auto;font-weight:400;color:var(--gray-400);}
+.item{border:1px solid var(--gray-200);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--gray-50);}
+.item-h{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--gray-600);margin-bottom:8px;}
+.item-h span{flex:1;}
+.pitem{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--gray-200);border-radius:10px;padding:8px;margin-bottom:8px;background:white;}
+.pitem img,.pitem .noimg{width:56px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0;background:var(--gray-100);}
+.pitem .bd{flex:1;min-width:0;}
+.pitem .bd input{width:100%;padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;margin-bottom:4px;}
+.pitem .bd input:focus{outline:none;border-color:var(--primary);}
+.pitem .code{font-size:11px;color:var(--gray-400);}
+.pitem .ops{display:flex;flex-direction:column;}
+
+/* モーダル */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:50;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:white;border-radius:14px;width:min(960px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.modal.small{width:min(560px,100%);}
+.m-h{padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;}
+.m-h .icon-btn{margin-left:auto;font-size:18px;}
+.m-b{padding:16px 20px;overflow:auto;flex:1;}
+.m-f{padding:12px 20px;border-top:1px solid var(--gray-200);display:flex;align-items:center;gap:10px;}
+.m-f .r{margin-left:auto;display:flex;gap:8px;}
+.tab-bar{display:flex;gap:6px;margin-bottom:12px;}
+.tab-btn{padding:7px 14px;border-radius:8px;font-size:13px;border:1px solid var(--gray-200);background:var(--gray-50);cursor:pointer;font-weight:600;color:var(--gray-600);}
+.tab-btn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px;}
+.pcard{border:2px solid var(--gray-200);border-radius:10px;padding:6px;cursor:pointer;position:relative;background:white;transition:border-color .1s;}
+.pcard:hover{border-color:var(--gray-400);}
+.pcard.on{border-color:var(--primary);background:var(--primary-light);}
+.pcard img,.pcard .noimg{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:var(--gray-100);display:block;}
+.pcard .nm{font-size:12px;line-height:1.4;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:34px;}
+.pcard .pr{font-size:13px;font-weight:700;color:#E02020;}
+.pcard .cd{font-size:10px;color:var(--gray-400);}
+.pcard .ck{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:white;border:2px solid var(--gray-300);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:bold;}
+.pcard.on .ck{background:var(--primary);border-color:var(--primary);}
+.pcard .used{position:absolute;top:10px;left:10px;background:rgba(31,41,55,.75);color:white;font-size:10px;padding:2px 6px;border-radius:999px;}
+.upload-zone{border:2px dashed var(--gray-300);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50);position:relative;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--primary);background:var(--primary-light);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone .ic{font-size:32px;margin-bottom:6px;}
+.upload-zone p{font-size:15px;color:var(--gray-600);margin-bottom:4px;font-weight:600;}
+.upload-zone small{font-size:12px;color:var(--gray-400);}
+.rule-box{background:var(--blue-light);border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;font-size:13px;color:#1E40AF;line-height:1.9;}
+.steps{padding-left:22px;line-height:2.1;font-size:14px;}
+.steps b{color:var(--primary);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--gray-800);color:white;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
 .toast.show{opacity:1;}
-@media(max-width:1100px){.main{grid-template-columns:1fr;}.pv-wrap{max-height:none;}}
+textarea.code{width:100%;height:200px;font-family:'Courier New',monospace;font-size:11px;border:1px solid var(--gray-300);border-radius:8px;padding:8px;}
+@media(max-width:1250px){.main{grid-template-columns:250px 1fr;}.ed-col{grid-column:1 / -1;}.sticky{position:static;}}
+@media(max-width:800px){.main{grid-template-columns:1fr;}header{padding:10px 14px;}}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">Q10</div>
   <h1>Qoo10 トップページ編集 <span>EL COMMUN</span></h1>
-  <div class="hd-actions">
-    <button class="btn" onclick="exportJson()">💾 保存(JSON)</button>
-    <button class="btn" onclick="document.getElementById('imp').click()">📂 読み込み</button>
+  <div class="hd-r">
+    <select class="sel" id="width" title="ページ幅" onchange="S.width=+this.value;save();render()">
+      <option value="686">幅 686px（推奨）</option><option value="750">幅 750px</option><option value="860">幅 860px</option><option value="1000">幅 1000px</option>
+    </select>
+    <button class="btn pri" onclick="openPublish()">🚀 Qoo10に反映する</button>
+    <div class="menu-wrap">
+      <button class="btn" onclick="toggleMenu(event)">⋯ その他</button>
+      <div class="menu" id="menu">
+        <button onclick="exportJson()">💾 作業を保存（ファイル）</button>
+        <button onclick="$('imp').click()">📂 保存した作業を開く</button>
+        <button onclick="openCode()">&lt;/&gt; HTMLを見る</button>
+        <button onclick="downloadHtml()">⬇️ HTMLファイルで保存</button>
+        <button onclick="openProductModal('load')">🔄 商品データを読み込み直す</button>
+        <button onclick="resetAll()">🗑 すべて消して最初から</button>
+      </div>
+    </div>
     <input type="file" id="imp" accept=".json" style="display:none" onchange="importJson(this)">
-    <button class="btn" onclick="resetAll()">🗑 全消去</button>
-    <button class="btn pri" onclick="copyHtml()">📋 HTMLをコピー</button>
-    <button class="btn grn" onclick="downloadHtml()">⬇️ HTML保存</button>
   </div>
 </header>
-<div class="info-box"><b>使い方：</b>① 左でパーツを追加 → ② 中央で内容を入力 → ③ 右でプレビュー確認 → 「HTMLをコピー」してQoo10 QSMのショップ編集（HTML編集モード）に貼り付け。画像はQoo10や自社サーバーに<b>アップ済みのURL（https）</b>を入れてください。入力は自動でこのブラウザに保存されます。</div>
 
 <div class="main">
-  <div class="card">
-    <div class="card-header"><div class="step">1</div><h2>パーツを追加</h2></div>
-    <div class="card-body">
-      <div class="add-grid" id="palette"></div>
-      <div id="blockList"></div>
+  <!-- 左：商品データ・パーツ追加・構成 -->
+  <div>
+    <div class="panel">
+      <div class="p-h"><span class="step">1</span>商品データ</div>
+      <div class="p-b" id="pdStatus"></div>
+    </div>
+    <div class="panel">
+      <div class="p-h"><span class="step">2</span>パーツを追加</div>
+      <div class="p-b"><div class="add-grid" id="palette"></div></div>
+    </div>
+    <div class="panel">
+      <div class="p-h">ページの構成<span class="r pv-note" id="blkCount"></span></div>
+      <div class="p-b" id="blockList"></div>
     </div>
   </div>
-  <div class="card">
-    <div class="card-header"><div class="step">2</div><h2>内容を編集</h2></div>
-    <div class="card-body" id="editor"></div>
-  </div>
-  <div class="card">
-    <div class="card-header"><div class="step">3</div><h2>プレビュー</h2></div>
-    <div class="pv-bar">
-      ページ幅 <select id="width" onchange="S.width=+this.value;save();render()">
-        <option value="860">860px</option><option value="1000">1000px</option><option value="1200">1200px</option><option value="750">750px</option>
-      </select>
-      背景色 <input type="color" id="pageBg" value="#ffffff" onchange="S.bg=this.value;save();render()">
-      <button class="btn sm" onclick="document.getElementById('code').classList.toggle('show')">&lt;/&gt; HTMLを見る</button>
-    </div>
+
+  <!-- 中央：プレビュー -->
+  <div class="panel">
+    <div class="p-h"><span class="step">3</span>プレビュー<span class="r pv-note">クリックしたパーツを右で編集できます</span></div>
     <div class="warn" id="warn"></div>
-    <div class="code" id="code"><textarea id="codeTa" readonly onclick="this.select()"></textarea></div>
-    <div class="pv-wrap"><div class="pv-frame" id="pv"></div></div>
+    <div class="pv-area" id="pvArea"><div class="pv-frame" id="pv"></div></div>
+  </div>
+
+  <!-- 右：編集 -->
+  <div class="ed-col">
+    <div class="panel sticky">
+      <div class="p-h">✏️ 内容を編集</div>
+      <div class="p-b" id="editor"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 商品選択モーダル -->
+<div class="modal-bg" id="pmBg" onclick="if(event.target===this)closeModal('pmBg')">
+  <div class="modal">
+    <div class="m-h">🛍 商品を選ぶ<button class="icon-btn" onclick="closeModal('pmBg')">✕</button></div>
+    <div class="m-b" id="pmBody"></div>
+    <div class="m-f" id="pmFoot"></div>
+  </div>
+</div>
+
+<!-- 反映手順モーダル -->
+<div class="modal-bg" id="pubBg" onclick="if(event.target===this)closeModal('pubBg')">
+  <div class="modal small">
+    <div class="m-h">🚀 Qoo10に反映する<button class="icon-btn" onclick="closeModal('pubBg')">✕</button></div>
+    <div class="m-b">
+      <div id="pubWarn"></div>
+      <ol class="steps">
+        <li>下の <b>「HTMLをコピー」</b> を押す</li>
+        <li><b>「QSMを開く」</b> → 基本情報 ＞ ショップ管理 ＞ <b>メインページ</b></li>
+        <li>B.全体の構成 で <b>フリーフォーム ＞ HTML方式</b> を選ぶ</li>
+        <li>HTML入力欄の中身を消して <b>貼り付け</b>（⌘ + V）</li>
+        <li><b>保存</b> を押して完了</li>
+      </ol>
+    </div>
+    <div class="m-f">
+      <a class="btn" href="https://qsm.qoo10.jp/" target="_blank" rel="noopener" style="text-decoration:none">🔗 QSMを開く</a>
+      <div class="r"><button class="btn pri" onclick="copyHtml()">📋 HTMLをコピー</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- HTML表示モーダル -->
+<div class="modal-bg" id="codeBg" onclick="if(event.target===this)closeModal('codeBg')">
+  <div class="modal small">
+    <div class="m-h">&lt;/&gt; 出力されるHTML<button class="icon-btn" onclick="closeModal('codeBg')">✕</button></div>
+    <div class="m-b"><textarea class="code" id="codeTa" readonly onclick="this.select()"></textarea></div>
+    <div class="m-f"><div class="r"><button class="btn pri" onclick="copyHtml()">📋 コピー</button></div></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-const KEY='qoo10_top_editor_v1';
+const KEY='qoo10_top_editor_v1',PKEY='qoo10_top_products_v1';
 const ALIGN=[['left','左'],['center','中央'],['right','右']];
-// パーツ定義：f=入力項目, items=繰り返し項目
+const SWATCH=['#E85D26','#1F2937','#ffffff','#E02020','#2563EB','#059669','#F59E0B','#EC4899'];
+const qooUrl=code=>code?`https://www.qoo10.jp/g/${encodeURIComponent(code)}`:'';
+// パーツ定義：f=入力項目, items=繰り返し項目（product=true は商品選択式）
 const TYPES={
-  banner:{icon:'🖼',label:'バナー(1枚)',def:{img:'',link:'',alt:''},
-    f:[['img','画像URL','text'],['link','リンク先URL','text'],['alt','代替テキスト','text']]},
-  banner2:{icon:'🖼🖼',label:'バナー(横並び)',def:{cols:2,gap:8,items:[{img:'',link:'',alt:''},{img:'',link:'',alt:''}]},
-    f:[['cols','列数','select',[[2,'2列'],[3,'3列'],[4,'4列']]],['gap','すき間(px)','number']],
-    items:{name:'バナー',max:4,def:{img:'',link:'',alt:''},f:[['img','画像URL','text'],['link','リンク先URL','text'],['alt','代替テキスト','text']]}},
+  products:{icon:'🛍',label:'商品一覧',def:{cols:3,gap:10,showPrice:'1',items:[]},
+    f:[['cols','1行の商品数','seg',[[2,'2'],[3,'3'],[4,'4'],[5,'5']]],['showPrice','価格の表示','seg',[['1','表示'],['0','非表示']]]],
+    product:true},
+  banner:{icon:'🖼',label:'バナー',def:{img:'',link:'',alt:''},
+    f:[['img','画像URL','text'],['link','クリックしたときの移動先','link'],['alt','画像の説明（任意）','text']]},
+  banner2:{icon:'🧩',label:'バナー横並び',def:{cols:2,gap:8,items:[{img:'',link:'',alt:''},{img:'',link:'',alt:''}]},
+    f:[['cols','1行の枚数','seg',[[2,'2'],[3,'3'],[4,'4']]]],
+    items:{name:'バナー',max:12,def:{img:'',link:'',alt:''},f:[['img','画像URL','text'],['link','移動先','link']]}},
   heading:{icon:'🔖',label:'見出し',def:{text:'人気ランキング',sub:'',bg:'#E85D26',color:'#ffffff',align:'center',size:22,style:'bar'},
-    f:[['text','見出し','text'],['sub','サブ見出し','text'],['style','デザイン','select',[['bar','帯'],['line','下線'],['plain','文字のみ']]],['bg','色(帯/線)','color'],['color','文字色','color'],['align','文字位置','select',ALIGN],['size','文字サイズ','number']]},
+    f:[['text','見出し','text'],['sub','サブ見出し（任意）','text'],['style','デザイン','seg',[['bar','帯'],['line','下線'],['plain','文字だけ']]],['bg','帯・線の色','color'],['color','文字の色','color'],['align','文字の位置','seg',ALIGN],['size','文字の大きさ','seg',[[16,'小'],[22,'中'],[28,'大']]]]},
   text:{icon:'📝',label:'テキスト',def:{text:'ここに文章を入力します。\n改行もそのまま反映されます。',color:'#333333',bg:'#ffffff',align:'center',size:14},
-    f:[['text','文章','textarea'],['color','文字色','color'],['bg','背景色','color'],['align','文字位置','select',ALIGN],['size','文字サイズ','number']]},
-  products:{icon:'🛍',label:'商品一覧',def:{cols:4,gap:10,showPrice:1,items:[{img:'',name:'商品名',price:'1,980円',link:''},{img:'',name:'商品名',price:'1,980円',link:''},{img:'',name:'商品名',price:'1,980円',link:''},{img:'',name:'商品名',price:'1,980円',link:''}]},
-    f:[['cols','列数','select',[[2,'2列'],[3,'3列'],[4,'4列'],[5,'5列']]],['gap','すき間(px)','number']],
-    items:{name:'商品',max:40,def:{img:'',name:'商品名',price:'1,980円',link:''},f:[['img','商品画像URL','text'],['name','商品名','text'],['price','価格表記','text'],['link','商品ページURL','text']]}},
+    f:[['text','文章','textarea'],['align','文字の位置','seg',ALIGN],['size','文字の大きさ','seg',[[12,'小'],[14,'中'],[18,'大']]],['color','文字の色','color'],['bg','背景の色','color']]},
   menu:{icon:'🔗',label:'ボタンメニュー',def:{cols:3,color:'#ffffff',bg:'#E85D26',items:[{label:'新着',link:''},{label:'ランキング',link:''},{label:'セール',link:''}]},
-    f:[['cols','列数','select',[[2,'2列'],[3,'3列'],[4,'4列'],[5,'5列'],[6,'6列']]],['bg','ボタン色','color'],['color','文字色','color']],
-    items:{name:'ボタン',max:24,def:{label:'ボタン',link:''},f:[['label','表示名','text'],['link','リンク先URL','text']]}},
-  button:{icon:'🔘',label:'大きなボタン',def:{label:'ショップの全商品を見る',link:'',bg:'#E85D26',color:'#ffffff',width:60},
-    f:[['label','表示名','text'],['link','リンク先URL','text'],['bg','ボタン色','color'],['color','文字色','color'],['width','幅(%)','number']]},
-  spacer:{icon:'↕️',label:'余白・区切り線',def:{h:30,line:0,lineColor:'#dddddd'},
-    f:[['h','高さ(px)','number'],['line','区切り線','select',[[0,'なし'],[1,'あり']]],['lineColor','線の色','color']]}
+    f:[['cols','1行のボタン数','seg',[[2,'2'],[3,'3'],[4,'4'],[5,'5']]],['bg','ボタンの色','color'],['color','文字の色','color']],
+    items:{name:'ボタン',max:24,def:{label:'ボタン',link:''},f:[['label','表示名','text'],['link','移動先','link']]}},
+  button:{icon:'🔘',label:'大きなボタン',def:{label:'ショップの全商品を見る',link:'',bg:'#E85D26',color:'#ffffff',width:70},
+    f:[['label','表示名','text'],['link','移動先','link'],['bg','ボタンの色','color'],['color','文字の色','color'],['width','ボタンの幅','seg',[[50,'狭'],[70,'中'],[100,'全幅']]]]},
+  spacer:{icon:'↕️',label:'余白・線',def:{h:30,line:'0',lineColor:'#dddddd'},
+    f:[['h','高さ','seg',[[10,'小'],[30,'中'],[60,'大']]],['line','区切り線','seg',[['0','なし'],['1','あり']]],['lineColor','線の色','color']]}
 };
-let S={width:860,bg:'#ffffff',blocks:[]},SEL=null;
+let S={width:686,bg:'#ffffff',blocks:[]},SEL=null,P={items:[],file:'',at:''};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const clone=o=>JSON.parse(JSON.stringify(o));
 const uid=()=>Math.random().toString(36).slice(2,9);
+const yen=v=>{const n=Number(String(v).replace(/[^\d.]/g,''));return v!==''&&v!=null&&isFinite(n)&&n>0?n.toLocaleString('ja-JP')+'円':String(v||'')};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&Array.isArray(j.blocks))S=Object.assign(S,j)}catch(e){}}
-function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function load(){
+  try{const j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&Array.isArray(j.blocks))S=Object.assign(S,j)}catch(e){}
+  try{const p=JSON.parse(localStorage.getItem(PKEY)||'null');if(p&&Array.isArray(p.items))P=p}catch(e){}
+}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
+function closeModal(id){$(id).classList.remove('show')}
+function toggleMenu(e){e.stopPropagation();$('menu').classList.toggle('show')}
+document.addEventListener('click',()=>$('menu').classList.remove('show'));
 
 /* ---------- HTML生成（Qoo10向け：table＋インラインstyleのみ・JS/classなし） ---------- */
-const img=(it,w)=>`<img src="${esc(it.img)}" alt="${esc(it.alt||it.name||'')}" width="${w}" style="display:block;width:100%;height:auto;border:0;">`;
-const a=(link,inner)=>link?`<a href="${esc(link)}" target="_blank" style="text-decoration:none;color:inherit;">${inner}</a>`:inner;
 const FONT="font-family:'Hiragino Sans','Meiryo',sans-serif;";
-function cellsGrid(cells,cols,gap){ // cells: html[]。左右に gap/2 の余白を持つ単純な表組み（Qoo10で崩れにくい）
+const imgTag=(src,alt,w)=>`<img src="${esc(src)}" alt="${esc(alt||'')}" width="${w}" style="display:block;width:100%;height:auto;border:0;">`;
+const a=(link,inner)=>link?`<a href="${esc(link)}" target="_blank" style="text-decoration:none;color:inherit;display:block;">${inner}</a>`:inner;
+function grid(cells,cols,gap){
   const pct=(100/cols).toFixed(3),h2=Math.round(gap/2);
   let h=`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">`;
   for(let i=0;i<cells.length;i+=cols){
     h+='<tr>';
-    for(let j=0;j<cols;j++){const c=cells[i+j];h+=`<td width="${pct}%" valign="top" style="width:${pct}%;padding:0 ${h2}px ${gap}px;">${c||''}</td>`}
+    for(let j=0;j<cols;j++)h+=`<td width="${pct}%" valign="top" style="width:${pct}%;padding:0 ${h2}px ${gap}px;">${cells[i+j]||''}</td>`;
     h+='</tr>';
   }
   return h+'</table>';
 }
 function genBlock(b,W){
   switch(b.type){
-    case 'banner': return b.img?a(b.link,img(b,W)):'';
+    case 'banner': return b.img?a(b.link,imgTag(b.img,b.alt,W)):'';
     case 'banner2':{
       const cols=+b.cols,g=+b.gap||0,w=Math.floor(W/cols-g);
-      const cells=b.items.filter(i=>i.img).map(i=>a(i.link,img(i,w)));
-      return cells.length?cellsGrid(cells,cols,g):'';}
+      const cells=b.items.filter(i=>i.img).map(i=>a(i.link,imgTag(i.img,i.alt,w)));
+      return cells.length?grid(cells,cols,g):'';}
     case 'heading':{
-      const al=b.align,fs=+b.size||20;
+      const fs=+b.size||22;
       const sub=b.sub?`<div style="font-size:${Math.max(11,Math.round(fs*0.55))}px;font-weight:normal;opacity:.85;margin-top:4px;">${esc(b.sub)}</div>`:'';
-      let st=`${FONT}text-align:${al};font-size:${fs}px;font-weight:bold;padding:14px 10px;color:${b.color};`;
+      let st=`${FONT}text-align:${b.align};font-size:${fs}px;font-weight:bold;padding:14px 12px;color:${b.color};`;
       if(b.style==='bar')st+=`background:${b.bg};`;
-      else if(b.style==='line')st+=`color:${b.color};border-bottom:3px solid ${b.bg};`;
-      else st+=`color:${b.color};`;
+      else if(b.style==='line')st+=`border-bottom:3px solid ${b.bg};margin:0 6px;`;
       return `<div style="${st}">${esc(b.text)}${sub}</div>`;}
     case 'text':
       return `<div style="${FONT}text-align:${b.align};font-size:${+b.size||14}px;line-height:1.8;color:${b.color};background:${b.bg};padding:14px 16px;">${esc(b.text).replace(/\n/g,'<br>')}</div>`;
     case 'products':{
-      const cols=+b.cols,g=+b.gap||0,w=Math.floor(W/cols-g),fs=cols>=5?11:12;
+      const cols=+b.cols,g=+b.gap||10,w=Math.floor(W/cols-g),fs=cols>=4?11:13;
       const cells=b.items.map(i=>{
-        const im=i.img?img(i,w):`<div style="background:#eee;height:${w}px;"></div>`;
-        const nm=`<div style="${FONT}font-size:${fs}px;line-height:1.5;color:#333;margin-top:6px;text-align:left;">${esc(i.name)}</div>`;
-        const pr=i.price?`<div style="${FONT}font-size:${fs+2}px;font-weight:bold;color:#E02020;margin-top:2px;text-align:left;">${esc(i.price)}</div>`:'';
+        const im=i.img?imgTag(i.img,i.name,w):`<div style="background:#eee;height:${w}px;"></div>`;
+        const nm=`<div style="${FONT}font-size:${fs}px;line-height:1.5;color:#333;margin-top:6px;text-align:left;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:${Math.ceil(fs*3)}px;">${esc(i.name)}</div>`;
+        const pr=b.showPrice!=='0'&&i.price?`<div style="${FONT}font-size:${fs+2}px;font-weight:bold;color:#E02020;margin-top:2px;text-align:left;">${esc(yen(i.price))}</div>`:'';
         return a(i.link,im+nm+pr);});
-      return cells.length?cellsGrid(cells,cols,g):'';}
+      return cells.length?grid(cells,cols,g):'';}
     case 'menu':{
-      const cols=+b.cols,g=6;
-      const cells=b.items.map(i=>a(i.link,`<div style="${FONT}background:${b.bg};color:${b.color};text-align:center;font-size:13px;font-weight:bold;padding:11px 4px;border-radius:6px;">${esc(i.label)}</div>`));
-      return cellsGrid(cells,cols,g);}
+      const cells=b.items.map(i=>a(i.link,`<div style="${FONT}background:${b.bg};color:${b.color};text-align:center;font-size:13px;font-weight:bold;padding:12px 4px;border-radius:6px;">${esc(i.label)}</div>`));
+      return grid(cells,+b.cols,6);}
     case 'button':
-      return `<div style="text-align:center;padding:16px 0;"><a href="${esc(b.link)}" target="_blank" style="${FONT}display:inline-block;width:${+b.width||60}%;background:${b.bg};color:${b.color};font-size:16px;font-weight:bold;padding:15px 10px;border-radius:999px;text-decoration:none;">${esc(b.label)}</a></div>`;
-    case 'spacer':
-      return `<div style="height:${+b.h||0}px;line-height:${+b.h||0}px;font-size:0;${+b.line?`border-bottom:1px solid ${b.lineColor};height:${Math.max(0,(+b.h||0)/2)}px;margin-bottom:${Math.max(0,(+b.h||0)/2)}px;`:''}">&nbsp;</div>`;
+      return `<div style="text-align:center;padding:16px 10px;"><a href="${esc(b.link)}" target="_blank" style="${FONT}display:inline-block;width:${+b.width||70}%;background:${b.bg};color:${b.color};font-size:16px;font-weight:bold;padding:15px 10px;border-radius:999px;text-decoration:none;">${esc(b.label)}</a></div>`;
+    case 'spacer':{
+      const h=+b.h||0;
+      return b.line==='1'?`<div style="height:${Math.floor(h/2)}px;border-bottom:1px solid ${b.lineColor};margin:0 10px ${Math.ceil(h/2)}px;font-size:0;line-height:0;">&nbsp;</div>`
+        :`<div style="height:${h}px;font-size:0;line-height:0;">&nbsp;</div>`;}
   }
   return '';
 }
 function genHtml(){
-  const W=S.width;
-  return `<div style="width:${W}px;max-width:100%;margin:0 auto;background:${S.bg};">\n`+
-    S.blocks.map(b=>genBlock(b,W)).filter(Boolean).join('\n')+`\n</div>`;
+  return `<div style="width:${S.width}px;max-width:100%;margin:0 auto;background:${S.bg};">\n`+
+    S.blocks.map(b=>genBlock(b,S.width)).filter(Boolean).join('\n')+`\n</div>`;
 }
 function check(){
   const w=[];
   S.blocks.forEach((b,i)=>{
     const n=`${i+1}. ${TYPES[b.type].label}`;
-    const imgs=b.items?b.items:[b];
-    if(['banner','banner2','products'].includes(b.type)){
-      const e=imgs.filter(x=>!x.img).length;
-      if(e)w.push(`${n}：画像URL未入力 ${e}件${b.type==='products'?'（グレー枠で表示）':'（出力されません）'}`);
-      const bad=imgs.filter(x=>x.img&&!/^https:\/\//i.test(x.img)).length;
-      if(bad)w.push(`${n}：https:// で始まらない画像URL ${bad}件（Qoo10で表示されない可能性）`);
+    if(b.type==='products'){
+      if(!b.items.length)w.push(`${n}：商品が選ばれていません`);
+      const ni=b.items.filter(x=>!x.img).length;if(ni)w.push(`${n}：画像の無い商品 ${ni}件`);
+      const nl=b.items.filter(x=>!x.link).length;if(nl)w.push(`${n}：リンクの無い商品 ${nl}件（Qoo10商品コードが無いため）`);
     }
-    if(b.type==='button'&&!b.link)w.push(`${n}：リンク先未入力`);
+    if(b.type==='banner'||b.type==='banner2'){
+      const imgs=b.items||[b];
+      const e=imgs.filter(x=>!x.img).length;if(e)w.push(`${n}：画像URLが未入力 ${e}件（出力されません）`);
+      const bad=imgs.filter(x=>x.img&&!/^https:\/\//i.test(x.img)).length;if(bad)w.push(`${n}：https:// で始まらない画像URL ${bad}件`);
+    }
+    if(b.type==='button'&&!b.link)w.push(`${n}：移動先が未入力`);
   });
   return w;
 }
 
-/* ---------- UI ---------- */
+/* ---------- 画面描画 ---------- */
 function render(){
-  $('width').value=S.width;$('pageBg').value=S.bg;
-  // palette
-  $('palette').innerHTML=Object.entries(TYPES).map(([k,t])=>`<button onclick="addBlock('${k}')">${t.icon}<br>${t.label}</button>`).join('');
-  // list
+  $('width').value=S.width;
+  renderProductStatus();
+  $('palette').innerHTML=Object.entries(TYPES).map(([k,t])=>`<button onclick="addBlock('${k}')"><b>${t.icon}</b>${t.label}</button>`).join('');
+  $('blkCount').textContent=S.blocks.length?S.blocks.length+'パーツ':'';
   $('blockList').innerHTML=S.blocks.length?S.blocks.map((b,i)=>`
     <div class="blk ${b.id===SEL?'sel':''}" onclick="selBlock('${b.id}')">
-      <span>${TYPES[b.type].icon}</span><span class="nm">${i+1}. ${TYPES[b.type].label}</span>
-      <button title="上へ" onclick="event.stopPropagation();mv(${i},-1)">▲</button>
-      <button title="下へ" onclick="event.stopPropagation();mv(${i},1)">▼</button>
-      <button title="複製" onclick="event.stopPropagation();dup(${i})">⧉</button>
-      <button title="削除" onclick="event.stopPropagation();del(${i})">✕</button>
-    </div>`).join(''):'<div class="empty">上のボタンから<br>パーツを追加してください</div>';
+      <span class="no">${i+1}</span><span>${TYPES[b.type].icon}</span><span class="nm">${esc(blockTitle(b))}</span>
+      <button class="icon-btn" title="上へ" onclick="event.stopPropagation();mv(${i},-1)">▲</button>
+      <button class="icon-btn" title="下へ" onclick="event.stopPropagation();mv(${i},1)">▼</button>
+    </div>`).join(''):'<div class="empty">「パーツを追加」から<br>好きな部品を足してください</div>';
   renderEditor();
-  const html=genHtml();
-  $('pv').style.width=S.width+'px';$('pv').innerHTML=html;
-  $('codeTa').value=html;
-  const w=check();$('warn').classList.toggle('show',w.length>0);$('warn').innerHTML=w.length?'⚠️ 確認してください<br>'+w.map(esc).join('<br>'):'';
+  renderPreview();
+}
+function blockTitle(b){
+  const t=TYPES[b.type].label;
+  if(b.type==='heading')return b.text||t;
+  if(b.type==='products')return `${t}（${b.items.length}件）`;
+  if(b.type==='button')return b.label||t;
+  return t;
+}
+function renderPreview(){
+  const W=S.width;
+  $('pv').style.width=W+'px';$('pv').style.background=S.bg;
+  $('pv').innerHTML=S.blocks.length?S.blocks.map((b,i)=>{
+    const h=genBlock(b,W)||`<div class="pv-ph">${TYPES[b.type].icon} ${TYPES[b.type].label}<br><small>${b.type==='products'?'右の「＋ 商品を選ぶ」から商品を追加':'右で内容を入力してください'}</small></div>`;
+    return `<div class="pvb ${b.id===SEL?'sel':''}" data-id="${b.id}" onclick="selBlock('${b.id}',true)"><span class="tag">${i+1}. ${TYPES[b.type].label}</span>${h}</div>`;
+  }).join(''):'<div class="pv-ph" style="padding:120px 20px">ここにページのプレビューが表示されます</div>';
+  // プレビュー内のリンクは開かない
+  $('pv').querySelectorAll('a').forEach(x=>x.addEventListener('click',e=>e.preventDefault()));
+  fitPreview();
+  const w=check();$('warn').classList.toggle('show',w.length>0);
+  $('warn').innerHTML=w.length?'⚠️ <b>確認してください</b><br>'+w.map(esc).join('<br>'):'';
+}
+function fitPreview(){ // 枠に収まるよう縮小表示
+  const area=$('pvArea'),pv=$('pv'),avail=area.clientWidth-40,W=S.width;
+  const sc=Math.min(1,avail/W);
+  pv.style.transform=sc<1?`scale(${sc})`:'';
+  pv.style.marginLeft=sc<1?'0':'auto';
+  area.style.height=sc<1?(pv.offsetHeight*sc+40)+'px':'';
+}
+window.addEventListener('resize',fitPreview);
+
+function renderProductStatus(){
+  $('pdStatus').innerHTML=P.items.length
+    ?`<div class="pd-ok">✅ <b>${P.items.length.toLocaleString()}件</b> 読み込み済み<br><small>${esc(P.file)}（${esc(P.at)}）</small></div>
+      <button class="btn sm block" style="margin-top:8px" onclick="openProductModal('load')">🔄 新しいデータに入れ替える</button>`
+    :`<div class="pd-none">QSMの<b>商品データ</b>（Excel / CSV）を読み込むと、<b>商品を選ぶだけ</b>で画像・商品名・価格・リンクが自動で入ります。</div>
+      <button class="btn pri block" style="margin-top:10px" onclick="openProductModal('load')">📊 商品データを読み込む</button>`;
+}
+
+/* ---------- 編集パネル ---------- */
+function colorHtml(k,v,path){
+  return `<div class="color-row">${SWATCH.map(c=>`<span class="sw" style="background:${c}" onclick="setVal('${path}','${k}','${c}',true)"></span>`).join('')}
+    <input type="color" value="${esc(v)}" oninput="setVal('${path}','${k}',this.value)" onchange="renderEditor()"></div>`;
 }
 function fieldHtml(f,obj,path){
   const [k,label,type,opts]=f,v=obj[k];
   let inp;
   if(type==='textarea')inp=`<textarea oninput="setVal('${path}','${k}',this.value)">${esc(v)}</textarea>`;
-  else if(type==='select')inp=`<select onchange="setVal('${path}','${k}',this.value,true)">${opts.map(o=>`<option value="${o[0]}" ${String(o[0])===String(v)?'selected':''}>${o[1]}</option>`).join('')}</select>`;
-  else if(type==='color')inp=`<input type="color" value="${esc(v)}" oninput="setVal('${path}','${k}',this.value)">`;
-  else inp=`<input type="${type}" value="${esc(v)}" oninput="setVal('${path}','${k}',this.value)" ${type==='text'?'placeholder="'+(k==='img'?'https://...':'')+'"':''}>`;
+  else if(type==='seg')inp=`<div class="seg">${opts.map(o=>`<button class="${String(o[0])===String(v)?'on':''}" onclick="setVal('${path}','${k}','${o[0]}',true)">${o[1]}</button>`).join('')}</div>`;
+  else if(type==='color')inp=colorHtml(k,v,path);
+  else if(type==='link')inp=`<div class="link-row"><input type="text" value="${esc(v)}" placeholder="https://www.qoo10.jp/..." oninput="setVal('${path}','${k}',this.value)"><button class="btn sm" title="商品ページのURLを入れる" onclick="openProductModal('link','${path}')">🛍 商品から</button></div>`;
+  else inp=`<input type="text" value="${esc(v)}" ${k==='img'?'placeholder="https://..."':''} oninput="setVal('${path}','${k}',this.value)">`;
   return `<div class="fld"><label>${label}</label>${inp}</div>`;
 }
 function renderEditor(){
-  const b=S.blocks.find(x=>x.id===SEL),el=$('editor');
-  if(!b){el.innerHTML='<div class="empty">左の一覧でパーツを選ぶと<br>ここで内容を編集できます</div>';return}
-  const T=TYPES[b.type];let h=`<div style="font-weight:700;margin-bottom:10px;font-size:13px;">${T.icon} ${T.label}</div>`;
-  h+=T.f.map(f=>fieldHtml(f,b,'')).join('');
-  if(T.items){
-    h+=`<div style="font-size:12px;font-weight:700;margin:6px 0;">${T.items.name}一覧（${b.items.length}）</div>`;
-    h+=b.items.map((it,i)=>`<div class="item"><div class="item-h"><span>${T.items.name} ${i+1}</span>
-      <button class="btn sm" onclick="itemMv(${i},-1)">▲</button> <button class="btn sm" onclick="itemMv(${i},1)">▼</button> <button class="btn sm" onclick="itemDel(${i})">✕</button></div>
-      ${T.items.f.map(f=>fieldHtml(f,it,String(i))).join('')}</div>`).join('');
-    if(b.items.length<T.items.max)h+=`<button class="btn" style="width:100%" onclick="itemAdd()">＋ ${T.items.name}を追加</button>`;
+  const b=cur(),el=$('editor');
+  if(!b){el.innerHTML='<div class="empty">プレビューか左の「ページの構成」で<br>パーツをクリックすると、ここで編集できます</div>';return}
+  const T=TYPES[b.type],i=S.blocks.indexOf(b);
+  let h=`<div class="ed-title">${T.icon} ${T.label}<span style="margin-left:auto;display:flex;gap:2px">
+    <button class="icon-btn" title="上へ" onclick="mv(${i},-1)">▲</button><button class="icon-btn" title="下へ" onclick="mv(${i},1)">▼</button>
+    <button class="icon-btn" title="複製" onclick="dup(${i})">⧉</button><button class="icon-btn" title="削除" onclick="del(${i})">🗑</button></span></div>`;
+  if(T.product){
+    h+=`<button class="btn pri block" onclick="openProductModal('add')">＋ 商品を選ぶ</button>`;
+    h+=`<div class="sec">選んだ商品<span>${b.items.length}件</span></div>`;
+    h+=b.items.length?b.items.map((it,j)=>`<div class="pitem">
+        ${it.img?`<img src="${esc(it.img)}" alt="">`:'<div class="noimg"></div>'}
+        <div class="bd"><input value="${esc(it.name)}" title="表示する商品名" oninput="setVal('${j}','name',this.value)">
+          <input value="${esc(it.price)}" title="価格" style="width:110px" oninput="setVal('${j}','price',this.value)">
+          <div class="code">${esc(it.code||'コードなし')}${it.sku?' / '+esc(it.sku):''}</div></div>
+        <div class="ops"><button class="icon-btn" onclick="itemMv(${j},-1)">▲</button><button class="icon-btn" onclick="itemMv(${j},1)">▼</button><button class="icon-btn" onclick="itemDel(${j})">✕</button></div>
+      </div>`).join(''):'<div class="empty" style="padding:12px">まだ商品がありません</div>';
+    h+=`<div class="sec">表示の設定</div>`+T.f.map(f=>fieldHtml(f,b,'')).join('');
+  }else{
+    h+=T.f.map(f=>fieldHtml(f,b,'')).join('');
+    if(T.items){
+      h+=`<div class="sec">${T.items.name}<span>${b.items.length}件</span></div>`;
+      h+=b.items.map((it,j)=>`<div class="item"><div class="item-h"><span>${T.items.name} ${j+1}</span>
+        <button class="icon-btn" onclick="itemMv(${j},-1)">▲</button><button class="icon-btn" onclick="itemMv(${j},1)">▼</button><button class="icon-btn" onclick="itemDel(${j})">✕</button></div>
+        ${T.items.f.map(f=>fieldHtml(f,it,String(j))).join('')}</div>`).join('');
+      if(b.items.length<T.items.max)h+=`<button class="btn dashed block" onclick="itemAdd()">＋ ${T.items.name}を追加</button>`;
+    }
   }
-  // フォーカスを失わないよう、入力中は再描画しない（setVal側で制御）
   el.innerHTML=h;
 }
 function cur(){return S.blocks.find(x=>x.id===SEL)}
 function setVal(path,k,v,rerender){
   const b=cur();if(!b)return;
   (path===''?b:b.items[+path])[k]=v;
-  if(k==='cols'||k==='h'){}
   save();
-  // 入力欄はそのまま、プレビューとリストだけ更新
-  const html=genHtml();$('pv').innerHTML=html;$('codeTa').value=html;
-  const w=check();$('warn').classList.toggle('show',w.length>0);$('warn').innerHTML=w.length?'⚠️ 確認してください<br>'+w.map(esc).join('<br>'):'';
+  if(rerender){renderEditor();}
+  if(k==='text'||k==='label')renderList();
+  renderPreview();
 }
-function addBlock(t){const b=Object.assign({id:uid(),type:t},clone(TYPES[t].def));
-  // 選択中の次に挿入
+function renderList(){ // 構成リストの名前だけ更新（入力中のフォーカスを保つ）
+  document.querySelectorAll('#blockList .blk .nm').forEach((el,i)=>{if(S.blocks[i])el.textContent=blockTitle(S.blocks[i])});
+}
+function addBlock(t){
+  const b=Object.assign({id:uid(),type:t},clone(TYPES[t].def));
   const i=S.blocks.findIndex(x=>x.id===SEL);
   if(i>=0)S.blocks.splice(i+1,0,b);else S.blocks.push(b);
-  SEL=b.id;save();render()}
-function selBlock(id){SEL=id;render()}
+  SEL=b.id;save();render();
+  if(t==='products')openProductModal('add');
+}
+function selBlock(id,fromPv){SEL=id;render();if(fromPv&&innerWidth<=1250)$('editor').scrollIntoView({behavior:'smooth'})}
 function mv(i,d){const j=i+d;if(j<0||j>=S.blocks.length)return;[S.blocks[i],S.blocks[j]]=[S.blocks[j],S.blocks[i]];save();render()}
 function dup(i){const c=clone(S.blocks[i]);c.id=uid();S.blocks.splice(i+1,0,c);SEL=c.id;save();render()}
-function del(i){if(!confirm('このパーツを削除しますか？'))return;const [r]=S.blocks.splice(i,1);if(SEL===r.id)SEL=null;save();render()}
+function del(i){if(!confirm('このパーツを削除しますか？'))return;S.blocks.splice(i,1);SEL=S.blocks[Math.min(i,S.blocks.length-1)]?.id||null;save();render()}
 function itemAdd(){const b=cur();b.items.push(clone(TYPES[b.type].items.def));save();render()}
 function itemDel(i){const b=cur();b.items.splice(i,1);save();render()}
 function itemMv(i,d){const b=cur(),j=i+d;if(j<0||j>=b.items.length)return;[b.items[i],b.items[j]]=[b.items[j],b.items[i]];save();render()}
-function resetAll(){if(!confirm('すべてのパーツを消して最初からにします。よろしいですか？'))return;S.blocks=[];SEL=null;save();render()}
+function resetAll(){if(!confirm('作ったページをすべて消して最初からにします。よろしいですか？\n（商品データは残ります）'))return;S.blocks=[];SEL=null;save();render()}
+
+/* ---------- 商品データの読み込み ---------- */
+const COLS={
+  code:['item_number','商品コード','qoo10商品コード','商品番号'],
+  sku:['seller_unique_item_id','販売者商品コード','販売者商品ID','管理コード','品番'],
+  name:['item_name','商品名'],
+  price:['price_yen','販売価格','価格','price'],
+  img:['image_main_file','代表画像','メイン画像','商品画像','image_main','画像']
+};
+const norm=s=>String(s==null?'':s).trim().toLowerCase().replace(/[\s　]/g,'');
+function findCol(headers,keys){
+  const H=headers.map(norm);
+  for(const k of keys){const i=H.indexOf(norm(k));if(i>=0)return i}
+  for(const k of keys){const i=H.findIndex(h=>h&&h.includes(norm(k)));if(i>=0)return i}
+  return -1;
+}
+const cleanName=s=>String(s||'').trim()
+  .replace(/^(?:[＼\\][^／\/]*[／\/]|【[^】]*】|\[[^\]]*\]|★[^★]*★|☆[^☆]*☆|◆[^◆]*◆|■[^■]*■|\s)+/,'').trim()||String(s||'').trim();
+function parseRows(rows,fileName){
+  let hi=-1,map=null;
+  for(let i=0;i<Math.min(rows.length,15);i++){
+    const hd=(rows[i]||[]).map(x=>x==null?'':String(x));
+    const m={};for(const k in COLS)m[k]=findCol(hd,COLS[k]);
+    if(m.name>=0&&(m.code>=0||m.sku>=0)){hi=i;map=m;break}
+  }
+  if(hi<0)throw new Error('「item_name（商品名）」と「item_number / seller_unique_item_id（商品コード）」の列が見つかりません');
+  const items=[],seen=new Set();
+  for(const r of rows.slice(hi+1)){
+    const g=k=>map[k]>=0&&r[map[k]]!=null?String(r[map[k]]).trim():'';
+    const name=g('name'),code=g('code'),sku=g('sku'),price=g('price');let img=g('img');
+    if(!name||!(code||sku))continue;
+    const priceOk=/^\d[\d,]*(\.\d+)?$/.test(price);
+    if(!priceOk&&!/^https?:\/\//i.test(img))continue; // 説明行などを除外
+    if(code&&!/^\d+$/.test(code)&&!sku)continue;
+    const key=code||sku;if(seen.has(key))continue;seen.add(key);
+    if(img&&/^http:\/\//i.test(img))img=img.replace(/^http:/i,'https:');
+    items.push({code:/^\d+$/.test(code)?code:'',sku,name,price:priceOk?price.replace(/,/g,''):'',img});
+  }
+  if(!items.length)throw new Error('商品が1件も読み取れませんでした');
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  P={items,file:fileName,at:`${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`};
+  try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){toast('⚠️ 件数が多くブラウザに保存できませんでした（このページを開いている間は使えます）')}
+  return {items,noImg:items.filter(x=>!x.img).length,noCode:items.filter(x=>!x.code).length};
+}
+function readProductFile(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        let rows;
+        if(/\.csv$|\.txt$|\.tsv$/i.test(file.name)){
+          const buf=new Uint8Array(e.target.result);
+          let txt=new TextDecoder('utf-8').decode(buf);
+          if(txt.includes('�'))txt=new TextDecoder('shift_jis').decode(buf);
+          const wb=XLSX.read(txt,{type:'string',raw:true});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:false});
+        }else{
+          const wb=XLSX.read(e.target.result,{type:'array'});
+          let last;for(const sn of wb.SheetNames){
+            rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false});
+            try{return res(parseRows(rows,file.name))}catch(err){last=err}
+          }
+          throw last;
+        }
+        res(parseRows(rows,file.name));
+      }catch(err){rej(err)}
+    };
+    r.onerror=()=>rej(new Error('ファイルを読み込めませんでした'));
+    r.readAsArrayBuffer(file);
+  });
+}
+
+/* ---------- 商品選択モーダル ---------- */
+let PM={mode:'add',path:'',q:'',picked:[],tab:'search'};
+function openProductModal(mode,path){
+  $('menu').classList.remove('show');
+  PM={mode,path:path||'',q:'',picked:[],tab:'search'};
+  $('pmBg').classList.add('show');renderPM();
+}
+function renderPM(){
+  const body=$('pmBody'),foot=$('pmFoot');
+  if(PM.mode==='load'||!P.items.length){
+    body.innerHTML=`<div class="upload-zone" id="pz"><input type="file" accept=".xlsx,.xls,.csv,.txt" onchange="onPF(this.files[0])"><div class="ic">📊</div><p>Qoo10の商品データをドロップ</p><small>またはクリックして選択（.xlsx / .csv）</small></div>
+      <div id="pfStat"></div>
+      <div class="rule-box" style="margin-top:14px">
+        <b>使えるデータ：</b>QSMの商品一括ダウンロードで保存したExcel / CSV（「Qoo10 商品データ補完ツール」で使っているファイルと同じ形式）<br>
+        <b>使う列：</b>item_number（Qoo10商品コード→リンク）／item_name（商品名）／price_yen（価格）／image_main_file（画像）<br>
+        一度読み込むとこのブラウザに保存され、次回からは読み込み不要です。商品を追加・価格変更したときだけ読み込み直してください。
+      </div>`;
+    const z=$('pz');
+    ['dragover','dragenter'].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.add('drag')}));
+    ['dragleave','drop'].forEach(ev=>z.addEventListener(ev,()=>z.classList.remove('drag')));
+    z.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files[0])onPF(e.dataTransfer.files[0])});
+    foot.innerHTML=`<div class="r"><button class="btn" onclick="closeModal('pmBg')">閉じる</button></div>`;
+    return;
+  }
+  const single=PM.mode==='link';
+  if(PM.tab==='search'){
+    body.innerHTML=`${single?'':`<div class="tab-bar"><button class="tab-btn active">🔍 検索して選ぶ</button><button class="tab-btn" onclick="PM.tab='paste';renderPM()">📋 品番をまとめて貼り付け</button></div>`}
+      <input class="inp" id="pmQ" placeholder="商品名・品番・Qoo10商品コードで検索（スペース区切りで絞り込み）" value="${esc(PM.q)}" oninput="PM.q=this.value;renderPMGrid()">
+      <div class="pv-note" style="margin-top:8px" id="pmCnt"></div>
+      <div class="pgrid" id="pmGrid"></div>`;
+    renderPMGrid();
+    setTimeout(()=>{const q=$('pmQ');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}},0);
+  }else{
+    body.innerHTML=`<div class="tab-bar"><button class="tab-btn" onclick="PM.tab='search';renderPM()">🔍 検索して選ぶ</button><button class="tab-btn active">📋 品番をまとめて貼り付け</button></div>
+      <textarea class="inp" id="pmPaste" style="height:220px;font-family:monospace" placeholder="品番（販売者商品コード）またはQoo10商品コードを1行に1つずつ貼り付け&#10;例）&#10;DR-MG-585&#10;CAL-034"></textarea>
+      <div class="pv-note" style="margin-top:8px">Excelの列をそのままコピーして貼り付けられます。貼り付けた順番で追加されます。</div>
+      <div id="pasteRes" style="margin-top:8px;font-size:13px"></div>`;
+  }
+  const n=PM.picked.length;
+  foot.innerHTML=single
+    ?`<span class="pv-note">移動先にしたい商品をクリック</span><div class="r"><button class="btn" onclick="closeModal('pmBg')">キャンセル</button></div>`
+    :PM.tab==='search'
+      ?`<span class="pv-note" id="pmPicked">${n?n+'件 選択中（クリックした順に並びます）':'商品をクリックして選択'}</span><div class="r"><button class="btn" onclick="closeModal('pmBg')">キャンセル</button><button class="btn pri" id="pmAdd" ${n?'':'disabled'} onclick="addPicked()">選んだ ${n} 件を追加</button></div>`
+      :`<div class="r"><button class="btn" onclick="closeModal('pmBg')">キャンセル</button><button class="btn pri" onclick="addPasted()">貼り付けた品番を追加</button></div>`;
+}
+function renderPMGrid(){
+  const words=PM.q.trim().toLowerCase().split(/[\s　]+/).filter(Boolean);
+  const hit=P.items.filter(p=>{const t=(p.name+' '+p.code+' '+p.sku).toLowerCase();return words.every(w=>t.includes(w))});
+  const show=hit.slice(0,120),single=PM.mode==='link';
+  const used=new Set(((cur()&&cur().type==='products')?cur().items:[]).map(x=>x.code||x.sku));
+  $('pmCnt').textContent=`${hit.length.toLocaleString()}件${hit.length>show.length?'（先頭120件を表示。キーワードで絞り込んでください）':''}`;
+  $('pmGrid').innerHTML=show.map(p=>{
+    const k=p.code||p.sku,on=PM.picked.includes(k);
+    return `<div class="pcard ${on?'on':''}" onclick="pickP('${esc(k)}')">
+      ${p.img?`<img src="${esc(p.img)}" loading="lazy" alt="">`:'<div class="noimg"></div>'}
+      ${single?'':`<div class="ck">${on?PM.picked.indexOf(k)+1:''}</div>`}
+      ${!single&&used.has(k)?'<span class="used">追加済み</span>':''}
+      <div class="nm">${esc(p.name)}</div><div class="pr">${esc(yen(p.price))}</div><div class="cd">${esc(p.sku||'')} ${esc(p.code)}</div></div>`;
+  }).join('')||'<div class="empty">見つかりませんでした</div>';
+}
+const findP=k=>P.items.find(p=>(p.code&&p.code===k)||(p.sku&&p.sku===k));
+function pickP(k){
+  if(PM.mode==='link'){
+    const p=findP(k),b=cur();if(!p||!b)return;
+    if(!p.code){toast('⚠️ この商品はQoo10商品コードが無いためリンクを作れません');return}
+    (PM.path===''?b:b.items[+PM.path]).link=qooUrl(p.code);
+    if(b.type==='banner'&&PM.path===''&&!b.alt)b.alt=cleanName(p.name);
+    save();closeModal('pmBg');render();toast('🔗 商品ページのURLを入れました');return;
+  }
+  const i=PM.picked.indexOf(k);if(i>=0)PM.picked.splice(i,1);else PM.picked.push(k);
+  renderPMGrid();
+  const n=PM.picked.length;
+  $('pmPicked').textContent=n?n+'件 選択中（クリックした順に並びます）':'商品をクリックして選択';
+  $('pmAdd').disabled=!n;$('pmAdd').textContent=`選んだ ${n} 件を追加`;
+}
+const toItem=p=>({code:p.code,sku:p.sku,name:cleanName(p.name),price:p.price,img:p.img,link:qooUrl(p.code)});
+function addItems(list){
+  let b=cur();
+  if(!b||b.type!=='products'){addBlock('products');b=cur();closeModal('pmBg')}
+  list.forEach(p=>b.items.push(toItem(p)));
+  save();closeModal('pmBg');render();toast(`✅ ${list.length}件の商品を追加しました`);
+}
+function addPicked(){addItems(PM.picked.map(findP).filter(Boolean))}
+function addPasted(){
+  const lines=$('pmPaste').value.split(/[\r\n\t,]+/).map(s=>s.trim()).filter(Boolean);
+  const ok=[],ng=[];
+  lines.forEach(l=>{const p=findP(l)||P.items.find(x=>x.sku&&x.sku.toLowerCase()===l.toLowerCase());p?ok.push(p):ng.push(l)});
+  if(!ok.length){$('pasteRes').innerHTML=`<span style="color:#991B1B">❌ 一致する商品がありませんでした</span>`;return}
+  if(ng.length&&!confirm(`見つからなかった品番が ${ng.length}件あります：\n${ng.slice(0,15).join('\n')}${ng.length>15?'\n…':''}\n\n見つかった ${ok.length}件だけ追加しますか？`))return;
+  addItems(ok);
+}
+async function onPF(file){
+  if(!file)return;
+  try{
+    const r=await readProductFile(file);
+    let msg=`✅ ${r.items.length.toLocaleString()}件の商品を読み込みました`;
+    if(r.noImg)msg+=`（画像なし ${r.noImg}件）`;
+    if(r.noCode)msg+=`<br>⚠️ Qoo10商品コード（item_number）が無い商品 ${r.noCode}件はリンクを作れません`;
+    render();
+    if(PM.mode==='load'){$('pfStat').innerHTML=`<div class="pd-ok" style="margin-top:10px">${msg}</div>`;PM.mode='add';setTimeout(()=>{if($('pmBg').classList.contains('show')){if(cur()&&cur().type==='products')renderPM();else closeModal('pmBg')}},1200)}
+    else{toast('✅ 商品データを読み込みました');renderPM()}
+  }catch(err){$('pfStat').innerHTML=`<div class="pd-none" style="margin-top:10px;background:var(--red-light);color:#991B1B;border-color:#FECACA">❌ ${esc(err.message)}</div>`}
+}
 
 /* ---------- 出力 ---------- */
+function openPublish(){
+  const w=check();
+  $('pubWarn').innerHTML=w.length?`<div class="warn show" style="border-radius:8px;margin-bottom:12px;border:1px solid #FECACA">⚠️ <b>未入力があります</b>（このままでも反映できます）<br>${w.map(esc).join('<br>')}</div>`:'';
+  $('pubBg').classList.add('show');
+}
+function openCode(){$('codeTa').value=genHtml();$('codeBg').classList.add('show')}
 function copyHtml(){
   const t=genHtml();
-  const done=()=>toast('✅ HTMLをコピーしました。QSMに貼り付けてください');
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>{$('codeTa').select();document.execCommand('copy');done()});
-  else{$('codeTa').select();document.execCommand('copy');done()}
+  const done=()=>toast('📋 コピーしました。QSMのHTML入力欄に貼り付けてください');
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,fb);else fb();
 }
-function dl(name,text,mime){const u=URL.createObjectURL(new Blob([text],{type:mime}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
-function downloadHtml(){dl('qoo10-top.html','<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>Qoo10 トップ</title></head><body style="margin:0;">\n'+genHtml()+'\n</body></html>','text/html')}
-function exportJson(){const d=new Date(),p=n=>String(n).padStart(2,'0');dl(`qoo10-top-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`,JSON.stringify(S,null,1),'application/json');toast('💾 保存しました（あとで「読み込み」で再編集できます）')}
-function importJson(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!Array.isArray(j.blocks))throw 0;S=Object.assign({width:860,bg:'#ffffff'},j);SEL=null;save();render();toast('📂 読み込みました')}catch(e){alert('読み込めないファイルです')}};r.readAsText(f);inp.value=''}
+function dl(name,text,mime){const u=URL.createObjectURL(new Blob([text],{type:mime}));const x=document.createElement('a');x.href=u;x.download=name;x.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
+const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`};
+function downloadHtml(){dl(`qoo10-top-${stamp()}.html`,'<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>Qoo10 トップ</title></head><body style="margin:0;">\n'+genHtml()+'\n</body></html>','text/html')}
+function exportJson(){dl(`qoo10-top-${stamp()}.json`,JSON.stringify(S,null,1),'application/json');toast('💾 保存しました（「保存した作業を開く」で続きから編集できます）')}
+function importJson(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!Array.isArray(j.blocks))throw 0;S=Object.assign({width:686,bg:'#ffffff'},j);SEL=S.blocks[0]?.id||null;save();render();toast('📂 読み込みました')}catch(e){alert('読み込めないファイルです')}};r.readAsText(f);inp.value=''}
 
+/* ---------- 起動 ---------- */
 load();
-if(!S.blocks.length){ // 初回サンプル
+// 旧バージョンの保存データの移行（商品一覧・余白の形式）
+S.blocks.forEach(b=>{
+  if(b.type==='products')b.items=(b.items||[]).filter(i=>i.img||i.link||(i.name&&i.name!=='商品名'));
+  if(b.type==='spacer')b.line=String(b.line||'0');
+});
+if(!S.blocks.length){
   S.blocks=['banner','menu','heading','products'].map(t=>Object.assign({id:uid(),type:t},clone(TYPES[t].def)));
 }
 SEL=S.blocks[0]&&S.blocks[0].id;render();

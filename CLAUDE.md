@@ -60,6 +60,11 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - カタログPDF・画像（JPG/PNG/WebP）の品番・JAN・バリエーション名・価格をExcelマスタとOCR照合する校正チェックアプリ。容量制限なし（50MB超のPDFも動作確認済み）
 - ライブラリは `catalog-check/lib/` に同梱（SheetJS / Tesseract.js + traineddata / ZXing バーコード読取）。pdf.js は `design-preview/lib/` を共用しているため、design-preview の lib を移動・削除する場合は注意
 
+### qoo10-top-editor（Qoo10 メインページ編集・2026-10-15）
+- パーツ（商品一覧・バナー・見出し等）を並べて、QSM ＞ 基本情報 ＞ ショップ管理 ＞ メインページ（フリーフォーム ＞ HTML方式）に貼る HTML（table＋インラインstyleのみ）を作るアプリ。QSMとの自動連携は無し（コピー＆貼り付け）
+- 商品はQSMの商品一括ダウンロード（Excel/CSV）を読み込んで選ぶ（`item_number`→リンク `https://www.qoo10.jp/g/コード`、`item_name`・`price_yen`・`image_main_file`）。データは localStorage（`qoo10_top_products_v1`）、作業は `qoo10_top_editor_v1`
+- 作業中の入力を消さないため `APP_VERSION` の自動リロードは付けていない
+
 ### 他リポジトリから移したアプリ（2026-10-11）
 - `sales-order-tool/` `frame-estimator/` `apj-order/` `shopify-converter/` `raffinart-stock-tool/` `goq-order-tool/` は、旧リポジトリ（`elcommun-◯◯` など）から移した単体HTMLアプリ。公開URLは `https://elcommun.github.io/app/フォルダ名/`
 - `apj-order/`（発注書作成のHTML）は `apj-auto/`（GoQ自動化のPython）とは別物
