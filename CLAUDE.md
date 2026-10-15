@@ -7,6 +7,8 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 
 **URL（GitHub Pages）**: `elcommun/app` の `main` ブランチで公開。
 
+**リポジトリ名（2026-10-15 ユーザー指示）**: 旧名 `Claude-App`（`claude-app`）は `app` に改名済みで、もう存在しない・一切使わない。**今後作るアプリはほとんど `elcommun/app` の配下に作る。** GitHub の操作（PR・マージなど）は必ず `elcommun/app` に対して行う。セッションの対象リポジトリに `app` が無いときは `add_repo`（push権限）で追加する。
+
 ---
 
 ## 共通データ資産（他アプリでも再利用可・要提案）
