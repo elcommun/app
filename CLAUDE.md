@@ -78,6 +78,13 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - アプリで**外部ライブラリを新しく読み込む**ときは、CDN は `cdnjs.cloudflare.com` / `cdn.jsdelivr.net` / `unpkg.com` / `code.jquery.com` のどれかにすること（`make-offline.py` が自動で手元に保存して書き換える）。それ以外のホストの外部読み込み（Web フォント以外）は、バックアップがオフラインで動かなくなるので避ける。`fetch()` で同じフォルダ外のファイルを読む作りも `file://` では動かないので、`<script src>` で読む方式にする
 - `backup.sh` / `install.sh` を変更したら、ユーザーに install.sh の再実行を案内する（`make-offline.py` は自動で最新になる）
 
+### qoo10-convert のバージョン番号（2026-10-15 新規）
+- `qoo10-convert/index.html` に `const APP_VERSION = N;`（フッターの `#verBadge` に `vN` 表示）がある。**変更してコミットするたびに `APP_VERSION` を必ず1つ増やすこと**。3分ごとにサーバー側と比較し、楽天CSV読込済みでなければ自動リロード
+- 楽天 dl-normal-item.csv（＋任意で dl-item-cat.csv）から、Qoo10 の ItemInfo 形式 xlsx（ヘッダー4行＋データ、50列）を作る。全商品入りCSVから「商品管理番号の貼り付け」「Qoo10登録済みxlsx（除外）」で対象を抽出する
+- 変換ルール（Qoo10に登録済みの100商品と突き合わせて決定。価格99/100・カテゴリ96/100一致）: 価格＝SKU最安値×1.1、オプション＝`キー||*選択肢||*差額||*在庫||*コード`を`$$`連結、商品説明＝販売説明文＋スペック（`h2`→`p`・リンクは`#`）、送料・原産地は `qoo10-data-add` と同じ `SHIPPING_MAP`/`ORIGIN_MAP`（変えるときは両方そろえる）
+- カテゴリは `DEFAULT_GENRE`（ジャンルID→Qoo10カテゴリ。登録済み商品から作成）＋画面で追加。ヘッダー4行（`QHDR`）は Qoo10 の ItemInfo テンプレートそのもの。Qoo10 側のテンプレートが変わったら差し替える
+- 画像は楽天の画像URLをそのまま入れる（Qoo10 が取り込めるかは実登録で要確認）
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
