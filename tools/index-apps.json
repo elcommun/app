@@ -25,7 +25,7 @@
       {"dir": "rakuten-filter", "name": "楽天データ絞り込みフィルター"},
       {"dir": "rakuten-image-dl", "name": "楽天画像ダウンローダー"},
       {"dir": "qoo10-data-add", "name": "Qoo10 商品データ補完ツール"},
-      {"dir": "qoo10-top-editor", "name": "Qoo10 トップページ編集", "desc": "パーツを並べてQoo10用HTMLを作成"},
+      {"dir": "qoo10-top-editor", "name": "Qoo10 トップページ編集", "desc": "商品を選ぶだけでQoo10のメインページHTMLを作成"},
       {"dir": "yahoo-data-add", "name": "Yahoo data_add 配送補完ツール"}
     ]},
     {"id": "files", "title": "🖼 画像・ファイル", "apps": [
