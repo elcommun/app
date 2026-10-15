@@ -67,6 +67,7 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - `apj-order/`（発注書作成のHTML）は `apj-auto/`（GoQ自動化のPython）とは別物
 - `raffinart-stock-tool/` は `raffinart-order/`（発注書作成）とは別物。オフライン版 `raffinart-stock-tool-offline.html` は `build-offline.py` で作り直す
 - バージョン番号の自動更新（`APP_VERSION`）は付けていない（作業中の自動リロードで入力が消えるのを避けるため）
+- **shopify-converter：新規商品は必ず「新商品」コレクションに入れる（2026-10-15 ユーザー指示）**。Shopifyの「新商品」は自動コレクション（CSVのCollection列では入れられない）なので、新規商品（Shopify登録済み商品CSVに無い商品。未読み込み時は全商品）にタグ `新商品`（`NEW_PRODUCT_TAG`）を付け、コレクション側の条件「タグが 新商品 と等しい」（OR条件。2026-10-15 追加済み）で入れる
 
 ### トップページ（アプリ一覧）`index.html`（2026-10-11 ユーザー指示）
 - `https://elcommun.github.io/app/` のトップページ。全アプリの一覧を表示する。ID・パスワードのログインあり（一度入るとブラウザが記憶）。ID/パスワードはこのファイルには書かない（ユーザーが管理）

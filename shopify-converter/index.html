@@ -187,7 +187,7 @@
   let convertedData = null;
 
   // アプリ更新時はこの日付を上げる（キャッシュで旧版を使っていないか画面上で確認できるように）
-  const APP_VERSION = 'v2026-10-14';
+  const APP_VERSION = 'v2026-10-15';
   document.getElementById('appVersion').textContent = APP_VERSION;
 
   const uploadZone = document.getElementById('uploadZone');
@@ -222,6 +222,7 @@
   const regInput  = document.getElementById('regInput');
   const regStatus = document.getElementById('regStatus');
   let registeredHandles = new Set(); // Shopify登録済み商品のHandle（末尾ハイフン除去済み）
+  const NEW_PRODUCT_TAG = '新商品'; // 新規商品に付けるタグ（Shopify自動コレクション「新商品」の条件）
 
   regInput.addEventListener('change', e => handleRegFile(e.target.files[0]));
   regZone.addEventListener('dragover', e => { e.preventDefault(); regZone.classList.add('drag'); });
@@ -1300,6 +1301,7 @@
       let variantCount = 0;
       let imageCount = 0;
       let skipCount = 0;
+      let newProductCount = 0; // タグ「新商品」を付けた新規商品数
       let titleSplitCount = 0;
       let titleTagTotal = 0;
       const categoryIssues = []; // Type未設定 または Product Category未対応の商品
@@ -1485,6 +1487,18 @@
           }
         }
 
+        // 新規商品（Shopify登録済み商品CSVに無い商品。CSV未読み込み時は全商品）はタグ「新商品」を必ず付ける
+        // （Shopifyの「新商品」は自動コレクションで、条件「タグが新商品と等しい」で入る。2026-10-15 ユーザー指示）
+        if (registeredHandles.size === 0 || !registeredHandles.has(normalizeHandle(handle))) {
+          const tagList = finalTags.split(',').map(t => t.trim()).filter(Boolean);
+          if (!tagList.includes(NEW_PRODUCT_TAG)) {
+            if (tagList.length >= 30) tagList.pop(); // タグ総数30上限
+            tagList.push(NEW_PRODUCT_TAG);
+          }
+          finalTags = tagList.join(', ');
+          newProductCount++;
+        }
+
         const images = [];
         for (let i = 1; i <= 20; i++) {
           let p = (first[`商品画像パス${i}`] || '').trim();
@@ -1595,6 +1609,11 @@
       log(`📦 商品数：${productCount}`, 'log-ok');
       log(`🎨 バリエーション数：${variantCount}`, 'log-ok');
       log(`🖼️  画像数：${imageCount}`, 'log-ok');
+      if (registeredHandles.size > 0) {
+        log(`🆕 新規商品（タグ「${NEW_PRODUCT_TAG}」を付与）：${newProductCount} 商品`, 'log-ok');
+      } else {
+        log(`🆕 登録済み商品CSV未読み込みのため、全 ${newProductCount} 商品を新規扱いでタグ「${NEW_PRODUCT_TAG}」を付与`, 'log-warn');
+      }
       if (skipCount > 0) log(`⚠️ スキップ：${skipCount} 件（商品名なし等）`, 'log-warn');
       if (doTitleSplit && titleSplitCount > 0) {
         const avgTags = (titleTagTotal / titleSplitCount).toFixed(1);
