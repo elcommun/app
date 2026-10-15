@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qoo10 トップページ編集 | EL COMMUN</title>
+<style>
+:root{--primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;--gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;--gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;--green:#10B981;--green-light:#ECFDF5;--red:#EF4444;--red-light:#FEF2F2;--yellow-light:#FFFBEB;--blue-light:#EFF6FF;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
+header{background:white;border-bottom:3px solid var(--primary);padding:12px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex-wrap:wrap;}
+.logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;}
+header h1{font-size:18px;font-weight:700;}header h1 span{font-size:12px;color:var(--gray-400);margin-left:4px;}
+.hd-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{padding:8px 14px;border-radius:8px;border:1px solid var(--gray-200);background:var(--gray-50);font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--primary);color:var(--primary);}
+.btn.pri{background:var(--primary);color:white;border-color:var(--primary);}.btn.pri:hover{background:var(--primary-dark);color:white;}
+.btn.grn{background:var(--green);color:white;border-color:var(--green);}.btn.grn:hover{background:#059669;color:white;}
+.btn.sm{padding:3px 8px;font-size:12px;}
+.info-box{background:var(--yellow-light);border-bottom:1px solid #FDE68A;padding:8px 24px;font-size:12px;color:#92400E;line-height:1.6;}
+.main{display:grid;grid-template-columns:260px 330px 1fr;gap:14px;padding:14px;align-items:start;max-width:1700px;margin:0 auto;}
+.card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:8px;}
+.step{width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;}
+.card-header h2{font-size:14px;font-weight:700;}
+.card-body{padding:12px 14px;}
+.add-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.add-grid button{padding:8px 4px;border:1px dashed var(--gray-400);border-radius:8px;background:var(--gray-50);font-size:12px;cursor:pointer;line-height:1.3;}
+.add-grid button:hover{border-color:var(--primary);background:var(--primary-light);}
+.blk{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:12px;background:white;}
+.blk.sel{border-color:var(--primary);background:var(--primary-light);}
+.blk .nm{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600;}
+.blk button{border:none;background:none;cursor:pointer;font-size:13px;padding:2px 3px;color:var(--gray-600);}
+.blk button:hover{color:var(--primary);}
+.empty{font-size:12px;color:var(--gray-400);text-align:center;padding:18px 6px;line-height:1.7;}
+.fld{margin-bottom:10px;}
+.fld label{display:block;font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:3px;}
+.fld input[type=text],.fld input[type=number],.fld textarea,.fld select{width:100%;padding:7px 9px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;}
+.fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--primary);}
+.fld textarea{min-height:70px;resize:vertical;}
+.fld input[type=color]{width:100%;height:32px;border:1px solid var(--gray-200);border-radius:6px;padding:2px;background:white;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.item{border:1px solid var(--gray-200);border-radius:8px;padding:8px;margin-bottom:8px;background:var(--gray-50);}
+.item-h{display:flex;align-items:center;font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:6px;}
+.item-h span{flex:1;}
+.pv-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--gray-200);flex-wrap:wrap;font-size:12px;}
+.pv-bar select{padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;}
+.pv-wrap{background:#e5e7eb;padding:14px;overflow:auto;max-height:calc(100vh - 170px);}
+.pv-frame{margin:0 auto;background:white;box-shadow:0 2px 12px rgba(0,0,0,.15);}
+.warn{margin:10px 14px 0;padding:8px 12px;border-radius:8px;background:var(--red-light);color:#991B1B;font-size:12px;line-height:1.6;display:none;}
+.warn.show{display:block;}
+.code{display:none;margin:10px 14px 14px;}
+.code.show{display:block;}
+.code textarea{width:100%;height:180px;font-family:'Courier New',monospace;font-size:11px;border:1px solid var(--gray-200);border-radius:8px;padding:8px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gray-800);color:white;padding:10px 20px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9;}
+.toast.show{opacity:1;}
+@media(max-width:1100px){.main{grid-template-columns:1fr;}.pv-wrap{max-height:none;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Q10</div>
+  <h1>Qoo10 トップページ編集 <span>EL COMMUN</span></h1>
+  <div class="hd-actions">
+    <button class="btn" onclick="exportJson()">💾 保存(JSON)</button>
+    <button class="btn" onclick="document.getElementById('imp').click()">📂 読み込み</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importJson(this)">
+    <button class="btn" onclick="resetAll()">🗑 全消去</button>
+    <button class="btn pri" onclick="copyHtml()">📋 HTMLをコピー</button>
+    <button class="btn grn" onclick="downloadHtml()">⬇️ HTML保存</button>
+  </div>
+</header>
+<div class="info-box"><b>使い方：</b>① 左でパーツを追加 → ② 中央で内容を入力 → ③ 右でプレビュー確認 → 「HTMLをコピー」してQoo10 QSMのショップ編集（HTML編集モード）に貼り付け。画像はQoo10や自社サーバーに<b>アップ済みのURL（https）</b>を入れてください。入力は自動でこのブラウザに保存されます。</div>
+
+<div class="main">
+  <div class="card">
+    <div class="card-header"><div class="step">1</div><h2>パーツを追加</h2></div>
+    <div class="card-body">
+      <div class="add-grid" id="palette"></div>
+      <div id="blockList"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="step">2</div><h2>内容を編集</h2></div>
+    <div class="card-body" id="editor"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="step">3</div><h2>プレビュー</h2></div>
+    <div class="pv-bar">
+      ページ幅 <select id="width" onchange="S.width=+this.value;save();render()">
+        <option value="860">860px</option><option value="1000">1000px</option><option value="1200">1200px</option><option value="750">750px</option>
+      </select>
+      背景色 <input type="color" id="pageBg" value="#ffffff" onchange="S.bg=this.value;save();render()">
+      <button class="btn sm" onclick="document.getElementById('code').classList.toggle('show')">&lt;/&gt; HTMLを見る</button>
+    </div>
+    <div class="warn" id="warn"></div>
+    <div class="code" id="code"><textarea id="codeTa" readonly onclick="this.select()"></textarea></div>
+    <div class="pv-wrap"><div class="pv-frame" id="pv"></div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='qoo10_top_editor_v1';
+const ALIGN=[['left','左'],['center','中央'],['right','右']];
+// パーツ定義：f=入力項目, items=繰り返し項目
+const TYPES={
+  banner:{icon:'🖼',label:'バナー(1枚)',def:{img:'',link:'',alt:''},
+    f:[['img','画像URL','text'],['link','リンク先URL','text'],['alt','代替テキスト','text']]},
+  banner2:{icon:'🖼🖼',label:'バナー(横並び)',def:{cols:2,gap:8,items:[{img:'',link:'',alt:''},{img:'',link:'',alt:''}]},
+    f:[['cols','列数','select',[[2,'2列'],[3,'3列'],[4,'4列']]],['gap','すき間(px)','number']],
+    items:{name:'バナー',max:4,def:{img:'',link:'',alt:''},f:[['img','画像URL','text'],['link','リンク先URL','text'],['alt','代替テキスト','text']]}},
+  heading:{icon:'🔖',label:'見出し',def:{text:'人気ランキング',sub:'',bg:'#E85D26',color:'#ffffff',align:'center',size:22,style:'bar'},
+    f:[['text','見出し','text'],['sub','サブ見出し','text'],['style','デザイン','select',[['bar','帯'],['line','下線'],['plain','文字のみ']]],['bg','色(帯/線)','color'],['color','文字色','color'],['align','文字位置','select',ALIGN],['size','文字サイズ','number']]},
+  text:{icon:'📝',label:'テキスト',def:{text:'ここに文章を入力します。\n改行もそのまま反映されます。',color:'#333333',bg:'#ffffff',align:'center',size:14},
+    f:[['text','文章','textarea'],['color','文字色','color'],['bg','背景色','color'],['align','文字位置','select',ALIGN],['size','文字サイズ','number']]},
+  products:{icon:'🛍',label:'商品一覧',def:{cols:4,gap:10,showPrice:1,items:[{img:'',name:'商品名',price:'1,980円',link:''},{img:'',name:'商品名',price:'1,980円',link:''},{img:'',name:'商品名',price:'1,980円',link:''},{img:'',name:'商品名',price:'1,980円',link:''}]},
+    f:[['cols','列数','select',[[2,'2列'],[3,'3列'],[4,'4列'],[5,'5列']]],['gap','すき間(px)','number']],
+    items:{name:'商品',max:40,def:{img:'',name:'商品名',price:'1,980円',link:''},f:[['img','商品画像URL','text'],['name','商品名','text'],['price','価格表記','text'],['link','商品ページURL','text']]}},
+  menu:{icon:'🔗',label:'ボタンメニュー',def:{cols:3,color:'#ffffff',bg:'#E85D26',items:[{label:'新着',link:''},{label:'ランキング',link:''},{label:'セール',link:''}]},
+    f:[['cols','列数','select',[[2,'2列'],[3,'3列'],[4,'4列'],[5,'5列'],[6,'6列']]],['bg','ボタン色','color'],['color','文字色','color']],
+    items:{name:'ボタン',max:24,def:{label:'ボタン',link:''},f:[['label','表示名','text'],['link','リンク先URL','text']]}},
+  button:{icon:'🔘',label:'大きなボタン',def:{label:'ショップの全商品を見る',link:'',bg:'#E85D26',color:'#ffffff',width:60},
+    f:[['label','表示名','text'],['link','リンク先URL','text'],['bg','ボタン色','color'],['color','文字色','color'],['width','幅(%)','number']]},
+  spacer:{icon:'↕️',label:'余白・区切り線',def:{h:30,line:0,lineColor:'#dddddd'},
+    f:[['h','高さ(px)','number'],['line','区切り線','select',[[0,'なし'],[1,'あり']]],['lineColor','線の色','color']]}
+};
+let S={width:860,bg:'#ffffff',blocks:[]},SEL=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const clone=o=>JSON.parse(JSON.stringify(o));
+const uid=()=>Math.random().toString(36).slice(2,9);
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&Array.isArray(j.blocks))S=Object.assign(S,j)}catch(e){}}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+
+/* ---------- HTML生成（Qoo10向け：table＋インラインstyleのみ・JS/classなし） ---------- */
+const img=(it,w)=>`<img src="${esc(it.img)}" alt="${esc(it.alt||it.name||'')}" width="${w}" style="display:block;width:100%;height:auto;border:0;">`;
+const a=(link,inner)=>link?`<a href="${esc(link)}" target="_blank" style="text-decoration:none;color:inherit;">${inner}</a>`:inner;
+const FONT="font-family:'Hiragino Sans','Meiryo',sans-serif;";
+function cellsGrid(cells,cols,gap){ // cells: html[]。左右に gap/2 の余白を持つ単純な表組み（Qoo10で崩れにくい）
+  const pct=(100/cols).toFixed(3),h2=Math.round(gap/2);
+  let h=`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">`;
+  for(let i=0;i<cells.length;i+=cols){
+    h+='<tr>';
+    for(let j=0;j<cols;j++){const c=cells[i+j];h+=`<td width="${pct}%" valign="top" style="width:${pct}%;padding:0 ${h2}px ${gap}px;">${c||''}</td>`}
+    h+='</tr>';
+  }
+  return h+'</table>';
+}
+function genBlock(b,W){
+  switch(b.type){
+    case 'banner': return b.img?a(b.link,img(b,W)):'';
+    case 'banner2':{
+      const cols=+b.cols,g=+b.gap||0,w=Math.floor(W/cols-g);
+      const cells=b.items.filter(i=>i.img).map(i=>a(i.link,img(i,w)));
+      return cells.length?cellsGrid(cells,cols,g):'';}
+    case 'heading':{
+      const al=b.align,fs=+b.size||20;
+      const sub=b.sub?`<div style="font-size:${Math.max(11,Math.round(fs*0.55))}px;font-weight:normal;opacity:.85;margin-top:4px;">${esc(b.sub)}</div>`:'';
+      let st=`${FONT}text-align:${al};font-size:${fs}px;font-weight:bold;padding:14px 10px;color:${b.color};`;
+      if(b.style==='bar')st+=`background:${b.bg};`;
+      else if(b.style==='line')st+=`color:${b.color};border-bottom:3px solid ${b.bg};`;
+      else st+=`color:${b.color};`;
+      return `<div style="${st}">${esc(b.text)}${sub}</div>`;}
+    case 'text':
+      return `<div style="${FONT}text-align:${b.align};font-size:${+b.size||14}px;line-height:1.8;color:${b.color};background:${b.bg};padding:14px 16px;">${esc(b.text).replace(/\n/g,'<br>')}</div>`;
+    case 'products':{
+      const cols=+b.cols,g=+b.gap||0,w=Math.floor(W/cols-g),fs=cols>=5?11:12;
+      const cells=b.items.map(i=>{
+        const im=i.img?img(i,w):`<div style="background:#eee;height:${w}px;"></div>`;
+        const nm=`<div style="${FONT}font-size:${fs}px;line-height:1.5;color:#333;margin-top:6px;text-align:left;">${esc(i.name)}</div>`;
+        const pr=i.price?`<div style="${FONT}font-size:${fs+2}px;font-weight:bold;color:#E02020;margin-top:2px;text-align:left;">${esc(i.price)}</div>`:'';
+        return a(i.link,im+nm+pr);});
+      return cells.length?cellsGrid(cells,cols,g):'';}
+    case 'menu':{
+      const cols=+b.cols,g=6;
+      const cells=b.items.map(i=>a(i.link,`<div style="${FONT}background:${b.bg};color:${b.color};text-align:center;font-size:13px;font-weight:bold;padding:11px 4px;border-radius:6px;">${esc(i.label)}</div>`));
+      return cellsGrid(cells,cols,g);}
+    case 'button':
+      return `<div style="text-align:center;padding:16px 0;"><a href="${esc(b.link)}" target="_blank" style="${FONT}display:inline-block;width:${+b.width||60}%;background:${b.bg};color:${b.color};font-size:16px;font-weight:bold;padding:15px 10px;border-radius:999px;text-decoration:none;">${esc(b.label)}</a></div>`;
+    case 'spacer':
+      return `<div style="height:${+b.h||0}px;line-height:${+b.h||0}px;font-size:0;${+b.line?`border-bottom:1px solid ${b.lineColor};height:${Math.max(0,(+b.h||0)/2)}px;margin-bottom:${Math.max(0,(+b.h||0)/2)}px;`:''}">&nbsp;</div>`;
+  }
+  return '';
+}
+function genHtml(){
+  const W=S.width;
+  return `<div style="width:${W}px;max-width:100%;margin:0 auto;background:${S.bg};">\n`+
+    S.blocks.map(b=>genBlock(b,W)).filter(Boolean).join('\n')+`\n</div>`;
+}
+function check(){
+  const w=[];
+  S.blocks.forEach((b,i)=>{
+    const n=`${i+1}. ${TYPES[b.type].label}`;
+    const imgs=b.items?b.items:[b];
+    if(['banner','banner2','products'].includes(b.type)){
+      const e=imgs.filter(x=>!x.img).length;
+      if(e)w.push(`${n}：画像URL未入力 ${e}件${b.type==='products'?'（グレー枠で表示）':'（出力されません）'}`);
+      const bad=imgs.filter(x=>x.img&&!/^https:\/\//i.test(x.img)).length;
+      if(bad)w.push(`${n}：https:// で始まらない画像URL ${bad}件（Qoo10で表示されない可能性）`);
+    }
+    if(b.type==='button'&&!b.link)w.push(`${n}：リンク先未入力`);
+  });
+  return w;
+}
+
+/* ---------- UI ---------- */
+function render(){
+  $('width').value=S.width;$('pageBg').value=S.bg;
+  // palette
+  $('palette').innerHTML=Object.entries(TYPES).map(([k,t])=>`<button onclick="addBlock('${k}')">${t.icon}<br>${t.label}</button>`).join('');
+  // list
+  $('blockList').innerHTML=S.blocks.length?S.blocks.map((b,i)=>`
+    <div class="blk ${b.id===SEL?'sel':''}" onclick="selBlock('${b.id}')">
+      <span>${TYPES[b.type].icon}</span><span class="nm">${i+1}. ${TYPES[b.type].label}</span>
+      <button title="上へ" onclick="event.stopPropagation();mv(${i},-1)">▲</button>
+      <button title="下へ" onclick="event.stopPropagation();mv(${i},1)">▼</button>
+      <button title="複製" onclick="event.stopPropagation();dup(${i})">⧉</button>
+      <button title="削除" onclick="event.stopPropagation();del(${i})">✕</button>
+    </div>`).join(''):'<div class="empty">上のボタンから<br>パーツを追加してください</div>';
+  renderEditor();
+  const html=genHtml();
+  $('pv').style.width=S.width+'px';$('pv').innerHTML=html;
+  $('codeTa').value=html;
+  const w=check();$('warn').classList.toggle('show',w.length>0);$('warn').innerHTML=w.length?'⚠️ 確認してください<br>'+w.map(esc).join('<br>'):'';
+}
+function fieldHtml(f,obj,path){
+  const [k,label,type,opts]=f,v=obj[k];
+  let inp;
+  if(type==='textarea')inp=`<textarea oninput="setVal('${path}','${k}',this.value)">${esc(v)}</textarea>`;
+  else if(type==='select')inp=`<select onchange="setVal('${path}','${k}',this.value,true)">${opts.map(o=>`<option value="${o[0]}" ${String(o[0])===String(v)?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+  else if(type==='color')inp=`<input type="color" value="${esc(v)}" oninput="setVal('${path}','${k}',this.value)">`;
+  else inp=`<input type="${type}" value="${esc(v)}" oninput="setVal('${path}','${k}',this.value)" ${type==='text'?'placeholder="'+(k==='img'?'https://...':'')+'"':''}>`;
+  return `<div class="fld"><label>${label}</label>${inp}</div>`;
+}
+function renderEditor(){
+  const b=S.blocks.find(x=>x.id===SEL),el=$('editor');
+  if(!b){el.innerHTML='<div class="empty">左の一覧でパーツを選ぶと<br>ここで内容を編集できます</div>';return}
+  const T=TYPES[b.type];let h=`<div style="font-weight:700;margin-bottom:10px;font-size:13px;">${T.icon} ${T.label}</div>`;
+  h+=T.f.map(f=>fieldHtml(f,b,'')).join('');
+  if(T.items){
+    h+=`<div style="font-size:12px;font-weight:700;margin:6px 0;">${T.items.name}一覧（${b.items.length}）</div>`;
+    h+=b.items.map((it,i)=>`<div class="item"><div class="item-h"><span>${T.items.name} ${i+1}</span>
+      <button class="btn sm" onclick="itemMv(${i},-1)">▲</button> <button class="btn sm" onclick="itemMv(${i},1)">▼</button> <button class="btn sm" onclick="itemDel(${i})">✕</button></div>
+      ${T.items.f.map(f=>fieldHtml(f,it,String(i))).join('')}</div>`).join('');
+    if(b.items.length<T.items.max)h+=`<button class="btn" style="width:100%" onclick="itemAdd()">＋ ${T.items.name}を追加</button>`;
+  }
+  // フォーカスを失わないよう、入力中は再描画しない（setVal側で制御）
+  el.innerHTML=h;
+}
+function cur(){return S.blocks.find(x=>x.id===SEL)}
+function setVal(path,k,v,rerender){
+  const b=cur();if(!b)return;
+  (path===''?b:b.items[+path])[k]=v;
+  if(k==='cols'||k==='h'){}
+  save();
+  // 入力欄はそのまま、プレビューとリストだけ更新
+  const html=genHtml();$('pv').innerHTML=html;$('codeTa').value=html;
+  const w=check();$('warn').classList.toggle('show',w.length>0);$('warn').innerHTML=w.length?'⚠️ 確認してください<br>'+w.map(esc).join('<br>'):'';
+}
+function addBlock(t){const b=Object.assign({id:uid(),type:t},clone(TYPES[t].def));
+  // 選択中の次に挿入
+  const i=S.blocks.findIndex(x=>x.id===SEL);
+  if(i>=0)S.blocks.splice(i+1,0,b);else S.blocks.push(b);
+  SEL=b.id;save();render()}
+function selBlock(id){SEL=id;render()}
+function mv(i,d){const j=i+d;if(j<0||j>=S.blocks.length)return;[S.blocks[i],S.blocks[j]]=[S.blocks[j],S.blocks[i]];save();render()}
+function dup(i){const c=clone(S.blocks[i]);c.id=uid();S.blocks.splice(i+1,0,c);SEL=c.id;save();render()}
+function del(i){if(!confirm('このパーツを削除しますか？'))return;const [r]=S.blocks.splice(i,1);if(SEL===r.id)SEL=null;save();render()}
+function itemAdd(){const b=cur();b.items.push(clone(TYPES[b.type].items.def));save();render()}
+function itemDel(i){const b=cur();b.items.splice(i,1);save();render()}
+function itemMv(i,d){const b=cur(),j=i+d;if(j<0||j>=b.items.length)return;[b.items[i],b.items[j]]=[b.items[j],b.items[i]];save();render()}
+function resetAll(){if(!confirm('すべてのパーツを消して最初からにします。よろしいですか？'))return;S.blocks=[];SEL=null;save();render()}
+
+/* ---------- 出力 ---------- */
+function copyHtml(){
+  const t=genHtml();
+  const done=()=>toast('✅ HTMLをコピーしました。QSMに貼り付けてください');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>{$('codeTa').select();document.execCommand('copy');done()});
+  else{$('codeTa').select();document.execCommand('copy');done()}
+}
+function dl(name,text,mime){const u=URL.createObjectURL(new Blob([text],{type:mime}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
+function downloadHtml(){dl('qoo10-top.html','<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>Qoo10 トップ</title></head><body style="margin:0;">\n'+genHtml()+'\n</body></html>','text/html')}
+function exportJson(){const d=new Date(),p=n=>String(n).padStart(2,'0');dl(`qoo10-top-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`,JSON.stringify(S,null,1),'application/json');toast('💾 保存しました（あとで「読み込み」で再編集できます）')}
+function importJson(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!Array.isArray(j.blocks))throw 0;S=Object.assign({width:860,bg:'#ffffff'},j);SEL=null;save();render();toast('📂 読み込みました')}catch(e){alert('読み込めないファイルです')}};r.readAsText(f);inp.value=''}
+
+load();
+if(!S.blocks.length){ // 初回サンプル
+  S.blocks=['banner','menu','heading','products'].map(t=>Object.assign({id:uid(),type:t},clone(TYPES[t].def)));
+}
+SEL=S.blocks[0]&&S.blocks[0].id;render();
+</script>
+</body>
+</html>
