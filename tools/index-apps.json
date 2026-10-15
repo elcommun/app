@@ -24,6 +24,7 @@
       {"dir": "laikle-convert", "name": "楽天 EL COMMUN → LAIKLE 変換"},
       {"dir": "rakuten-filter", "name": "楽天データ絞り込みフィルター"},
       {"dir": "rakuten-image-dl", "name": "楽天画像ダウンローダー"},
+      {"dir": "qoo10-convert", "name": "楽天 → Qoo10 商品データ変換", "desc": "楽天CSVから対象商品を抽出してQoo10登録用xlsxを作成"},
       {"dir": "qoo10-data-add", "name": "Qoo10 商品データ補完ツール"},
       {"dir": "qoo10-top-editor", "name": "Qoo10 トップページ編集", "desc": "パーツを並べてQoo10用HTMLを作成"},
       {"dir": "yahoo-data-add", "name": "Yahoo data_add 配送補完ツール"}
