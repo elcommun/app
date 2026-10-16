@@ -555,7 +555,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v165</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v166</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -960,6 +960,13 @@ const MACRO_CODE_OVERRIDE=[
 // APJ（額縁）の商品番号を楽天市場側の表記に統一するための例外補正
 // （サイズだけでは楽天市場側の実際の商品番号と一致しないもの。末尾に枝番が付く）
 const APJ_CODE_FIXUPS={'apj-wf61_91':'apj-wf61_91_1'};
+// 商品番号の頭が一致する商品を、1つの商品番号・商品名にまとめるルール（dedupeProductsByCode で統合）
+// ・apj-af00_00〜（FIT FRAME 特寸）は、サイズ・色ごとに都度単価が違うオーダーメイド商品なので1商品にまとめる（2026-10-15 ユーザー指示）
+//   色などのバリエーション名は表示から外し、非表示の検索ワードとして残す
+const MERGE_CODE_RULES=[[/^apj-af00_00/i,'apj-af00_00','FIT FRAME【特寸：オーダーメイド】']];
+// 単価を「表示中の期間の合計金額÷販売数」の平均単価で出す商品番号（単価が注文ごとに違う商品）
+const AVG_PRICE_CODES=new Set(['apj-af00_00']);
+function unitPriceOf(p,qty,amount){ return AVG_PRICE_CODES.has(p[3])&&qty>0 ? Math.round(amount/qty) : p[4]; }
 // 商品名クリーニング用の定数（normalizeProducts()がbuildData()の初回同期実行から参照するため、ここで初期化）
 // 「|」「｜」以降は検索ワードの羅列のため、商品名には表示せず非表示検索ワードに回す
 const CUT_KEYWORDS=['オーダーメイドOK','オーダーメイド','お見積もり','お見積り','受注生産','製作期間','発送までに','同送不可','別注専用ページ','＊仮金額','銀行振込の場合','ご決済確認から発送','|','｜'];
@@ -1108,6 +1115,14 @@ function normalizeProducts(){
 const CANONICAL_STORE='EL COMMUN 楽天市場店';
 function dedupeProductsByCode(){
   Object.values(ALL_PRODUCTS).forEach(p=>{ p[3]=normalizeApjCode(p[3]); });
+  Object.values(ALL_PRODUCTS).forEach(p=>{
+    for(const [re,code,name] of MERGE_CODE_RULES){
+      if(!re.test(p[3]||'')) continue;
+      if(p[2]) p[6]=p[6]?(p[6]+' '+p[2]):p[2];
+      p[3]=code; p[1]=name; p[2]='';
+      break;
+    }
+  });
   const byCode={};
   Object.keys(ALL_PRODUCTS).forEach(pid=>{
     const code=ALL_PRODUCTS[pid][3];
@@ -1977,7 +1992,7 @@ function itemRows(items){
   return Object.keys(items).map(pid=>{
     const p=ALL_PRODUCTS[pid];
     const it=items[pid];
-    return {pid, maker:p[0], name:p[1], varName:p[2], code:p[3], price:p[4], category:p[5], qty:it.qty, amount:it.amount};
+    return {pid, maker:p[0], name:p[1], varName:p[2], code:p[3], price:unitPriceOf(p,it.qty,it.amount), category:p[5], qty:it.qty, amount:it.amount};
   });
 }
 function costOf(rows){
@@ -2621,7 +2636,7 @@ function renderSearch(){
       const hay=normalize(p[0]+p[1]+p[2]+p[3]+(p[6]||''));
       if(hay.includes(qn)){
         const it=AGG[m].items[pid];
-        rows.push({pid, maker:p[0], name:p[1], varName:p[2], code:p[3], price:p[4], category:p[5], qty:it.qty, amount:it.amount});
+        rows.push({pid, maker:p[0], name:p[1], varName:p[2], code:p[3], price:unitPriceOf(p,it.qty,it.amount), category:p[5], qty:it.qty, amount:it.amount});
       }
     });
   });
