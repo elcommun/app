@@ -187,7 +187,7 @@
   let convertedData = null;
 
   // アプリ更新時はこの日付を上げる（キャッシュで旧版を使っていないか画面上で確認できるように）
-  const APP_VERSION = 'v2026-10-15';
+  const APP_VERSION = 'v2026-10-17';
   document.getElementById('appVersion').textContent = APP_VERSION;
 
   const uploadZone = document.getElementById('uploadZone');
@@ -1077,6 +1077,18 @@
     return null;
   }
 
+  // ===== 楽天の倉庫ページ・検索結果リンクの正規化 =====
+  // 楽天の倉庫ページ（soko.rms）や rakuten.co.jp 直下のリンクは item.rakuten.co.jp の形にそろえ、
+  // 以降の商品リンク・カテゴリリンクの付け替え（リンク切れ削除を含む）に乗せる。
+  // 楽天の検索結果ページは、同じ検索語のShopifyサイト内検索に付け替える。（2026-10-17 ユーザー指示）
+  function normalizeRakutenLinks(html) {
+    return html
+      .replace(/https?:\/\/soko\.rms\.rakuten\.co\.jp\/elcommun\//g, 'https://item.rakuten.co.jp/elcommun/')
+      .replace(/https?:\/\/(?:www\.)?rakuten\.co\.jp\/elcommun\/c\//g, 'https://item.rakuten.co.jp/elcommun/c/')
+      .replace(/https?:\/\/search\.rakuten\.co\.jp\/search\/mall\/([^\/?#"]+)\/?[^"]*/g,
+        (m, kw) => 'https://elcommun.com/search?q=' + kw);
+  }
+
   // ===== 商品説明文の書式統一 =====
   // 商品ページのフォーマットがバラつかないよう、見出しと余白を統一する。
   // ・見出しは太字20px固定（<font size="4">でもテーマやShopifyエディタ由来の<span>でも同じ見た目に）
@@ -1393,7 +1405,7 @@
 
         const handle = handleKey.trim();
         // ⓪ 書式統一（見出し太字20px・キャプション16px・余白の詰め）→ GOLDページ変換（リンク切れ削除より必ず先に行う）
-        let bodySource = normalizeBodyFormat(first['スマートフォン用商品説明文'] || '')
+        let bodySource = normalizeRakutenLinks(normalizeBodyFormat(first['スマートフォン用商品説明文'] || ''))
           .replace(GOLD_LINK_RE, (url) => resolveGoldLink(url) || url);
         // ① リンク切れブロック（未登録商品・対応表に無い楽天GOLDページへのリンクを含む）を削除
         if (doLinkClean && bodySource) {
