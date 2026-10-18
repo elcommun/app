@@ -187,7 +187,7 @@
   let convertedData = null;
 
   // アプリ更新時はこの日付を上げる（キャッシュで旧版を使っていないか画面上で確認できるように）
-  const APP_VERSION = 'v2026-10-17';
+  const APP_VERSION = 'v2026-10-18';
   document.getElementById('appVersion').textContent = APP_VERSION;
 
   const uploadZone = document.getElementById('uploadZone');
@@ -1099,7 +1099,8 @@
   function normalizeBodyFormat(html) {
     return html
       // <font size="4">見出し</font><br><hr> → 統一スタイルの見出し＋hr（brは除去）
-      .replace(/<font size="4"[^>]*>([\s\S]*?)<\/font>\s*(?:<br\s*\/?>)?\s*<hr\s*\/?>/gi,
+      // ※見出しとhrの間に別の要素がある場合に、後ろの見出しまでまとめて巻き込まないよう </font> をまたがない
+      .replace(/<font size="4"[^>]*>((?:(?!<\/font>)[\s\S])*?)<\/font>\s*(?:<br\s*\/?>)?\s*<hr\s*\/?>/gi,
         `<span style="${HEADING_STYLE}">$1</span><hr style="${HR_STYLE}">`)
       // hrを伴わない<font size="4">見出し → スタイルだけ統一
       .replace(/<font size="4"[^>]*>([\s\S]*?)<\/font>/gi,
