@@ -193,18 +193,18 @@ function buildMail(shop,validRows){
     const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
     const f=FT[c.ft];
     const ex=exactOf(c);
-    if(ex)return `${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … 規格サイズ「${ex.name}」と同サイズです\n　単価 ${f.stdPrice(ex)}\n　商品ページ：https://item.rakuten.co.jp/${s.shopId}/${ex.urlKey}/`;
-    return `${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalIn)}（税込）`;
-  }).join("\n\n・");
+    const dl=c.ft==="fit"?"約7～10営業日":"約9～12営業日";
+    const tail=`
+・納期：ご決済確認から商品の発送まで「${dl}」`;
+    if(ex)return `・${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … 規格サイズ「${ex.name}」と同サイズです
+　単価 ${f.stdPrice(ex)}${tail}
+・商品ページ：https://item.rakuten.co.jp/${s.shopId}/${ex.urlKey}/`;
+    return `・${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalIn)}（税込）${tail}
+・商品ページ：${s.links[c.ft]}`;
+  }).join("\n\n");
   const customTotal=custom.reduce((a,c)=>a+c.result.subtotalIn,0);
   const totalLine=custom.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　${custom.length<validRows.length?"別注サイズ分の合計":"合計"}：¥${fmt(customTotal)}（税込）`:"";
   const maxThickness = hasFit && hasStain ? "約2mm厚（アルミ）／約3mm厚（木製）" : hasFit ? "約2mm厚" : "約3mm厚";
-  const deliveryLine = custom.length===0 ? ""
-    : cFit && cStain
-    ? "・納期（アルミフレーム）：ご決済確認から商品の発送まで「約7～10営業日」\n・納期（木製フレーム）：ご決済確認から商品の発送まで「約9～12営業日」"
-    : cFit
-    ? "・納期：ご決済確認から商品の発送まで「約7～10営業日」"
-    : "・納期：ご決済確認から商品の発送まで「約9～12営業日」";
   // 規格サイズ案内（近いサイズがある行のみ）
   const stdLines=validRows.flatMap(c=>{
     if(!c.nearStd||c.nearStd.length===0||exactOf(c))return[];
@@ -266,8 +266,7 @@ ${s.name}の 真田と申します。
 
 【お見積もり内容】
 
-・${lines}${totalLine}
-${deliveryLine}${stdSection}
+${lines}${totalLine}${stdSection}
 
 　- 商品の特長 -
 ・縦 横どちらにも掛けられます。
