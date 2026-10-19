@@ -181,16 +181,16 @@ const SHOPS={
 ---------------------------------------------------------------`},
 };
 
-function buildMail(shop,validRows,grandTotalEx){
+function buildMail(shop,validRows,grandTotalIn){
   const s=SHOPS[shop];
   const hasFit=validRows.some(c=>c.ft==="fit");
   const hasStain=validRows.some(c=>c.ft==="stain");
   const lines=validRows.map(c=>{
     const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
     const f=FT[c.ft];
-    return `${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalEx)}（税抜）`;
+    return `${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalIn)}（税込）`;
   }).join("\n・");
-  const totalLine=validRows.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　合計：¥${fmt(grandTotalEx)}（税抜）`:"";
+  const totalLine=validRows.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　合計：¥${fmt(grandTotalIn)}（税込）`:"";
   const maxThickness = hasFit && hasStain ? "約2mm厚（アルミ）／約3mm厚（木製）" : hasFit ? "約2mm厚" : "約3mm厚";
   const deliveryLine = hasFit && hasStain
     ? "・納期（アルミフレーム）：ご決済確認から商品の発送まで「約7～10営業日」\n・納期（木製フレーム）：ご決済確認から商品の発送まで「約9～12営業日」"
@@ -206,7 +206,8 @@ function buildMail(shop,validRows,grandTotalEx){
       const mSh=Math.min(m.w,m.h),mLo=Math.max(m.w,m.h);
       const diffNote=(m.diffS>0||m.diffL>0)?`（ご依頼サイズより短辺+${m.diffS}mm／長辺+${m.diffL}mmのサイズです）`:"（ぴったり同サイズです）";
       const url=`https://item.rakuten.co.jp/${s.shopId}/${m.urlKey}/`;
-      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm に近い規格品です`;
+      const sameSize=(m.diffS===0&&m.diffL===0);
+      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm と${sameSize?"同サイズ":"近いサイズ"}の規格品です`;
     });
   });
   const stdSection=stdLines.length>0
@@ -255,7 +256,7 @@ ${urlSection}
 　② ご注文確定前の「注文確認」画面下方にある「備考欄」の「▼【ポスターフレーム(額縁)】をご注文のお客様へ ▼」に、以下の情報をご記入ください。
 
 　○ ご希望の「ポスターサイズ」
-　○ 今回の「お見積もり金額（税抜）」
+　○ 今回の「お見積もり金額（税込）」
 
 
 【ご注文後の流れ】
@@ -401,7 +402,7 @@ export default function App(){
   const gTotalIn=valid.reduce((s,c)=>s+c.result.subtotalIn,0);
   const tQty=valid.reduce((s,c)=>s+c.qty,0);
   const tWeight=valid.reduce((s,c)=>s+(c.wi?c.wi.kg:0)*c.qty,0);
-  const mailText=valid.length>0?buildMail(shop,valid,gTotalEx):"";
+  const mailText=valid.length>0?buildMail(shop,valid,gTotalIn):"";
 
   const handleCopy=async()=>{
     try{await navigator.clipboard.writeText(mailText)}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>APJフレーム見積 | EL COMMUN</title>
+<title>フレーム見積 | EL COMMUN</title>
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -169,15 +169,15 @@ const SHOPS={
     sig:`---------------------------------------------------------------\n　LAIKLE 楽天市場店\n\n【住所】468-0007 愛知県名古屋市天白区植田本町2-1006\n【電話】052-807-0299\n【URL】https://www.rakuten.co.jp/laikle/\n【E-mail】laikle@elcommun.co.jp\n\n＊土日／祝日はお休みを頂いております＊\n（営業時間：平日／AM10時～PM17時）\n---------------------------------------------------------------`},
 };
 
-function buildMail(shop,validRows,grandTotalEx){
+function buildMail(shop,validRows,grandTotalIn){
   const s=SHOPS[shop];
   const hasFit=validRows.some(c=>c.ft==="fit");
   const hasStain=validRows.some(c=>c.ft==="stain");
   const lines=validRows.map(c=>{
     const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
-    return `${FT[c.ft].mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalEx)}（税抜）`;
+    return `${FT[c.ft].mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalIn)}（税込）`;
   }).join("\n・");
-  const totalLine=validRows.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　合計：¥${fmt(grandTotalEx)}（税抜）`:"";
+  const totalLine=validRows.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　合計：¥${fmt(grandTotalIn)}（税込）`:"";
   const maxThickness=hasFit&&hasStain?"約2mm厚（アルミ）／約3mm厚（木製）":hasFit?"約2mm厚":"約3mm厚";
   const deliveryLine=hasFit&&hasStain
     ?"・納期（アルミフレーム）：ご決済確認から商品の発送まで「約7～10営業日」\n・納期（木製フレーム）：ご決済確認から商品の発送まで「約9～12営業日」"
@@ -192,7 +192,8 @@ function buildMail(shop,validRows,grandTotalEx){
       const mSh=Math.min(m.w,m.h),mLo=Math.max(m.w,m.h);
       const diffNote=(m.diffS>0||m.diffL>0)?`（ご依頼サイズより短辺+${m.diffS}mm／長辺+${m.diffL}mmのサイズです）`:"（ぴったり同サイズです）";
       const url=`https://item.rakuten.co.jp/${s.shopId}/${m.urlKey}/`;
-      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm に近い規格品です`;
+      const sameSize=(m.diffS===0&&m.diffL===0);
+      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm と${sameSize?"同サイズ":"近いサイズ"}の規格品です`;
     });
   });
   const stdSection=stdLines.length>0
@@ -202,7 +203,7 @@ function buildMail(shop,validRows,grandTotalEx){
   if(hasFit&&hasStain){urlSection=`■ アルミフレーム別注ページ：${s.links.fit}\n■ 木製フレーム別注ページ：${s.links.stain}`;}
   else if(hasFit){urlSection=`■ 商品URL：${s.links.fit}`;}
   else{urlSection=`■ 商品URL：${s.links.stain}`;}
-  return `この度は当店へお問い合わせを頂き、誠にありがとうございます。\n${s.name}の 真田と申します。\n\nご依頼を頂いておりました、別注フレーム本体のお見積もりについてご案内いたします。\n\n\n【お見積もり内容】\n\n・${lines}${totalLine}\n${deliveryLine}${stdSection}\n\n　- 商品の特長 -\n・縦 横どちらにも掛けられます。\n・額縁内の中敷ダンボールの調整で「${maxThickness}」の内容物まで対応可能。\n　＊その他の仕様につきましては 商品ページをご確認ください。\n\n\n【別注サイズのご購入方法】\n\n${urlSection}\n\n　① 上記リンク先の額縁別注ページよりご希望の「フレームカラー」「数量」を選んでいただき「購入手続きへ」ボタンを押してください。\n　② ご注文確定前の「注文確認」画面下方にある「備考欄」の「▼【ポスターフレーム(額縁)】をご注文のお客様へ ▼」に、以下の情報をご記入ください。\n\n　○ ご希望の「ポスターサイズ」\n　○ 今回の「お見積もり金額（税抜）」\n\n\n【ご注文後の流れ】\n\n　① ご注文の確認が出来次第、仮金額（3,000円）を 今回のお見積もり金額に修正いたします。\n　② 変更内容と発送までの納期が記載されたメールが送付されます。\n　③ メーカーにてご注文商品の製作が開始。\n　④ メーカーから商品が発送され次第、当店より発送メールを送付いたします。\n\n\n【ご注意事項】\n\n・土日・祝日は 弊社・メーカー共にお休みをいただいております。\n・ご注文時、備考欄にご入力いただいたサイズが正式な製作サイズとなります。\n・受注生産品のため、ご注文後のキャンセルおよびサイズ・カラー等の変更は承ることができません。\n・見積もり有効期限：本日より1週間\n\n\n以上をご確認の上、ご検討の程 よろしくお願い申し上げます。\n\n\n${s.sig}`;
+  return `この度は当店へお問い合わせを頂き、誠にありがとうございます。\n${s.name}の 真田と申します。\n\nご依頼を頂いておりました、別注フレーム本体のお見積もりについてご案内いたします。\n\n\n【お見積もり内容】\n\n・${lines}${totalLine}\n${deliveryLine}${stdSection}\n\n　- 商品の特長 -\n・縦 横どちらにも掛けられます。\n・額縁内の中敷ダンボールの調整で「${maxThickness}」の内容物まで対応可能。\n　＊その他の仕様につきましては 商品ページをご確認ください。\n\n\n【別注サイズのご購入方法】\n\n${urlSection}\n\n　① 上記リンク先の額縁別注ページよりご希望の「フレームカラー」「数量」を選んでいただき「購入手続きへ」ボタンを押してください。\n　② ご注文確定前の「注文確認」画面下方にある「備考欄」の「▼【ポスターフレーム(額縁)】をご注文のお客様へ ▼」に、以下の情報をご記入ください。\n\n　○ ご希望の「ポスターサイズ」\n　○ 今回の「お見積もり金額（税込）」\n\n\n【ご注文後の流れ】\n\n　① ご注文の確認が出来次第、仮金額（3,000円）を 今回のお見積もり金額に修正いたします。\n　② 変更内容と発送までの納期が記載されたメールが送付されます。\n　③ メーカーにてご注文商品の製作が開始。\n　④ メーカーから商品が発送され次第、当店より発送メールを送付いたします。\n\n\n【ご注意事項】\n\n・土日・祝日は 弊社・メーカー共にお休みをいただいております。\n・ご注文時、備考欄にご入力いただいたサイズが正式な製作サイズとなります。\n・受注生産品のため、ご注文後のキャンセルおよびサイズ・カラー等の変更は承ることができません。\n・見積もり有効期限：本日より1週間\n\n\n以上をご確認の上、ご検討の程 よろしくお願い申し上げます。\n\n\n${s.sig}`;
 }
 
 const TH={
@@ -296,7 +297,7 @@ function App(){
   const gTotalIn=valid.reduce((s,c)=>s+c.result.subtotalIn,0);
   const tQty=valid.reduce((s,c)=>s+c.qty,0);
   const tWeight=valid.reduce((s,c)=>s+(c.wi?c.wi.kg:0)*c.qty,0);
-  const mailText=valid.length>0?buildMail(shop,valid,gTotalEx):"";
+  const mailText=valid.length>0?buildMail(shop,valid,gTotalIn):"";
 
   const handleCopy=async()=>{
     try{await navigator.clipboard.writeText(mailText)}
@@ -325,7 +326,7 @@ function App(){
           <div style={{width:34,height:34,background:"#E85D26",borderRadius:8,display:"flex",alignItems:"center",
             justifyContent:"center",color:"white",fontWeight:700,fontSize:13,flexShrink:0}}>EF</div>
           <div>
-            <div style={{fontSize:15,fontWeight:700,color:t.text,lineHeight:1.2}}>APJフレーム見積</div>
+            <div style={{fontSize:15,fontWeight:700,color:t.text,lineHeight:1.2}}>フレーム見積</div>
             <div style={{fontSize:11,color:t.textMuted,letterSpacing:1}}>FRAME ESTIMATOR</div>
           </div>
         </div>
