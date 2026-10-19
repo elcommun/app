@@ -181,33 +181,40 @@ const SHOPS={
 ---------------------------------------------------------------`},
 };
 
-function buildMail(shop,validRows,grandTotalIn){
+function buildMail(shop,validRows){
   const s=SHOPS[shop];
+  const exactOf=c=>(c.nearStd||[]).find(m=>m.diffS===0&&m.diffL===0);
+  const custom=validRows.filter(c=>!exactOf(c));
   const hasFit=validRows.some(c=>c.ft==="fit");
   const hasStain=validRows.some(c=>c.ft==="stain");
+  const cFit=custom.some(c=>c.ft==="fit");
+  const cStain=custom.some(c=>c.ft==="stain");
   const lines=validRows.map(c=>{
     const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
     const f=FT[c.ft];
+    const ex=exactOf(c);
+    if(ex)return `${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … 規格サイズ「${ex.name}」と同サイズです\n　単価 ${f.stdPrice(ex)}\n　商品ページ：https://item.rakuten.co.jp/${s.shopId}/${ex.urlKey}/`;
     return `${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalIn)}（税込）`;
-  }).join("\n・");
-  const totalLine=validRows.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　合計：¥${fmt(grandTotalIn)}（税込）`:"";
+  }).join("\n\n・");
+  const customTotal=custom.reduce((a,c)=>a+c.result.subtotalIn,0);
+  const totalLine=custom.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　${custom.length<validRows.length?"別注サイズ分の合計":"合計"}：¥${fmt(customTotal)}（税込）`:"";
   const maxThickness = hasFit && hasStain ? "約2mm厚（アルミ）／約3mm厚（木製）" : hasFit ? "約2mm厚" : "約3mm厚";
-  const deliveryLine = hasFit && hasStain
+  const deliveryLine = custom.length===0 ? ""
+    : cFit && cStain
     ? "・納期（アルミフレーム）：ご決済確認から商品の発送まで「約7～10営業日」\n・納期（木製フレーム）：ご決済確認から商品の発送まで「約9～12営業日」"
-    : hasFit
+    : cFit
     ? "・納期：ご決済確認から商品の発送まで「約7～10営業日」"
     : "・納期：ご決済確認から商品の発送まで「約9～12営業日」";
   // 規格サイズ案内（近いサイズがある行のみ）
   const stdLines=validRows.flatMap(c=>{
-    if(!c.nearStd||c.nearStd.length===0)return[];
+    if(!c.nearStd||c.nearStd.length===0||exactOf(c))return[];
     const sA=parseInt(c.sizeA),sB=parseInt(c.sizeB),sh=Math.min(sA,sB),lo=Math.max(sA,sB);
     const ftd=FT[c.ft];
     return c.nearStd.map(m=>{
       const mSh=Math.min(m.w,m.h),mLo=Math.max(m.w,m.h);
       const diffNote=(m.diffS>0||m.diffL>0)?`（ご依頼サイズより短辺+${m.diffS}mm／長辺+${m.diffL}mmのサイズです）`:"（ぴったり同サイズです）";
       const url=`https://item.rakuten.co.jp/${s.shopId}/${m.urlKey}/`;
-      const sameSize=(m.diffS===0&&m.diffL===0);
-      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm と${sameSize?"同サイズ":"近いサイズ"}の規格品です`;
+      return `・${ftd.mailLabel}「${m.name}」（内寸 ${mSh}×${mLo}mm）\n　${ftd.stdPrice(m)}\n　${diffNote}\n　商品ページ：${url}\n　※ ご依頼の ${sh}×${lo}mm に近い規格品です`;
     });
   });
   const stdSection=stdLines.length>0
@@ -224,28 +231,14 @@ ${stdLines.join("\n\n")}
 ※ 下記【別注サイズのご購入方法】は、上記お見積もりの別注サイズをご注文いただく場合の手順です。`
     :"";
   let urlSection;
-  if(hasFit&&hasStain){
+  if(cFit&&cStain){
     urlSection=`■ アルミフレーム別注ページ：${s.links.fit}\n■ 木製フレーム別注ページ：${s.links.stain}`;
-  } else if(hasFit){
+  } else if(cFit){
     urlSection=`■ 商品URL：${s.links.fit}`;
   } else {
     urlSection=`■ 商品URL：${s.links.stain}`;
   }
-  return `この度は当店へお問い合わせを頂き、誠にありがとうございます。
-${s.name}の 真田と申します。
-
-ご依頼を頂いておりました、別注フレーム本体のお見積もりについてご案内いたします。
-
-
-【お見積もり内容】
-
-・${lines}${totalLine}
-${deliveryLine}${stdSection}
-
-　- 商品の特長 -
-・縦 横どちらにも掛けられます。
-・額縁内の中敷ダンボールの調整で「${maxThickness}」の内容物まで対応可能。
-　＊その他の仕様につきましては 商品ページをご確認ください。
+  const orderSection=custom.length===0?"":`
 
 
 【別注サイズのご購入方法】
@@ -264,7 +257,22 @@ ${urlSection}
 　① ご注文の確認が出来次第、仮金額（3,000円）を 今回のお見積もり金額に修正いたします。
 　② 変更内容と発送までの納期が記載されたメールが送付されます。
 　③ メーカーにてご注文商品の製作が開始。
-　④ メーカーから商品が発送され次第、当店より発送メールを送付いたします。
+　④ メーカーから商品が発送され次第、当店より発送メールを送付いたします。`;
+  return `この度は当店へお問い合わせを頂き、誠にありがとうございます。
+${s.name}の 真田と申します。
+
+ご依頼を頂いておりました、別注フレーム本体のお見積もりについてご案内いたします。
+
+
+【お見積もり内容】
+
+・${lines}${totalLine}
+${deliveryLine}${stdSection}
+
+　- 商品の特長 -
+・縦 横どちらにも掛けられます。
+・額縁内の中敷ダンボールの調整で「${maxThickness}」の内容物まで対応可能。
+　＊その他の仕様につきましては 商品ページをご確認ください。${orderSection}
 
 
 【ご注意事項】
@@ -402,7 +410,7 @@ export default function App(){
   const gTotalIn=valid.reduce((s,c)=>s+c.result.subtotalIn,0);
   const tQty=valid.reduce((s,c)=>s+c.qty,0);
   const tWeight=valid.reduce((s,c)=>s+(c.wi?c.wi.kg:0)*c.qty,0);
-  const mailText=valid.length>0?buildMail(shop,valid,gTotalIn):"";
+  const mailText=valid.length>0?buildMail(shop,valid):"";
 
   const handleCopy=async()=>{
     try{await navigator.clipboard.writeText(mailText)}
@@ -583,7 +591,7 @@ export default function App(){
                           border:`1px solid ${t.stdBorder}`,borderRadius:8}}>
                           <div style={{fontSize:12,fontWeight:600,color:t.stdTitle,letterSpacing:0.5,
                             marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                            <span>💡</span><span>規格サイズに近いです</span>
+                            <span>💡</span><span>{c.nearStd.some(m=>m.diffS===0&&m.diffL===0)?"規格サイズと同サイズです":"規格サイズに近いです"}</span>
                           </div>
                           {c.nearStd.map((m,i)=>(
                             <div key={i} style={{marginBottom:6}}>
