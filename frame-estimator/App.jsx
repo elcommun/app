@@ -239,6 +239,7 @@ ${stdLines.join("\n\n")}
   } else {
     urlSection=`■ 商品URL：${s.links.stain}`;
   }
+  const posterSizes=custom.map(c=>{const a=parseInt(c.sizeA),b=parseInt(c.sizeB);return `${custom.length>1?FT[c.ft].mailLabel+" ":""}${Math.min(a,b)}mm×${Math.max(a,b)}mm`;}).join("\n　　　");
   const orderSection=custom.length===0?"":`
 
 
@@ -250,6 +251,8 @@ ${urlSection}
 　② ご注文確定前の「注文確認」画面下方にある「備考欄」の「▼【ポスターフレーム(額縁)】をご注文のお客様へ ▼」に、以下の情報をご記入ください。
 
 　○ ご希望の「ポスターサイズ」
+　　　以下をコピーしてご記入ください。
+　　　${posterSizes}
 　○ 今回の「お見積もり金額」
 　　　以下をコピーしてご記入ください。
 　　　税抜 ¥${fmt(customTotalEx)}／税込 ¥${fmt(customTotal)}
