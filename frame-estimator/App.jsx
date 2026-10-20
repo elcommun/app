@@ -239,7 +239,7 @@ ${stdLines.join("\n\n")}
   } else {
     urlSection=`■ 商品URL：${s.links.stain}`;
   }
-  const posterSizes=custom.map(c=>{const a=parseInt(c.sizeA),b=parseInt(c.sizeB);return `${custom.length>1?FT[c.ft].mailLabel+" ":""}${Math.min(a,b)}mm×${Math.max(a,b)}mm`;}).join("\n　　　");
+  const posterSizes=custom.map(c=>{const a=parseInt(c.sizeA),b=parseInt(c.sizeB);return `【${custom.length>1?FT[c.ft].mailLabel+" ":""}${Math.min(a,b)}mm×${Math.max(a,b)}mm】`;}).join("\n　　　");
   const orderSection=custom.length===0?"":`
 
 
@@ -255,7 +255,7 @@ ${urlSection}
 　　　${posterSizes}
 　○ 今回の「お見積もり金額」
 　　　以下をコピーしてご記入ください。
-　　　税抜 ¥${fmt(customTotalEx)}／税込 ¥${fmt(customTotal)}
+　　　【税抜 ¥${fmt(customTotalEx)}／税込 ¥${fmt(customTotal)}】
 
 
 【ご注文後の流れ】
