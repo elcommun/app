@@ -113,14 +113,14 @@ const FT={
   fit:{id:"fit",label:"アルミ",full:"FIT FRAME",spec:"透明シート0.8mm／厚み調整材1.5mm／裏段3mm",
     short:FF_SHORT,long:FF_LONG,pt:FF_PT,std:FF_STD,maxS:900,maxL:1200,
     mailLabel:"アルミフレーム",
-    stdPrice:m=>`WH/BK/SV ¥${fmt(m.priceWBS)}　GD ¥${fmt(m.priceGD)}（税込）`,
+    stdPrice:m=>`WH/BK/SV ¥${fmt(Math.round(m.priceWBS/1.1))}（税抜）／¥${fmt(m.priceWBS)}（税込）　GD ¥${fmt(Math.round(m.priceGD/1.1))}（税抜）／¥${fmt(m.priceGD)}（税込）`,
     color:"#2563EB",colorLight:"#EFF6FF",colorBorder:"#BFDBFE",colorText:"#1D4ED8",
     colorDark:"#60A5FA",colorDarkBg:"#1E3A5F",colorDarkBorder:"#2D5A8E",
   },
   stain:{id:"stain",label:"木製",full:"STAIN PANEL",spec:"透明シート1mm／厚み調整材3mm／裏段3mm",
     short:SP_SHORT,long:SP_LONG,pt:SP_PT,std:SP_STD,maxS:900,maxL:1050,
     mailLabel:"木製フレーム",
-    stdPrice:m=>`¥${fmt(m.priceTax)}（税込）　税抜 ¥${fmt(m.priceEx)}`,
+    stdPrice:m=>`¥${fmt(m.priceEx)}（税抜）／¥${fmt(m.priceTax)}（税込）`,
     color:"#D97706",colorLight:"#FFFBEB",colorBorder:"#FDE68A",colorText:"#92400E",
     colorDark:"#FBBF24",colorDarkBg:"#3D2C10",colorDarkBorder:"#6B4C1A",
   },
@@ -199,11 +199,12 @@ function buildMail(shop,validRows){
     if(ex)return `・${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … 規格サイズ「${ex.name}」と同サイズです
 　単価 ${f.stdPrice(ex)}${tail}
 ・商品ページ：https://item.rakuten.co.jp/${s.shopId}/${ex.urlKey}/`;
-    return `・${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalIn)}（税込）${tail}
+    return `・${f.mailLabel}（${sh}mm×${lo}mm）${c.qty}個 … ¥${fmt(c.result.subtotalEx)}（税抜）／¥${fmt(c.result.subtotalIn)}（税込）${tail}
 ・商品ページ：${s.links[c.ft]}`;
   }).join("\n\n");
   const customTotal=custom.reduce((a,c)=>a+c.result.subtotalIn,0);
-  const totalLine=custom.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　${custom.length<validRows.length?"別注サイズ分の合計":"合計"}：¥${fmt(customTotal)}（税込）`:"";
+  const customTotalEx=custom.reduce((a,c)=>a+c.result.subtotalEx,0);
+  const totalLine=custom.length>1?`\n　━━━━━━━━━━━━━━━━━━━━\n　${custom.length<validRows.length?"別注サイズ分の合計":"合計"}：¥${fmt(customTotalEx)}（税抜）／¥${fmt(customTotal)}（税込）`:"";
   const maxThickness = hasFit && hasStain ? "約2mm厚（アルミ）／約3mm厚（木製）" : hasFit ? "約2mm厚" : "約3mm厚";
   // 規格サイズ案内（近いサイズがある行のみ）
   const stdLines=validRows.flatMap(c=>{
@@ -223,7 +224,7 @@ function buildMail(shop,validRows){
 
 【規格サイズのご案内】
 
-ご依頼のサイズに近い規格品がございます。
+ご依頼の別注サイズに近い規格品がございます。
 規格品は別注品と比べて価格が安く、納期も短い場合がございますので、もしよろしければそちらもご検討くださいませ。
 
 ${stdLines.join("\n\n")}
@@ -249,7 +250,9 @@ ${urlSection}
 　② ご注文確定前の「注文確認」画面下方にある「備考欄」の「▼【ポスターフレーム(額縁)】をご注文のお客様へ ▼」に、以下の情報をご記入ください。
 
 　○ ご希望の「ポスターサイズ」
-　○ 今回の「お見積もり金額（税込）」
+　○ 今回の「お見積もり金額」
+　　　以下をコピーしてご記入ください。
+　　　税抜 ¥${fmt(customTotalEx)}／税込 ¥${fmt(customTotal)}
 
 
 【ご注文後の流れ】
