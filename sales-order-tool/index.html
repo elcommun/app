@@ -1003,7 +1003,7 @@ function _doGenerateMain() {
   const endDay = Math.floor(maxT / 86400000);
 
   for (const partCode of sorted) {
-    if (/^XEC-/.test(partCode)) continue; // XEC-系は発注対象外
+    if (/^(XEC|HOR)-/.test(partCode)) continue; // XEC-系・HOR-系（売り切り終了）は発注対象外
 
     const currentStock = csvData.stockMap.has(partCode) ? csvData.stockMap.get(partCode) : 0;
     const prod = xlsxData.productMap.get(partCode);
@@ -1088,7 +1088,7 @@ function _doGenerateMain() {
   // 在庫CSVに無い品番のTRONCOの注文（他店舗での注文など）は、発注書には入れず画面で知らせる
   const weekStart = maxT - 7 * 86400000;
   for (const pc of salesData.troncoSet) {
-    if (csvData.stockMap.has(pc)) continue;
+    if (csvData.stockMap.has(pc) || /^(XEC|HOR)-/.test(pc)) continue;
     const weekSold = (salesMap.get(pc) || []).filter(r => r.t > weekStart).reduce((a, r) => a + r.qty, 0);
     if (weekSold <= 0) continue;
     const prod = xlsxData.productMap.get(pc);
