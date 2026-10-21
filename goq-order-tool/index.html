@@ -1059,7 +1059,7 @@ function _doGenerateMain() {
   const sorted = [...csvData.stockMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 
   for (const [partCode, currentStock] of sorted) {
-    if (/^XEC-/.test(partCode)) continue; // XEC-系は発注対象外
+    if (/^(XEC|HOR)-/.test(partCode)) continue; // XEC-系・HOR-系（売り切り終了）は発注対象外
 
     const prod = xlsxData.productMap.get(partCode);
     if (!prod) {
