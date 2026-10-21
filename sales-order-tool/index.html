@@ -194,6 +194,10 @@ header span{font-size:12px;color:var(--gray-400);margin-left:4px;}
           <div class="rule-card-desc">在庫が0になってから一定日数以上経過した商品（最終販売日から推定）は正確な予測ができないため、品番個別ルールがあればその発注数を、なければ仮で1ロットを入れ、備考に「長期欠品・…」と記載します。必要に応じて数を調整してください。</div>
         </div>
       </div>
+      <div class="rule-card" style="margin-top:12px;background:#FFF7ED;border-color:#FED7AA;">
+        <div class="rule-card-title">🌱 TRONCO商品（商品名に「TRONCO」を含む取り寄せ品）</div>
+        <div class="rule-card-desc">在庫を持たず、売れた分だけ発注します。最小ロットで入荷して棚に余った分は差し引くので、余りで足りる間は発注しません。注文が入ったときは結果画面にオレンジの枠で表示します。ロット2以上で、期間より前の余りが棚に残っていた可能性がある場合は、備考に「要確認」と書きます。</div>
+      </div>
     </div>
   </div>
 
@@ -276,6 +280,7 @@ header span{font-size:12px;color:var(--gray-400);margin-left:4px;}
     <h3>✅ 発注書の生成が完了しました！</h3>
     <button class="dl-btn" id="dlBtn">⬇️ 発注書をダウンロード</button>
     <div class="stats-grid" id="statsGrid"></div>
+    <div id="troncoAlert" style="display:none;margin-top:14px;background:#FFF7ED;border:2px solid #FB923C;border-radius:8px;padding:14px 18px;text-align:left;font-size:13px;color:#9A3412;line-height:1.8;"></div>
     <div id="notFoundAlert" style="display:none;margin-top:14px;background:var(--red-light);border:1px solid #FECACA;border-radius:8px;padding:14px 18px;text-align:left;font-size:13px;color:#991B1B;line-height:1.8;"></div>
   </div>
 
@@ -665,8 +670,10 @@ function loadCSV(input) {
       if (idxSku   < 0) throw new Error(`品番列が見つかりません。検出列: ${headers.slice(0,12).join(' / ')}`);
       if (idxStock < 0) throw new Error(`在庫数列が見つかりません。検出列: ${headers.slice(0,12).join(' / ')}`);
 
+      const idxName  = findColIdx(headers, ['商品名']);
       const stockMap = new Map();
       const rawMap   = new Map();
+      const troncoSet = new Set();  // 商品名に「TRONCO」を含む品番（売れたら発注する取り寄せ品）
       let totalRows = 0, elcoRows = 0;
 
       for (let i = 1; i < rows.length; i++) {
@@ -680,9 +687,10 @@ function loadCSV(input) {
         if (!partCode) continue;
         stockMap.set(partCode, (stockMap.get(partCode) || 0) + stock);
         if (!rawMap.has(partCode)) rawMap.set(partCode, rawPn);
+        if (idxName >= 0 && /TRONCO/i.test(r[idxName] || '')) troncoSet.add(partCode);
       }
 
-      csvData = { stockMap, rawMap, totalRows, elcoRows, filename: file.name };
+      csvData = { stockMap, rawMap, troncoSet, totalRows, elcoRows, filename: file.name };
       setStatus('statusCSV', 'ok',
         `✅ 読み込み完了：全${totalRows}行 / elco- ${elcoRows}行 / 変換後 ${stockMap.size}品番`);
       showPreviewCSV(stockMap);
@@ -769,6 +777,8 @@ function loadSales(input) {
       const idxPn   = findColIdx(headers, ['商品番号','商品コード']);
       const idxQty  = findColIdx(headers, ['個数','数量']);
       const idxDate = findColIdx(headers, ['注文日時','注文日','受注日時','受注日']);
+      const idxSName = findColIdx(headers, ['商品名']);
+      const troncoSet = new Set();  // 注文データの商品名に「TRONCO」を含む品番
       if (idxPn   < 0) throw new Error(`商品番号列が見つかりません。検出列: ${headers.slice(0,10).join(' / ')}`);
       if (idxQty  < 0) throw new Error(`個数列が見つかりません。検出列: ${headers.slice(0,10).join(' / ')}`);
       if (idxDate < 0) throw new Error(`注文日時列が見つかりません。検出列: ${headers.slice(0,10).join(' / ')}`);
@@ -793,12 +803,13 @@ function loadSales(input) {
         if (!maxT || t > maxT) maxT = t;
         if (!salesMap.has(partCode)) salesMap.set(partCode, []);
         salesMap.get(partCode).push({ t, qty });
+        if (idxSName >= 0 && /TRONCO/i.test(r[idxSName] || '')) troncoSet.add(partCode);
       }
 
       if (!minT) throw new Error('elco- 商品の販売データが見つかりません');
       const periodDays = Math.max(1, (maxT - minT) / 86400000);
 
-      salesData = { salesMap, totalRows, elcoRows, minT, maxT, periodDays, filename: file.name };
+      salesData = { salesMap, troncoSet, totalRows, elcoRows, minT, maxT, periodDays, filename: file.name };
       setStatus('statusSales', 'ok',
         `✅ 読み込み完了：全${totalRows}行 / elco- ${elcoRows}行 / ${salesMap.size}品番<br>` +
         `<span style="font-size:11px">期間：${fmtDate(minT)} 〜 ${fmtDate(maxT)}（${periodDays.toFixed(1)}日間）</span>`);
@@ -907,6 +918,49 @@ function calcAdjustedAvg(records, currentStock, minT, maxT, periodDays) {
 }
 
 // =====================================================
+// TRONCO（売れたら発注する取り寄せ品）の発注数計算
+// =====================================================
+/**
+ * 注文データの期間を発注日から1週間ずつ区切り、毎週「売れた数のうち、手元の残り＋入荷待ちで
+ * 足りない分だけをロット単位で発注する」流れを再現して、今週の発注数を出す。
+ * 入荷待ちも含めた数（手元の残り＋入荷待ち−未出荷の注文）で判定するので、入荷までの日数に左右されない。
+ * 期間の最初の残り数は不明なため最小値を使う。ただし現在庫が1以上なら、未出荷の注文は無く
+ * 手元の残り＋入荷待ちは現在庫以上のはずなので、それを満たす最小値にする。
+ * 返り値: { orderQty, weekSold, ambiguous }
+ */
+function calcTroncoOrder(records, lot, currentStock, minT, maxT) {
+  const WEEK = 7 * 86400000;
+  const nWeeks = Math.max(1, Math.ceil((maxT - minT) / WEEK));
+  const weekly = new Array(nWeeks).fill(0);  // 古い週 → 今週
+  for (const r of records) {
+    const back = Math.min(nWeeks - 1, Math.floor((maxT - r.t) / WEEK));
+    weekly[nWeeks - 1 - back] += r.qty;
+  }
+  const totalSold = weekly.reduce((a, b) => a + b, 0);
+
+  // 期間の最初の残り数 x から、今週の発注前の数を求める
+  const simulate = x => {
+    let pos = x;
+    for (let i = 0; i < nWeeks; i++) {
+      pos -= weekly[i];
+      if (i < nWeeks - 1 && pos < 0) pos += Math.ceil(-pos / lot) * lot;
+    }
+    return pos;
+  };
+  const orderFrom = pos => pos < 0 ? Math.ceil(-pos / lot) * lot : 0;
+
+  let xMin = 0;
+  if (currentStock > 0)
+    while (simulate(xMin) < currentStock && xMin <= currentStock + totalSold + lot) xMin++;
+  const orderQty = orderFrom(simulate(xMin));
+
+  // ロット2以上は、期間より前の余りが棚に残っていた可能性がある。その場合に発注数が変わるなら要確認
+  const ambiguous = lot > 1 && orderQty > 0 && orderFrom(simulate(xMin + lot - 1)) !== orderQty;
+
+  return { orderQty, weekSold: weekly[nWeeks - 1], ambiguous };
+}
+
+// =====================================================
 // 発注書生成
 // =====================================================
 function doGenerate() {
@@ -941,6 +995,7 @@ function _doGenerateMain() {
   const notFoundList = [];
 
   let needOrder = 0, skipOk = 0, haibanCount = 0, notFound = 0, manualCount = 0;
+  const troncoSold = [];  // 今週TRONCOの注文が入った商品（画面表示用）
 
   // 対象品番：在庫CSVに含まれる品番のみ（発注対象は在庫CSVベース）
   const sorted = [...csvData.stockMap.keys()].sort((a, b) => a.localeCompare(b));
@@ -964,6 +1019,26 @@ function _doGenerateMain() {
     const lotNum = lot > 0 ? lot : 1;
     const records = salesMap.get(partCode) || [];
 
+    if (haiban) haibanCount++;
+
+    // TRONCO：在庫を持たず、売れた分だけ発注する
+    if (csvData.troncoSet.has(partCode) || salesData.troncoSet.has(partCode)) {
+      const tr = calcTroncoOrder(records, lotNum, currentStock, minT, maxT);
+      if (tr.weekSold > 0)
+        troncoSold.push({ partCode, hinmei, weekSold: tr.weekSold, currentStock, orderQty: tr.orderQty, ambiguous: tr.ambiguous });
+      if (tr.orderQty <= 0) {
+        if (tr.weekSold > 0) log(`🌱 TRONCO: ${partCode}  今週${tr.weekSold}個売れた → 手元の残りで足りるため発注なし`, 'log-ok');
+        continue;
+      }
+      const tBiko = [];
+      if (haiban) tBiko.push('廃番');
+      tBiko.push(tr.ambiguous ? 'TRONCO・要確認（棚の残りを確認）' : 'TRONCO（売れた分を発注）');
+      log(`🌱 TRONCO: ${partCode}  今週${tr.weekSold}個売れた → ${tr.orderQty}個発注${tr.ambiguous ? '（要確認）' : ''}`, 'log-purple');
+      needOrder++;
+      orderRows.push([partCode, hinmei, jodai, currentStock, lotNum, tr.orderQty, tBiko.join('＋')]);
+      continue;
+    }
+
     const adj = calcAdjustedAvg(records, currentStock, minT, maxT, periodDays);
     const forecast = adj.avgPerDay * forecastDays;
 
@@ -971,8 +1046,6 @@ function _doGenerateMain() {
     // （在庫履歴は無いため、現在庫0の商品は「最終販売日＝在庫が0になった日」とみなして推定。販売実績が無い在庫0商品も対象）
     const daysSinceLastSale = adj.lastSaleT ? endDay - Math.floor(adj.lastSaleT / 86400000) : Infinity;
     const isManual = currentStock <= 0 && daysSinceLastSale >= staleDays;
-
-    if (haiban) haibanCount++;
 
     let orderQty;
     let manualNote = '';
@@ -1012,6 +1085,17 @@ function _doGenerateMain() {
     orderRows.push([partCode, hinmei, jodai, currentStock, lotNum, orderQty, biko]);
   }
 
+  // 在庫CSVに無い品番のTRONCOの注文（他店舗での注文など）は、発注書には入れず画面で知らせる
+  const weekStart = maxT - 7 * 86400000;
+  for (const pc of salesData.troncoSet) {
+    if (csvData.stockMap.has(pc)) continue;
+    const weekSold = (salesMap.get(pc) || []).filter(r => r.t > weekStart).reduce((a, r) => a + r.qty, 0);
+    if (weekSold <= 0) continue;
+    const prod = xlsxData.productMap.get(pc);
+    troncoSold.push({ partCode: pc, hinmei: prod ? prod.hinmei : '', weekSold, currentStock: '—', orderQty: 0, notInStock: true });
+    log(`🌱 TRONCO: ${pc}  今週${weekSold}個売れた → 在庫CSVに無いため発注書には入れていません`, 'log-warn');
+  }
+
   log('──────────────────────────────', 'log-sep');
   log(`📊 完了 | 発注:${needOrder}（うち長期欠品:${manualCount}）/ 充足:${skipOk} / 廃番:${haibanCount} / 未発見:${notFound}`, 'log-info');
 
@@ -1043,6 +1127,20 @@ function _doGenerateMain() {
     <div class="stat"><div class="num">${haibanCount}</div><div class="label">廃番品</div></div>
     <div class="stat"><div class="num" style="color:${notFound ? 'var(--red)' : 'var(--gray-400)'}">${notFound}</div><div class="label">紐づけエラー</div></div>
   `;
+
+  // TRONCOの注文が入った商品を画面に表示
+  const trEl = document.getElementById('troncoAlert');
+  if (troncoSold.length) {
+    const rowsHtml = troncoSold.map(t => `<tr><td>${esc(t.partCode)}</td><td>${esc(t.hinmei)}</td>` +
+      `<td style="text-align:center;font-weight:700;">${t.weekSold}</td><td style="text-align:center;">${t.currentStock}</td>` +
+      `<td style="text-align:center;font-weight:700;">${t.orderQty}</td>` +
+      `<td>${t.notInStock ? '⚠️ 在庫CSVに無いため発注書に未記載（要確認）' : t.orderQty > 0 ? (t.ambiguous ? '⚠️ 発注（棚の残りを確認）' : '発注') : '手元の残りで対応'}</td></tr>`).join('');
+    trEl.innerHTML = `<div style="font-size:15px;font-weight:800;margin-bottom:8px;">🌱 TRONCOの注文が ${troncoSold.length} 品番 入っています（直近1週間）</div>` +
+      `<div style="overflow-x:auto;"><table class="preview-table" style="background:white;"><thead><tr><th>品番</th><th>品名</th><th>今週売れた数</th><th>現在庫</th><th>発注数</th><th>対応</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+    trEl.style.display = 'block';
+  } else {
+    trEl.style.display = 'none';
+  }
 
   // 紐づけエラー（在庫CSVにあるが商品データに存在しない品番）を画面に表示
   const alertEl = document.getElementById('notFoundAlert');
