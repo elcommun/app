@@ -555,7 +555,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v167</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v168</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -962,10 +962,13 @@ const MACRO_CODE_OVERRIDE=[
 const APJ_CODE_FIXUPS={'apj-wf61_91':'apj-wf61_91_1'};
 // 商品番号の頭が一致する商品を、1つの商品番号・商品名にまとめるルール（dedupeProductsByCode で統合）
 // ・apj-af00_00〜（FIT FRAME 特寸）・apj-wf00_00〜（STAIN PANEL 特寸）は、サイズ・色ごとに都度単価が違うオーダーメイド商品なので1商品にまとめる（2026-10-15・10-21 ユーザー指示）
-//   色などのバリエーション名は表示から外し、非表示の検索ワードとして残す
+//   元の商品名（サイズ・手ぬぐい用など）・色などのバリエーション名・元の商品番号は表示から外し、非表示の検索ワードとして残す
+// ・以前の品番で登録されていた特寸品（FIT FRAME の made2〜／af-made〜、STAIN PANEL の手ぬぐい用額縁・在庫品・wf99_97）も同じ1商品にまとめる（2026-10-21 ユーザー指示）
 const MERGE_CODE_RULES=[
   [/^apj-af00_00/i,'apj-af00_00','FIT FRAME【特寸：オーダーメイド】'],
+  [/^(made2(WH|BK)|af-made\d(BK|SV|GD|WH))$/i,'apj-af00_00','FIT FRAME【特寸：オーダーメイド】'],
   [/^apj-wf00_00/i,'apj-wf00_00','STAIN PANEL【特寸：オーダーメイド】'],
+  [/^(apj-wf_tenugui\d+|apj-wf_zaiko-sp\d+[a-z]*|apj-wf99_97)$/i,'apj-wf00_00','STAIN PANEL【特寸：オーダーメイド】'],
 ];
 // 単価を「表示中の期間の合計金額÷販売数」の平均単価で出す商品番号（単価が注文ごとに違う商品）
 const AVG_PRICE_CODES=new Set(['apj-af00_00','apj-wf00_00']);
@@ -1121,7 +1124,7 @@ function dedupeProductsByCode(){
   Object.values(ALL_PRODUCTS).forEach(p=>{
     for(const [re,code,name] of MERGE_CODE_RULES){
       if(!re.test(p[3]||'')) continue;
-      if(p[2]) p[6]=p[6]?(p[6]+' '+p[2]):p[2];
+      for(const w of [p[1]!==name?p[1]:'',p[2],p[3]!==code?p[3]:'']){ if(w) p[6]=p[6]?(p[6]+' '+w):w; }
       p[3]=code; p[1]=name; p[2]='';
       break;
     }
