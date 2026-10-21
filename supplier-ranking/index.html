@@ -555,7 +555,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v166</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v167</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -961,11 +961,14 @@ const MACRO_CODE_OVERRIDE=[
 // （サイズだけでは楽天市場側の実際の商品番号と一致しないもの。末尾に枝番が付く）
 const APJ_CODE_FIXUPS={'apj-wf61_91':'apj-wf61_91_1'};
 // 商品番号の頭が一致する商品を、1つの商品番号・商品名にまとめるルール（dedupeProductsByCode で統合）
-// ・apj-af00_00〜（FIT FRAME 特寸）は、サイズ・色ごとに都度単価が違うオーダーメイド商品なので1商品にまとめる（2026-10-15 ユーザー指示）
+// ・apj-af00_00〜（FIT FRAME 特寸）・apj-wf00_00〜（STAIN PANEL 特寸）は、サイズ・色ごとに都度単価が違うオーダーメイド商品なので1商品にまとめる（2026-10-15・10-21 ユーザー指示）
 //   色などのバリエーション名は表示から外し、非表示の検索ワードとして残す
-const MERGE_CODE_RULES=[[/^apj-af00_00/i,'apj-af00_00','FIT FRAME【特寸：オーダーメイド】']];
+const MERGE_CODE_RULES=[
+  [/^apj-af00_00/i,'apj-af00_00','FIT FRAME【特寸：オーダーメイド】'],
+  [/^apj-wf00_00/i,'apj-wf00_00','STAIN PANEL【特寸：オーダーメイド】'],
+];
 // 単価を「表示中の期間の合計金額÷販売数」の平均単価で出す商品番号（単価が注文ごとに違う商品）
-const AVG_PRICE_CODES=new Set(['apj-af00_00']);
+const AVG_PRICE_CODES=new Set(['apj-af00_00','apj-wf00_00']);
 function unitPriceOf(p,qty,amount){ return AVG_PRICE_CODES.has(p[3])&&qty>0 ? Math.round(amount/qty) : p[4]; }
 // 商品名クリーニング用の定数（normalizeProducts()がbuildData()の初回同期実行から参照するため、ここで初期化）
 // 「|」「｜」以降は検索ワードの羅列のため、商品名には表示せず非表示検索ワードに回す
@@ -992,7 +995,7 @@ const CODE_NAME_CUT=[[/^apj-cff/i,'フォトフレーム'],[/^apj-ncb/i,'フォ�
 const CODE_NAME_CUT_AFTER=[[/^wh-plus-51876-/i,'プラス デコレーションテープ デコラッシュPLUS テープ 6mm']];
 // 商品名が指定フレーズで「始まる」場合、フレーズより後ろを非表示検索ワードに回すルール（商品番号を問わない）
 // 長いフレーズを先に並べること（先にマッチしたものを採用）
-const NAME_CUT_AFTER=['キングジム KITTA キッタミシン マスキングテープ','キングジム KITTA マスキングテープ','Ohhh BENTOU ランチボックス','松尾ミユキ マグカップ Cat handle mug','松尾ミユキ Sheer Drawstring pouch','ナタリーレテ ミニバッグ チェック柄','松尾ミユキ Stripe Mesh flat pouch','ナタリーレテ マルチマット（Mサイズ）','松尾ミユキ Boat and Tote チェック柄','松尾ミユキ Cat Mirror','ナタリーレテ マルチマット（Lサイズ）','松尾ミユキ Sheer Bag'];
+const NAME_CUT_AFTER=['キングジム KITTA キッタミシン マスキングテープ','キングジム KITTA マスキングテープ','Ohhh BENTOU ランチボックス','松尾ミユキ マグカップ Cat handle mug','松尾ミユキ Sheer Drawstring pouch','ナタリーレテ ミニバッグ チェック柄','松尾ミユキ Stripe Mesh flat pouch','ナタリーレテ マルチマット（Mサイズ）','松尾ミユキ Boat and Tote チェック柄','松尾ミユキ Cat Mirror','ナタリーレテ マルチマット（Lサイズ）','松尾ミユキ Sheer Bag','小池ふみ ミラー Mirror'];
 // 商品名末尾の【…】ブロックは検索ワードの羅列とみなして商品名から外し、非表示検索ワードに回す。
 // ただし寸法表記（数字+mm/cm・数字×数字を含むもの。例:【特寸：450mm×500mm】）は商品名に残す
 const TRAIL_BRACKET_RE=/【([^【】]*)】\s*$/;
