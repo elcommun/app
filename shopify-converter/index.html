@@ -143,7 +143,7 @@
       </div>
       <div class="option-row">
         <input type="checkbox" id="linkCleanChk" checked>
-        <label for="linkCleanChk">説明文のリンク切れブロックを削除<span class="opt-sub">（Shopify登録済み商品CSVのHandleに無い商品や楽天専用ページへのリンクを含むブロックを除去。登録済みCSV未アップ時は今回のCSV内の商品で判定）</span></label>
+        <label for="linkCleanChk">説明文のリンク切れブロックを削除<span class="opt-sub">（Shopify登録済み商品CSVのHandleにも今回アップする商品にも無い商品や、楽天専用ページへのリンクを除去）</span></label>
       </div>
       <div class="option-row">
         <input type="checkbox" id="titleSplitChk" checked>
@@ -187,7 +187,7 @@
   let convertedData = null;
 
   // アプリ更新時はこの日付を上げる（キャッシュで旧版を使っていないか画面上で確認できるように）
-  const APP_VERSION = 'v2026-10-18';
+  const APP_VERSION = 'v2026-10-22';
   document.getElementById('appVersion').textContent = APP_VERSION;
 
   const uploadZone = document.getElementById('uploadZone');
@@ -1329,11 +1329,10 @@
       const gramsIssues = []; // 配送区分が不明でVariant Gramsを設定できない商品
 
       // リンク生存判定用（末尾ハイフン除去で比較）：
-      // Shopify登録済み商品CSVがあればそのHandle列のみを正とする。無ければ今回のCSV内の商品で判定。
+      // Shopify登録済み商品CSVのHandle ＋ 今回のCSVでアップする商品（同時に登録されるため有効）。
+      // （2026-10-22 ユーザー指示：登録済みに無くても今回アップする新商品は関連商品から省かない）
       const validHandles = new Set(registeredHandles);
-      if (validHandles.size === 0) {
-        Object.keys(grouped).forEach(h => { if (h) validHandles.add(normalizeHandle(h.trim())); });
-      }
+      Object.keys(grouped).forEach(h => { if (h) validHandles.add(normalizeHandle(h.trim())); });
 
       // リンク切れ判定：楽天GOLDページ、またはHandle一覧に無い商品へのリンク
       function isBrokenUrl(u) {
@@ -1637,7 +1636,7 @@
         if (registeredHandles.size === 0) {
           log('　※Shopify登録済み商品CSV未読み込みのため、今回のCSV内の商品のみ有効リンクと判定しています', 'log-warn');
         } else {
-          log(`　※登録済み ${registeredHandles.size} 商品のHandleを有効リンクとして判定`, 'log-info');
+          log(`　※登録済み ${registeredHandles.size} 商品＋今回アップする ${Object.keys(grouped).filter(Boolean).length} 商品を有効リンクとして判定`, 'log-info');
         }
         if (removedLinkTargets.size > 0) {
           const targets = [...removedLinkTargets].sort();

@@ -68,6 +68,7 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - `raffinart-stock-tool/` は `raffinart-order/`（発注書作成）とは別物。オフライン版 `raffinart-stock-tool-offline.html` は `build-offline.py` で作り直す
 - バージョン番号の自動更新（`APP_VERSION`）は付けていない（作業中の自動リロードで入力が消えるのを避けるため）
 - **shopify-converter：楽天リンクの付け替え（2026-10-17 ユーザー指示）**。商品説明の楽天リンクは、商品ページ→Shopify商品、カテゴリ（/c/）→対応表のコレクション、楽天の倉庫ページ（soko.rms）・rakuten.co.jp直下→item.rakuten.co.jp に正規化してから同じ付け替え、楽天の検索結果→同じ検索語のShopifyサイト内検索（`normalizeRakutenLinks`）。2026-10-17 に既存31商品の残っていた楽天リンク37か所も同じルールで直した（元の説明文は `shopify-converter/backup/`）
+- **shopify-converter：リンク切れ判定の有効商品（2026-10-22 ユーザー指示）**。説明文・関連商品のリンクは「Shopify登録済み商品CSVのHandle」＋「今回のCSVでアップする商品」を有効とする。登録済みに無くても同時にアップする新商品へのリンクは省かない。どちらにも無い商品・楽天GOLDの対応表に無いページへのリンクだけを削除する
 - **shopify-converter：新規商品は必ず「新商品」コレクションに入れる（2026-10-15 ユーザー指示）**。Shopifyの「新商品」は自動コレクション（CSVのCollection列では入れられない）なので、新規商品（Shopify登録済み商品CSVに無い商品。未読み込み時は全商品）にタグ `新商品`（`NEW_PRODUCT_TAG`）を付け、コレクション側の条件「タグが 新商品 と等しい」（OR条件。2026-10-15 追加済み）で入れる
 
 ### トップページ（アプリ一覧）`index.html`（2026-10-11 ユーザー指示）
