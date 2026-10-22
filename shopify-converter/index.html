@@ -183,11 +183,11 @@
   let catFile = null;
   let typeMap = {}; // 商品管理番号 -> Type
   let tagsMap = {}; // 商品管理番号 -> Tags
-  let calendarCollectionMap = {}; // 商品管理番号 -> カレンダー用Collection名
+  let pathCollectionMap = {}; // 商品管理番号 -> カテゴリのフルパスから決めたCollection名（カレンダー・花瓶）
   let convertedData = null;
 
   // アプリ更新時はこの日付を上げる（キャッシュで旧版を使っていないか画面上で確認できるように）
-  const APP_VERSION = 'v2026-10-22';
+  const APP_VERSION = 'v2026-10-22-2';
   document.getElementById('appVersion').textContent = APP_VERSION;
 
   const uploadZone = document.getElementById('uploadZone');
@@ -296,13 +296,13 @@
 
       typeMap = buildTypeMap(parsed.data);
       tagsMap = buildTagsMap(parsed.data);
-      calendarCollectionMap = buildCalendarCollectionMap(parsed.data);
+      pathCollectionMap = buildPathCollectionMap(parsed.data);
       const count = Object.keys(typeMap).length;
       catStatus.innerHTML = `<div class="file-status ok">✅ ${file.name} を読み込み、${count} 商品のType・Tagsを判定しました</div>`;
     } catch (err) {
       typeMap = {};
       tagsMap = {};
-      calendarCollectionMap = {};
+      pathCollectionMap = {};
       catStatus.innerHTML = `<div class="file-status err">❌ エラー：${err.message}</div>`;
     }
   }
@@ -504,6 +504,8 @@
     "壁掛けカレンダー",
     "MY Darlin｜マイダーリン",
     "クリップボード",
+    "花瓶・フラワーベース",
+    "小物ディスプレイ",
   ]);
   // Type名がコレクション一覧と表記違いの場合の読み替え
   const COLLECTION_ALIAS = {
@@ -1226,14 +1228,22 @@
     return '';
   }
 
-  function buildCalendarCollectionMap(rows) {
+  // 花瓶は楽天で「インテリア＼小物ディスプレイ」にも入っていて末端Typeだけでは決まらないため、
+  // 「花瓶」「花瓶・フラワーベース」カテゴリに入っていれば花瓶のコレクションを優先する
+  // （2026-10-22 ユーザー指示。楽天のカテゴリ名は「花瓶」→「花瓶・フラワーベース」に変更済み）
+  const VASE_CATEGORY_RE = /(^|\\)花瓶(・フラワーベース)?$/;
+
+  function buildPathCollectionMap(rows) {
     const byHandle = _.groupBy(rows, r => (r['商品管理番号（商品URL）'] || '').trim());
     const map = {};
     Object.entries(byHandle).forEach(([handle, items]) => {
       if (!handle) return;
-      const paths = items
-        .map(r => (r['表示先カテゴリ'] || '').trim().replace(/＼/g, '\\'))
-        .filter(p => p.includes('カレンダー'));
+      const allPaths = items.map(r => (r['表示先カテゴリ'] || '').trim().replace(/＼/g, '\\'));
+      if (allPaths.some(p => VASE_CATEGORY_RE.test(p))) {
+        map[handle] = '花瓶・フラワーベース';
+        return;
+      }
+      const paths = allPaths.filter(p => p.includes('カレンダー'));
       // 階層が深いパスを優先して判定
       paths.sort((a, b) => b.split('\\').length - a.split('\\').length);
       for (const p of paths) {
@@ -1449,7 +1459,7 @@
         } else if (!genreCategory && !PRODUCT_CATEGORY_MAP[productType]) {
           categoryIssues.push(`${productName}（${handle}）：ジャンルID「${genreId}」が対応表に無く、Type「${productType}」もProduct Categoryに未対応です`);
         }
-        if (productType && !calendarCollectionMap[handle] && !resolveCollection(productType)) {
+        if (productType && !pathCollectionMap[handle] && !resolveCollection(productType)) {
           collectionMissing.add(productType);
         }
 
@@ -1596,7 +1606,7 @@
             'Variant Tax Code': '',
             'Cost per item': '',
             'Status': isFirst ? 'active' : '',
-            'Collection': isFirst ? (calendarCollectionMap[handle] || resolveCollection(typeMap[handle] || '')) : '',
+            'Collection': isFirst ? (pathCollectionMap[handle] || resolveCollection(typeMap[handle] || '')) : '',
             'Metafield: custom.original_title [single_line_text_field]': isFirst ? originalTitle : '',
           });
           if (imageUrl) imageCount++;
