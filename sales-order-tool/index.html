@@ -299,7 +299,7 @@ let salesData = null;  // 注文データ
 // =====================================================
 function resolvePartCode(rawPn) {
   if (!rawPn || !rawPn.startsWith('elco-')) return null;
-  const pn = rawPn.trim();
+  const pn = rawPn.replace(/\s+/g, ''); // SKU内に紛れ込んだ空白（例: "elco-ptb009- PTB-013"）を除去
   if (/^elco-(ECL|LLN)-/i.test(pn)) {
     // 額縁付き（wf-brown/natural）は別在庫のSKU。ポスター単体と合算すると在庫0を見逃すため対象外
     if (/wf-/i.test(pn)) return null;
