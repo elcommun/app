@@ -326,6 +326,7 @@ const colspan = 7 + (showCmp ? 2 : 0) + (showSo ? 1 : 0) + (showImg ? 1 : 0);
   - **番号が同じだけの別商品ペアの実例（`XDR_UNIFY_EXCLUDE` にも登録済み）**:
     - DR-WK-638（2025年度版4月始まり Point Kiwi）≠ XDR-WK-638（EC別注2025年版1月始まり ﾜﾝﾎﾟｲﾝﾄﾃﾞﾒﾆｷﾞｽ）
     - DR-MG-593（2027年版 Pieni Sheep）。商品マスタExcelの XDR-MG-593（ﾄｺﾅｯﾂ別注2026年版B6ﾏﾝｽﾘｰﾘﾌｨﾙ）は**実在しない商品の誤登録行**で、2026-09-01にこれへ売上が誤付け替えされる事故が発生→修正済み。マスタExcel側の行削除をユーザーに依頼中
+- **画像が未登録の商品の報告（2026-10-26 ユーザー指示）**: 取り込みのたびに `python3 tools/list-missing-images.py <販売データ.xlsx> -o <スクラッチパッド>/missing_images_<期間>.csv` を実行し、**取り込みの報告に「画像なし ◯件」と一覧（品番・商品名・個数）を書き、CSV を SendUserFile で渡す**（0件なら「画像なし 0件」とだけ書く）。判定は `ranking/image-index.js`（`CODE_REMAP` で読み替え、`SLW-`・`DR-MM-` は除外）。**ランキングのアプリ画面には出さない**。画像不要とユーザーが言った品番はスクリプトの `NO_IMAGE_OK` に足す（現在 XEC-004〜006）
 - **`ranking/data.js` の検索コードを追加・更新したら `item-data/search-codes.js`（過去検索コードのスナップショット、item-data と ec-sales-split の両方が読み込む）を再生成し、両アプリの `<script src=...search-codes.js?v=N>` の `?v=N` を上げること**
 
 ### 仕入れ商品アプリ（supplier-ranking）のカテゴリ固定ルール
