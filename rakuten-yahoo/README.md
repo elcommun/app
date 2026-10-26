@@ -4,7 +4,7 @@
 
 - 公開先（予定）：https://elcommun.github.io/app/rakuten-yahoo/
 - 構成：`index.html` 1ファイルのみ（HTML／CSS／JSをすべて内包。ビルド不要）
-- 現在のバージョン：`APP_VERSION = 27`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
+- 現在のバージョン：`APP_VERSION = 28`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
 
 このファイルは、Claudeのチャットで作成した初版をClaude Codeに引き継ぐためのメモです。
 
@@ -21,7 +21,7 @@
 
 | 部分 | 内容 |
 |---|---|
-| `LINK_MAP` | 楽天カテゴリ番号 → YahooページID（84件） |
+| `LINK_MAP` | 楽天カテゴリ番号 → YahooページID（86件） |
 | `GENRE_MAP` | 楽天ジャンルID → Yahoo product-category と spec_id（130件。569310 → 13591 を v24 で追加） |
 | 変換ロジック | `convertAll`、`convName`、`convPcDesc`、`convAdditional`、`convSp`、`convertUrls`、`shippingFor`、`buildRequest`、`parseResponse`、`buildImageScript` など。DOMに依存しない |
 | 画面まわり | `APP_VERSION` 以降。ファイル読み込み、確認画面、設定（localStorage）、ダウンロード |
