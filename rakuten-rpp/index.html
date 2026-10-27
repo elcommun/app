@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>楽天RPP広告アナリスト | EL COMMUN</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="item-names.js?v=1"></script>
+<style>
+:root{--primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;--gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;--gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;--green:#10B981;--green-light:#ECFDF5;--red:#EF4444;--red-light:#FEF2F2;--yellow-light:#FFFBEB;--blue-light:#EFF6FF;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
+header{background:white;border-bottom:3px solid var(--primary);padding:14px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;}
+header h1{font-size:17px;font-weight:700;}
+header h1 span{font-size:12px;color:var(--gray-400);margin-left:6px;font-weight:400;}
+.container{max-width:1200px;margin:0 auto;padding:24px 16px;}
+.info-box{background:var(--yellow-light);border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#92400E;line-height:1.7;}
+.info-box strong{color:#78350F;}
+.rule-box{background:var(--blue-light);border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.9;}
+.card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:18px;overflow:hidden;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.step{width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;}
+.card-header h2{font-size:15px;font-weight:700;}
+.sub{font-size:12px;color:var(--gray-400);margin-left:4px;font-weight:400;}
+.card-body{padding:18px;}
+.upload-zone{border:2px dashed var(--gray-200);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50);position:relative;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--primary);background:var(--primary-light);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:30px;margin-bottom:6px;}
+.upload-zone p{font-size:14px;color:var(--gray-600);margin-bottom:2px;}
+.upload-zone small{font-size:12px;color:var(--gray-400);}
+.file-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;margin-top:8px;font-size:12px;}
+.file-status.ok{background:var(--green-light);color:#065F46;}
+.file-status.err{background:var(--red-light);color:#991B1B;}
+.file-status.warn{background:var(--yellow-light);color:#92400E;}
+.settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
+.setting-item label{display:block;font-size:12px;color:var(--gray-600);margin-bottom:3px;font-weight:600;}
+.setting-item input{width:100%;padding:7px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;}
+.setting-item small{display:block;font-size:11px;color:var(--gray-400);margin-top:2px;}
+.primary-btn{width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s;}
+.primary-btn:hover:not(:disabled){background:var(--primary-dark);}
+.primary-btn:disabled{background:var(--gray-400);cursor:not-allowed;}
+.dl-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;background:var(--green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
+.dl-btn:hover{background:#059669;}
+.log-box{margin-top:12px;background:var(--gray-800);color:#D1FAE5;border-radius:8px;padding:12px;font-size:12px;font-family:'Courier New',monospace;line-height:1.8;max-height:160px;overflow-y:auto;display:none;}
+.log-box.show{display:block;}
+.log-ok{color:#6EE7B7;}.log-warn{color:#FCD34D;}.log-err{color:#FCA5A5;}.log-info{color:#93C5FD;}
+.period{font-size:13px;color:var(--gray-600);margin-bottom:12px;}
+.period b{color:var(--gray-800);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.kpi-card{background:white;border-radius:10px;padding:12px 10px;text-align:center;border:1px solid var(--gray-200);}
+.kpi-card .num{font-size:19px;font-weight:800;color:var(--primary);}
+.kpi-card .label{font-size:11px;color:var(--gray-600);margin-top:2px;}
+.kpi-card.good .num{color:var(--green);}.kpi-card.warn .num{color:#D97706;}.kpi-card.danger .num{color:var(--red);}
+.table-wrap{overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{background:var(--gray-100);padding:7px 9px;text-align:right;font-weight:600;color:var(--gray-600);border-bottom:2px solid var(--gray-200);white-space:nowrap;cursor:pointer;user-select:none;}
+.data-table td{padding:6px 9px;border-bottom:1px solid var(--gray-200);text-align:right;white-space:nowrap;}
+.data-table .l{text-align:left;}
+.data-table td.name{text-align:left;white-space:normal;min-width:180px;max-width:280px;font-size:11px;color:var(--gray-600);}
+.data-table tr:hover td{background:#FAFAFA;}
+.data-table a{color:var(--primary);text-decoration:none;}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.badge-green{background:#D1FAE5;color:#065F46;}.badge-yellow{background:#FEF3C7;color:#92400E;}.badge-red{background:#FEE2E2;color:#991B1B;}.badge-gray{background:#F3F4F6;color:#374151;}.badge-blue{background:#DBEAFE;color:#1D4ED8;}.badge-orange{background:#FED7AA;color:#C2410C;}
+.tab-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.tab-btn{padding:6px 13px;border-radius:6px;font-size:12px;border:1px solid var(--gray-200);background:var(--gray-50);cursor:pointer;font-weight:600;color:var(--gray-600);}
+.tab-btn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.result-section{display:none;}.result-section.show{display:block;}
+.advice{font-size:13px;line-height:1.9;}
+.advice h3{font-size:14px;margin:14px 0 4px;color:var(--gray-800);}
+.advice h3:first-child{margin-top:0;}
+.advice ul{padding-left:20px;}
+.advice .muted{color:var(--gray-400);font-size:12px;}
+.cpc-up{color:var(--green);font-weight:700;}.cpc-down{color:var(--red);font-weight:700;}
+.footer{text-align:center;font-size:12px;color:var(--gray-400);padding:8px 0 24px;}
+@media (max-width:700px){.settings-grid{grid-template-columns:1fr 1fr;}header{padding:12px 16px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">RPP</div>
+  <div><h1>楽天RPP広告アナリスト<span>EL COMMUN EC事業部</span></h1></div>
+</header>
+<div class="container">
+  <div class="info-box"><strong>📊 使い方：</strong>楽天RMSのRPP広告レポートCSV（商品別）を入れると、粗利率から「赤字かどうか」を判定し、商品ごとの<strong>おすすめ操作と推奨CPC</strong>を出します。AI（API）は使わないので費用はかかりません。</div>
+
+  <div class="card">
+    <div class="card-header"><div class="step">1</div><h2>CSVアップロード<span class="sub">複数ファイル可・Shift_JIS／UTF-8 自動判定</span></h2></div>
+    <div class="card-body">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" accept=".csv" multiple id="fileInput">
+        <div class="upload-icon">📂</div>
+        <p>RPP広告レポートCSVをドロップ</p>
+        <small>またはクリックして選択（期間が重なるファイルを入れても同じ日の行は二重に数えません）</small>
+      </div>
+      <div id="fileStatus"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="step">2</div><h2>分析設定<span class="sub">変えると結果がすぐ更新されます</span></h2></div>
+    <div class="card-body">
+      <div class="settings-grid">
+        <div class="setting-item"><label>💴 粗利率（%）</label><input type="number" id="margin" value="40" min="1" max="99"><small id="beNote">損益分岐ROAS：250%</small></div>
+        <div class="setting-item"><label>🎯 目標ROAS（%）</label><input type="number" id="targetRoas" placeholder="空欄＝損益分岐×1.2"><small id="targetNote">空欄のときは 300%</small></div>
+        <div class="setting-item"><label>⚪ データ不足（クリック数未満）</label><input type="number" id="minClicks" value="10" min="1"><small>これ未満は判定しない</small></div>
+        <div class="setting-item"><label>🚫 除外を検討する広告費（円以上）</label><input type="number" id="excludeCost" value="3000" min="0"><small>売上0円でこの額以上使った商品</small></div>
+        <div class="setting-item"><label>⬇️ CPCの下限（円）</label><input type="number" id="minCpc" value="10" min="1"><small>推奨CPCはこれより下げない</small></div>
+        <div class="setting-item"><label>📈 売上の集計</label><input type="text" value="720時間（クリック後30日）" disabled><small>判定には「合計720時間」を使用</small></div>
+      </div>
+      <div class="rule-box">
+        <b>判定のしくみ</b><br>
+        🟢 優良＝ROASが目標以上 ／ 🟡 要注意＝損益分岐〜目標 ／ 🔴 赤字＝損益分岐未満（売上0円を含む） ／ ⚪ データ不足＝クリック数が少ない<br>
+        推奨CPC＝「1クリックあたりの売上 ÷ 目標ROAS」。1回の変更は今の実績CPCの −50%〜+30% までにします（急に変えすぎないため）。<br>
+        ※ 実績CPCは「広告費 ÷ クリック数」で、設定した入札単価より低くなることがあります。推奨CPCは<b>目安</b>として使ってください。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="step">3</div><h2>分析実行</h2></div>
+    <div class="card-body">
+      <button class="primary-btn" id="analyzeBtn" disabled onclick="runAnalysis()">📊 広告を分析する</button>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+
+  <div class="result-section" id="resultSection">
+    <div class="card">
+      <div class="card-header">
+        <div class="step" style="background:var(--green)">✓</div>
+        <h2>広告パフォーマンス サマリー</h2>
+        <div style="margin-left:auto;"><button class="dl-btn" onclick="downloadExcel()">⬇️ Excelダウンロード</button></div>
+      </div>
+      <div class="card-body">
+        <div class="period" id="periodNote"></div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="step" style="background:var(--gray-600)">💡</div><h2>改善提案<span class="sub">判定結果から自動で作成</span></h2></div>
+      <div class="card-body"><div class="advice" id="adviceBody"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="step">📋</div><h2>商品別分析結果<span class="sub">見出しをクリックで並べ替え</span></h2></div>
+      <div class="card-body">
+        <div class="tab-bar" id="tabBar"></div>
+        <div class="table-wrap"><table class="data-table" id="resultTable"></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">EL COMMUN EC事業部 — 楽天RPP広告アナリスト <span id="verBadge">v1</span></div>
+</div>
+<script>
+const APP_VERSION = 1;   // 変更のたびに +1（サーバー側が大きければ自動リロード）
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen = n => '¥' + Math.round(n).toLocaleString();
+
+let FILES = [];      // [{name, rows:[...]}]（読み込んだ順。同じ日・同じ商品は後のファイルを優先）
+let analyzed = [], lastCfg = null, curTab = 'all', sortKey = 'cost', sortDesc = true;
+
+/* ---------- 設定（端末に保存） ---------- */
+const CFG_KEYS = ['margin', 'targetRoas', 'minClicks', 'excludeCost', 'minCpc'];
+function loadCfg(){
+  try{ const c = JSON.parse(localStorage.getItem('rpp_cfg_v1') || '{}'); CFG_KEYS.forEach(k => { if(c[k] != null) $(k).value = c[k]; }); }catch(e){}
+}
+function saveCfg(){
+  try{ const c = {}; CFG_KEYS.forEach(k => c[k] = $(k).value); localStorage.setItem('rpp_cfg_v1', JSON.stringify(c)); }catch(e){}
+}
+function getCfg(){
+  const margin = Math.min(99, Math.max(1, parseFloat($('margin').value) || 40));
+  const be = 100 / margin * 100;                       // 損益分岐ROAS(%)
+  const tIn = parseFloat($('targetRoas').value);
+  const target = tIn > 0 ? tIn : Math.round(be * 1.2);
+  return {
+    margin, be, target,
+    minClicks: Math.max(1, parseInt($('minClicks').value) || 10),
+    excludeCost: Math.max(0, parseFloat($('excludeCost').value) || 0),
+    minCpc: Math.max(1, parseInt($('minCpc').value) || 10)
+  };
+}
+function updateCfgNotes(){
+  const c = getCfg();
+  $('beNote').textContent = '損益分岐ROAS：' + Math.round(c.be) + '%（これ未満は赤字）';
+  $('targetNote').textContent = $('targetRoas').value ? '目標ROAS：' + c.target + '%' : '空欄のときは ' + c.target + '%（損益分岐×1.2）';
+  if(c.target < c.be) $('targetNote').textContent += ' ⚠️ 損益分岐より低い';
+}
+CFG_KEYS.forEach(k => $(k).addEventListener('input', () => { updateCfgNotes(); saveCfg(); if(analyzed.length) runAnalysis(true); }));
+
+/* ---------- ファイル読み込み ---------- */
+const zone = $('uploadZone'), fileInput = $('fileInput');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+
+function readFileText(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => {
+      let t;
+      try{ t = new TextDecoder('utf-8', {fatal: true}).decode(e.target.result); }
+      catch(_){ t = new TextDecoder('shift-jis').decode(e.target.result); }
+      res(t.replace(/^﻿/, ''));
+    };
+    r.onerror = () => rej(new Error('読み込めませんでした'));
+    r.readAsArrayBuffer(file);
+  });
+}
+
+// CSV全体を解析（"" のエスケープ・項目内の改行に対応）
+function parseCSV(text){
+  const rows = []; let row = [], cur = '', inQ = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(inQ){
+      if(c === '"'){ if(text[i+1] === '"'){ cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    }else if(c === '"') inQ = true;
+    else if(c === ','){ row.push(cur); cur = ''; }
+    else if(c === '\n' || c === '\r'){
+      if(c === '\r' && text[i+1] === '\n') i++;
+      row.push(cur); rows.push(row); row = []; cur = '';
+    }else cur += c;
+  }
+  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+// 「1,234」「¥1,234」「12.3%」などを数値に
+const num = v => parseFloat(String(v == null ? '' : v).replace(/[,，¥￥円%％\s]/g, '')) || 0;
+const normH = h => String(h || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+
+function parseReport(text){
+  const all = parseCSV(text);
+  let hi = all.findIndex(r => r.some(c => c.includes('コントロールカラム')) && r.some(c => c.trim() === '日付'));
+  if(hi < 0) hi = all.findIndex(r => r.some(c => c.trim() === '商品管理番号'));
+  if(hi < 0) throw new Error('ヘッダー行（商品管理番号）が見つかりません');
+  const H = all[hi].map(normH);
+  const col = (...names) => { for(const n of names){ const i = H.indexOf(normH(n)); if(i >= 0) return i; } return -1; };
+  const C = {
+    date: col('日付'), id: col('商品管理番号'), url: col('商品ページURL', '商品URL'), name: col('商品名'),
+    clicks: col('クリック数(合計)'), cost: col('実績額(合計)'),
+    sales: col('売上金額(合計720時間)'), orders: col('売上件数(合計720時間)'),
+    ctr: col('CTR(%)'), imp: col('表示回数', '表示回数(合計)', 'インプレッション数', 'インプレッション')
+  };
+  const need = {clicks:'クリック数(合計)', cost:'実績額(合計)', sales:'売上金額(合計720時間)', orders:'売上件数(合計720時間)'};
+  const miss = Object.keys(need).filter(k => C[k] < 0).map(k => need[k]);
+  if(miss.length) throw new Error('列が見つかりません：' + miss.join('、'));
+  // 同じ日・同じ商品でも別の行になりうる列（デバイス・キャンペーンなど）は重複判定のキーに含める
+  const extra = H.map((h, i) => /デバイス|キャンペーン|device/.test(h) ? i : -1).filter(i => i >= 0);
+  const rows = [];
+  for(let j = hi + 1; j < all.length; j++){
+    const v = all[j];
+    const id = (v[C.id] || '').trim();
+    if(!id || v.length < 5) continue;
+    rows.push({
+      date: C.date >= 0 ? (v[C.date] || '').trim() : '',
+      id, url: C.url >= 0 ? (v[C.url] || '').trim() : '', name: C.name >= 0 ? (v[C.name] || '').trim() : '',
+      key: [C.date >= 0 ? v[C.date] : '', id].concat(extra.map(i => v[i])).join('|'),
+      clicks: num(v[C.clicks]), cost: num(v[C.cost]), sales: num(v[C.sales]), orders: num(v[C.orders]),
+      ctr: C.ctr >= 0 ? num(v[C.ctr]) : 0, imp: C.imp >= 0 ? num(v[C.imp]) : null
+    });
+  }
+  return {rows, hasDate: C.date >= 0};
+}
+
+async function handleFiles(files){
+  for(const file of Array.from(files)){
+    try{
+      const rep = parseReport(await readFileText(file));
+      FILES = FILES.filter(f => f.name !== file.name);   // 同じ名前のファイルは入れ直し
+      FILES.push({name: file.name, rows: rep.rows});
+      fileMsg('ok', '✅ ' + esc(file.name) + '：' + rep.rows.length.toLocaleString() + '行' + (rep.hasDate ? '' : '（日付列なし）'));
+    }catch(ex){
+      fileMsg('err', '❌ ' + esc(file.name) + '：' + esc(ex.message));
+    }
+  }
+  $('analyzeBtn').disabled = !FILES.some(f => f.rows.length);
+}
+function fileMsg(cls, html){ $('fileStatus').insertAdjacentHTML('beforeend', '<div class="file-status ' + cls + '">' + html + '</div>'); }
+
+/* ---------- 期間 ---------- */
+function toDate(s){
+  const m = String(s).match(/(\d{4})[\/\-年.](\d{1,2})[\/\-月.](\d{1,2})/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+const fmtD = d => d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+
+/* ---------- 商品名（ranking の商品マスタから。CSVに商品名があればそちらを優先） ---------- */
+function lookupName(id){
+  const N = window.RPP_NAMES; if(!N) return '';
+  const k = id.toLowerCase();
+  return N.page[k] || N.page[k + '-'] || N.code[k] || '';
+}
+
+/* ---------- 分析 ---------- */
+function runAnalysis(silent){
+  const cfg = getCfg(); lastCfg = cfg;
+  // 重複行を除く（同じ日・同じ商品は後に読み込んだファイルを優先）
+  const map = new Map(); let dup = 0;
+  FILES.forEach(f => f.rows.forEach(r => { if(map.has(r.key)) dup++; map.set(r.key, r); }));
+  const rows = Array.from(map.values());
+  if(!silent){
+    $('logBox').innerHTML = '';
+    log('🔍 ' + FILES.length + 'ファイル・' + rows.length.toLocaleString() + '行を集計', 'log-info');
+    if(dup) log('⚠️ 同じ日・同じ商品の重複 ' + dup.toLocaleString() + '行を除外しました（後に読み込んだファイルを採用）', 'log-warn');
+  }
+
+  // 期間
+  const ds = rows.map(r => toDate(r.date)).filter(Boolean).sort((a, b) => a - b);
+  let days = 0;
+  if(ds.length){
+    days = Math.round((ds[ds.length - 1] - ds[0]) / 864e5) + 1;
+    $('periodNote').innerHTML = '📅 分析期間：<b>' + fmtD(ds[0]) + ' 〜 ' + fmtD(ds[ds.length - 1]) + '</b>（' + days + '日間）';
+  }else $('periodNote').textContent = '📅 分析期間：CSVに日付が無いため不明';
+
+  const grouped = {};
+  rows.forEach(r => (grouped[r.id] = grouped[r.id] || []).push(r));
+  analyzed = Object.keys(grouped).map(id => {
+    const rs = grouped[id];
+    const sum = k => rs.reduce((a, r) => a + r[k], 0);
+    const clicks = sum('clicks'), cost = sum('cost'), sales = sum('sales'), orders = sum('orders');
+    // CTR：表示回数があればそれで、無ければ各行のCTRとクリック数から表示回数を逆算して重み付け
+    let imp = 0;
+    rs.forEach(r => { if(r.imp != null) imp += r.imp; else if(r.ctr > 0) imp += r.clicks / (r.ctr / 100); });
+    const ctr = imp > 0 ? clicks / imp * 100 : null;
+    const url = (rs.find(r => /^https?:\/\//.test(r.url)) || {}).url || '';
+    const name = (rs.find(r => r.name) || {}).name || lookupName(id);
+    return Object.assign({id, name, url, clicks, cost, sales, orders, ctr}, judge(clicks, cost, sales, orders, cfg));
+  });
+
+  renderSummary(cfg, days);
+  renderTabs(); renderTable();
+  renderAdvice(cfg);
+  $('resultSection').classList.add('show');
+  if(!silent){
+    const n = s => analyzed.filter(r => r.status === s).length;
+    log('✅ ' + analyzed.length + '商品（優良:' + n('good') + ' 要注意:' + n('warn') + ' 赤字:' + n('bad') + ' 不足:' + n('nodata') + '）', 'log-ok');
+    $('resultSection').scrollIntoView({behavior: 'smooth'});
+  }
+}
+
+// 判定・おすすめ操作・推奨CPC
+function judge(clicks, cost, sales, orders, c){
+  const roas = cost > 0 ? sales / cost * 100 : 0;
+  const cpc = clicks > 0 ? cost / clicks : 0;
+  const cvr = clicks > 0 ? orders / clicks * 100 : 0;
+  const rpc = clicks > 0 ? sales / clicks : 0;               // 1クリックあたりの売上
+  const r = {roas, cpc, cvr, rpc, status: '', action: '', rec: null, reason: ''};
+  const clamp = v => Math.max(c.minCpc, Math.round(v));
+  if(clicks < c.minClicks){
+    r.status = 'nodata'; r.action = 'keep'; r.reason = 'クリック' + clicks + '回で判定には少ない';
+    return r;
+  }
+  const tCpc = rpc / (c.target / 100);                        // 目標ROASになるCPC
+  if(orders === 0 || sales === 0){
+    r.status = 'bad';
+    if(cost >= c.excludeCost){ r.action = 'exclude'; r.reason = '売上0円で広告費' + yen(cost); }
+    else { r.action = 'down'; r.rec = clamp(cpc * 0.7); r.reason = '売上0円（広告費' + yen(cost) + '）'; }
+  }else if(roas < c.be){
+    r.status = 'bad';
+    if(tCpc < c.minCpc && cost >= c.excludeCost){ r.action = 'exclude'; r.reason = '下限CPCでも目標ROASに届かない'; }
+    else { r.action = 'down'; r.rec = clamp(Math.max(tCpc, cpc * 0.5)); r.reason = 'ROAS ' + Math.round(roas) + '% が損益分岐 ' + Math.round(c.be) + '% 未満'; }
+  }else if(roas < c.target){
+    r.status = 'warn';
+    const rec = clamp(Math.max(tCpc, cpc * 0.7));
+    if(rec < Math.round(cpc)){ r.action = 'down'; r.rec = rec; r.reason = '黒字だが目標 ' + c.target + '% 未満'; }
+    else { r.action = 'keep'; r.reason = '黒字（目標まであと少し）'; }
+  }else{
+    r.status = 'good';
+    if(roas >= c.target * 1.5 && orders >= 2){
+      const rec = clamp(Math.min(tCpc, cpc * 1.3));
+      if(rec > Math.round(cpc)){ r.action = 'up'; r.rec = rec; r.reason = 'ROAS ' + Math.round(roas) + '% で余裕あり。露出を増やせる'; }
+      else { r.action = 'keep'; r.reason = '好調'; }
+    }else { r.action = 'keep'; r.reason = '好調'; }
+  }
+  return r;
+}
+
+const ST = {good:['🟢 優良','badge-green'], warn:['🟡 要注意','badge-yellow'], bad:['🔴 赤字','badge-red'], nodata:['⚪ データ不足','badge-gray']};
+const AC = {up:['⬆️ 上げる','badge-green'], down:['⬇️ 下げる','badge-orange'], exclude:['🚫 除外を検討','badge-red'], keep:['➖ 据え置き','badge-gray']};
+
+function totals(){
+  const t = {cost:0, sales:0, clicks:0, orders:0};
+  analyzed.forEach(r => { t.cost += r.cost; t.sales += r.sales; t.clicks += r.clicks; t.orders += r.orders; });
+  t.roas = t.cost > 0 ? t.sales / t.cost * 100 : 0;
+  return t;
+}
+
+function renderSummary(c, days){
+  const t = totals();
+  const n = s => analyzed.filter(r => r.status === s).length;
+  const act = a => analyzed.filter(r => r.action === a).length;
+  const k = [
+    {cls: t.roas >= c.target ? 'good' : t.roas < c.be ? 'danger' : 'warn', num: Math.round(t.roas) + '%', label: '総合ROAS（損益分岐 ' + Math.round(c.be) + '%）'},
+    {num: yen(t.cost), label: '総広告費'},
+    {num: yen(t.sales), label: '総売上（720h）'},
+    {num: yen(t.sales * c.margin / 100 - t.cost), label: '広告の粗利効果（概算）', cls: t.sales * c.margin / 100 - t.cost >= 0 ? 'good' : 'danger'},
+    {num: t.clicks.toLocaleString() + '回', label: '総クリック'},
+    {num: (t.clicks ? t.orders / t.clicks * 100 : 0).toFixed(2) + '%', label: 'CVR'},
+    {cls:'good', num: n('good'), label: '🟢 優良'},
+    {cls:'warn', num: n('warn'), label: '🟡 要注意'},
+    {cls:'danger', num: n('bad'), label: '🔴 赤字'},
+    {num: n('nodata'), label: '⚪ データ不足'},
+    {num: act('up') + act('down') + act('exclude'), label: '🛠 CPCの変更を推奨'}
+  ];
+  $('kpiGrid').innerHTML = k.map(x => '<div class="kpi-card ' + (x.cls || '') + '"><div class="num">' + x.num + '</div><div class="label">' + x.label + '</div></div>').join('');
+}
+
+/* ---------- 改善提案（ルールで作成） ---------- */
+function adviceItems(c){
+  const t = totals();
+  const out = [];   // [{h, items:[text]}]（textはプレーン。HTML表示とExcelで共用）
+  const gross = t.sales * c.margin / 100 - t.cost;
+  let eval1;
+  if(t.roas >= c.target) eval1 = '総合ROAS ' + Math.round(t.roas) + '% は目標 ' + c.target + '% 以上で好調です。';
+  else if(t.roas >= c.be) eval1 = '総合ROAS ' + Math.round(t.roas) + '% は黒字（損益分岐 ' + Math.round(c.be) + '%）ですが、目標 ' + c.target + '% には届いていません。';
+  else eval1 = '総合ROAS ' + Math.round(t.roas) + '% は損益分岐 ' + Math.round(c.be) + '% を下回り、広告全体で赤字です。';
+  out.push({h: '1. 総合評価', items: [eval1, '広告費 ' + yen(t.cost) + ' に対して売上 ' + yen(t.sales) + '、粗利率 ' + c.margin + '% で計算した広告の粗利効果は ' + (gross >= 0 ? '+' : '−') + yen(Math.abs(gross)) + ' です。']});
+
+  const byCost = (a, b) => b.cost - a.cost;
+  const ex = analyzed.filter(r => r.action === 'exclude').sort(byCost);
+  const down = analyzed.filter(r => r.action === 'down').sort(byCost);
+  const up = analyzed.filter(r => r.action === 'up').sort((a, b) => b.sales - a.sales);
+  const pri = [];
+  if(ex.length) pri.push('除外を検討：' + ex.length + '商品。この期間の広告費 ' + yen(ex.reduce((a, r) => a + r.cost, 0)) + ' が売上につながっていません（' + ex.slice(0, 5).map(r => r.id).join('、') + (ex.length > 5 ? ' ほか' : '') + '）。');
+  if(down.length) pri.push('CPCを下げる：' + down.length + '商品。広告費の大きい順に ' + down.slice(0, 5).map(r => r.id + '（' + Math.round(r.cpc) + '→' + r.rec + '円）').join('、') + '。');
+  if(up.length) pri.push('CPCを上げる：' + up.length + '商品。ROASに余裕があり露出を増やせます（' + up.slice(0, 5).map(r => r.id + '（' + Math.round(r.cpc) + '→' + r.rec + '円）').join('、') + '）。');
+  if(!pri.length) pri.push('今すぐ変更が必要な商品はありません。');
+  out.push({h: '2. 優先アクション', items: pri});
+
+  const tips = [];
+  const valid = analyzed.filter(r => r.status !== 'nodata' && r.ctr != null);
+  if(valid.length >= 5){
+    const avg = (arr, k) => arr.reduce((a, r) => a + r[k], 0) / arr.length;
+    const aCtr = avg(valid, 'ctr'), aCvr = avg(valid, 'cvr');
+    const pageFix = valid.filter(r => r.ctr >= aCtr && r.cvr < aCvr * 0.5 && r.clicks >= c.minClicks * 2).sort(byCost);
+    if(pageFix.length) tips.push('クリックはされているのに買われていない商品（CTRが平均以上・CVRが平均の半分未満）：' + pageFix.slice(0, 5).map(r => r.id).join('、') + '。価格・レビュー・商品ページ（画像・説明）の見直しを検討してください。');
+    const lowCtr = valid.filter(r => r.ctr < aCtr * 0.5 && r.cvr >= aCvr).sort((a, b) => b.sales - a.sales);
+    if(lowCtr.length) tips.push('買われやすいのにクリックが少ない商品（CVRが平均以上・CTRが平均の半分未満）：' + lowCtr.slice(0, 5).map(r => r.id).join('、') + '。サムネイル画像・商品名の見直しでクリックを増やせる可能性があります。');
+  }
+  const nd = analyzed.filter(r => r.status === 'nodata');
+  if(nd.length) tips.push('データ不足の商品が ' + nd.length + ' 件あります。期間を長くしたCSVで分析すると判定できる商品が増えます。');
+  tips.push('推奨CPCは実績CPC（広告費÷クリック数）を基準にした目安です。変更後は1〜2週間おいて、もう一度分析して効果を確かめてください。');
+  out.push({h: '3. 改善のヒント', items: tips});
+  return out;
+}
+function renderAdvice(c){
+  $('adviceBody').innerHTML = adviceItems(c).map(s => '<h3>' + esc(s.h) + '</h3><ul>' + s.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>').join('');
+}
+
+/* ---------- 表 ---------- */
+const TABS = [
+  ['all', '📊 全商品', () => true],
+  ['todo', '🛠 要対応', r => r.action !== 'keep'],
+  ['good', '🟢 優良', r => r.status === 'good'],
+  ['warn', '🟡 要注意', r => r.status === 'warn'],
+  ['bad', '🔴 赤字', r => r.status === 'bad'],
+  ['nodata', '⚪ データ不足', r => r.status === 'nodata']
+];
+function renderTabs(){
+  $('tabBar').innerHTML = TABS.map(([k, label, f]) => '<button class="tab-btn' + (k === curTab ? ' active' : '') + '" onclick="curTab=\'' + k + '\';renderTabs();renderTable()">' + label + '（' + analyzed.filter(f).length + '）</button>').join('');
+}
+const COLS = [
+  ['id', '商品管理番号', 'l'], ['name', '商品名（参考）', 'l'], ['status', '判定', 'l'], ['action', 'おすすめ操作', 'l'],
+  ['cpc', '実績CPC'], ['rec', '推奨CPC'], ['cost', '広告費'], ['clicks', 'クリック'], ['ctr', 'CTR%'],
+  ['sales', '売上720h'], ['orders', '件数'], ['roas', 'ROAS%'], ['cvr', 'CVR%'], ['reason', '理由', 'l']
+];
+function sortBy(k){ if(sortKey === k) sortDesc = !sortDesc; else { sortKey = k; sortDesc = !['id', 'name'].includes(k); } renderTable(); }
+function renderTable(){
+  const el = $('resultTable');
+  const f = TABS.find(t => t[0] === curTab)[2];
+  const ORD = {status:{bad:0, warn:1, good:2, nodata:3}, action:{exclude:0, down:1, up:2, keep:3}};
+  const val = (r, k) => ORD[k] ? ORD[k][r[k]] : (r[k] == null ? -1 : r[k]);
+  const rows = analyzed.filter(f).sort((a, b) => {
+    const x = val(a, sortKey), y = val(b, sortKey);
+    const d = typeof x === 'string' ? x.localeCompare(y, 'ja') : x - y;
+    return sortDesc ? -d : d;
+  });
+  const head = '<thead><tr>' + COLS.map(([k, l, a]) => '<th class="' + (a || '') + '" onclick="sortBy(\'' + k + '\')">' + l + (sortKey === k ? (sortDesc ? ' ▼' : ' ▲') : '') + '</th>').join('') + '</tr></thead>';
+  if(!rows.length){ el.innerHTML = head + '<tbody><tr><td colspan="' + COLS.length + '" style="text-align:center;padding:16px;color:var(--gray-400);">対象商品なし</td></tr></tbody>'; return; }
+  el.innerHTML = head + '<tbody>' + rows.map(r => {
+    const id = /^https?:\/\//.test(r.url) ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.id) + '</a>' : esc(r.id);
+    const rec = r.rec == null ? '-' : '<span class="' + (r.rec > r.cpc ? 'cpc-up' : 'cpc-down') + '">¥' + r.rec + '</span>';
+    return '<tr><td class="l">' + id + '</td><td class="name">' + esc(r.name) + '</td>' +
+      '<td class="l"><span class="badge ' + ST[r.status][1] + '">' + ST[r.status][0] + '</span></td>' +
+      '<td class="l"><span class="badge ' + AC[r.action][1] + '">' + AC[r.action][0] + '</span></td>' +
+      '<td>' + (r.clicks ? yen(r.cpc) : '-') + '</td><td>' + rec + '</td><td>' + yen(r.cost) + '</td><td>' + r.clicks.toLocaleString() + '</td>' +
+      '<td>' + (r.ctr == null ? '-' : r.ctr.toFixed(2)) + '</td><td>' + yen(r.sales) + '</td><td>' + r.orders.toLocaleString() + '</td>' +
+      '<td>' + (r.cost > 0 ? Math.round(r.roas) + '%' : '-') + '</td><td>' + (r.clicks ? r.cvr.toFixed(2) : '-') + '</td>' +
+      '<td class="l" style="font-size:11px;color:var(--gray-600)">' + esc(r.reason) + '</td></tr>';
+  }).join('') + '</tbody>';
+}
+
+/* ---------- Excel ---------- */
+function downloadExcel(){
+  if(!analyzed.length) return;
+  const c = lastCfg, t = totals();
+  const wb = XLSX.utils.book_new();
+  const n = s => analyzed.filter(r => r.status === s).length;
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['RPP広告分析レポート'], ['出力日時', new Date().toLocaleString('ja-JP')], ['分析期間', $('periodNote').textContent.replace('📅 分析期間：', '')], [],
+    ['粗利率(%)', c.margin], ['損益分岐ROAS(%)', Math.round(c.be)], ['目標ROAS(%)', c.target], [],
+    ['総広告費(円)', Math.round(t.cost)], ['総売上720h(円)', Math.round(t.sales)], ['総合ROAS(%)', +t.roas.toFixed(1)],
+    ['広告の粗利効果・概算(円)', Math.round(t.sales * c.margin / 100 - t.cost)], ['総クリック', t.clicks], ['総件数', t.orders], [],
+    ['分析商品数', analyzed.length], ['優良', n('good')], ['要注意', n('warn')], ['赤字', n('bad')], ['データ不足', n('nodata')]
+  ]), 'サマリー');
+  const hdr = ['商品管理番号', '商品名（参考）', '判定', 'おすすめ操作', '実績CPC(円)', '推奨CPC(円)', '広告費(円)', 'クリック数', 'CTR(%)', '売上720h(円)', '件数', 'ROAS(%)', 'CVR(%)', '理由', '商品ページURL'];
+  const sl = s => ST[s][0].replace(/^\S+ /, ''), al = a => AC[a][0].replace(/^\S+ /, '');
+  const toRow = r => [r.id, r.name, sl(r.status), al(r.action), r.clicks ? Math.round(r.cpc) : '', r.rec == null ? '' : r.rec, Math.round(r.cost), r.clicks,
+    r.ctr == null ? '' : +r.ctr.toFixed(2), Math.round(r.sales), r.orders, r.cost > 0 ? Math.round(r.roas) : '', r.clicks ? +r.cvr.toFixed(2) : '', r.reason, r.url];
+  const byCost = (a, b) => b.cost - a.cost;
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(analyzed.slice().sort(byCost).map(toRow))), '全商品');
+  const todo = analyzed.filter(r => r.action !== 'keep').sort((a, b) => ({exclude:0, down:1, up:2}[a.action] - {exclude:0, down:1, up:2}[b.action]) || b.cost - a.cost);
+  if(todo.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(todo.map(toRow))), '要対応');
+  const adv = [];
+  adviceItems(c).forEach(s => { adv.push([s.h]); s.items.forEach(i => adv.push(['・' + i])); adv.push([]); });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(adv), '改善提案');
+  const d = new Date();
+  XLSX.writeFile(wb, 'RPP広告分析_' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.xlsx');
+}
+
+function log(msg, cls){ const box = $('logBox'); box.classList.add('show'); box.insertAdjacentHTML('beforeend', '<div class="' + (cls || '') + '">' + msg + '</div>'); box.scrollTop = box.scrollHeight; }
+
+/* ---------- 起動・自動アップデート ---------- */
+loadCfg(); updateCfgNotes();
+$('verBadge').textContent = 'v' + APP_VERSION;
+setInterval(async () => {
+  try{
+    const r = await fetch(location.pathname + '?_=' + Date.now(), {cache: 'no-store'});
+    const m = (await r.text()).match(/const APP_VERSION\s*=\s*(\d+)/);
+    if(m && parseInt(m[1], 10) > APP_VERSION){
+      if(!FILES.length) location.reload();
+      else $('verBadge').textContent = 'v' + APP_VERSION + '（新版あり・作業後に再読込）';
+    }
+  }catch(e){}
+}, 3 * 60 * 1000);
+</script>
+</body>
+</html>
