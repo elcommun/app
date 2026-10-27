@@ -94,6 +94,12 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - **商品説明の関連商品リンク（2026-10-16 ユーザー指示）**: 画面で「現在Qoo10にある商品データ（QSMからダウンロードした ItemInfo.xlsx・商品番号つき・複数可）」を読み込み、楽天の商品ページリンク `item.rakuten.co.jp/elcommun/{商品コード}/` を `https://www.qoo10.jp/g/{商品番号}` に付け替える（`QOO10_NO`・`qoo10Url()`・`buildDescription()`）。Qoo10に無い／未読込の商品は、関連商品の画像セルを外して3列で組み直す（1件も無ければ関連商品ブロックごと外す）。カテゴリ・GOLD・検索ページなど Qoo10 に相当先が無いリンクはリンクだけ外して文字・画像は残す。今回のバッチ内の新商品同士は、登録後に商品番号が付くまでリンクできない（登録後に再変換）
 - 画像は楽天の画像URLをそのまま入れる（Qoo10 が取り込めるかは実登録で要確認）
 
+### rakuten-rpp のバージョン番号（2026-10-27 新規）
+- `rakuten-rpp/index.html` に `const APP_VERSION = N;`（フッターの `#verBadge` に `vN` 表示）がある。**変更してコミットするたびに `APP_VERSION` を必ず1つ増やすこと**。3分ごとにサーバー側と比較し、CSV未読込なら自動リロード
+- 楽天RPP広告レポートCSV（商品別・複数可・Shift_JIS/UTF-8自動判定）から、粗利率で決まる損益分岐ROAS（100÷粗利率）と目標ROASで判定し、おすすめ操作（上げる／下げる／除外を検討／据え置き）と推奨CPC（1クリック売上÷目標ROAS。1回の変更は実績CPCの−50%〜+30%）を出す。同じ日・同じ商品の行は後のファイルを優先して重複除外。CTRは表示回数（無ければCTRから逆算）で重み付け
+- **AI（Anthropic API）は使わない**（ユーザー指示：課金しない）。改善提案はルールで作る（`adviceItems()`）
+- 商品名は ranking の商品マスタから作った `rakuten-rpp/item-names.js`（検索コード＝楽天の商品管理番号 → 商品名）。ranking 更新を反映したいときは `python3 rakuten-rpp/build-names.py` → `<script src="item-names.js?v=N">` の `?v=N` を上げる
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
