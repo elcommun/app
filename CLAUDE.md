@@ -341,6 +341,7 @@ const colspan = 7 + (showCmp ? 2 : 0) + (showSo ? 1 : 0) + (showImg ? 1 : 0);
     - DR-WK-638（2025年度版4月始まり Point Kiwi）≠ XDR-WK-638（EC別注2025年版1月始まり ﾜﾝﾎﾟｲﾝﾄﾃﾞﾒﾆｷﾞｽ）
     - DR-MG-593（2027年版 Pieni Sheep）。商品マスタExcelの XDR-MG-593（ﾄｺﾅｯﾂ別注2026年版B6ﾏﾝｽﾘｰﾘﾌｨﾙ）は**実在しない商品の誤登録行**で、2026-09-01にこれへ売上が誤付け替えされる事故が発生→修正済み。マスタExcel側の行削除をユーザーに依頼中
 - **画像が未登録の商品の報告（2026-10-26 ユーザー指示）**: 取り込みのたびに `python3 tools/list-missing-images.py <販売データ.xlsx> -o <スクラッチパッド>/missing_images_<期間>.csv` を実行し、**取り込みの報告に「画像なし ◯件」と一覧（品番・商品名・個数）を書き、CSV を SendUserFile で渡す**（0件なら「画像なし 0件」とだけ書く）。判定は `ranking/image-index.js`（`CODE_REMAP` で読み替え、`SLW-`・`DR-MM-` は除外）。**ランキングのアプリ画面には出さない**。画像不要とユーザーが言った品番はスクリプトの `NO_IMAGE_OK` に足す（現在 XEC-004〜006）
+- **仕入れ商品（supplier-ranking）の画像なし商品の報告（2026-10-27 ユーザー指示）**: 仕入れ商品の販売データを取り込んだら毎回 `python3 tools/list-missing-supplier-images.py --from <取り込んだ期間の開始日> --to <終了日> -o <スクラッチパッド>/missing_images_supplier_<期間>.csv` を実行し、**取り込みの報告に、出力の最後の行（楽天の商品管理番号のコンマ区切り）をそのまま貼れる形で書き**、CSV を SendUserFile で渡す（0件なら「画像なし 0件」とだけ書く）。ユーザーは RMS の「CSVファイルダウンロード」→「商品管理番号で絞り込む」に貼って dl-normal-item を絞り込み、楽天画像ダウンローダーの「🏭 メーカー販売データ用」で画像を取る。管理番号はアプリの商品番号（SKU単位）を `rakutenCodeBase` と同じ規則で商品ページ単位にしたもの（apj- の額縁はサイズの区切りまで、選択肢の無い単品は商品番号そのもの）。JANコードだけの品番などは「管理番号を出せない」と出るので、そのまま報告する
 - **`ranking/data.js` の検索コードを追加・更新したら `item-data/search-codes.js`（過去検索コードのスナップショット、item-data と ec-sales-split の両方が読み込む）を再生成し、両アプリの `<script src=...search-codes.js?v=N>` の `?v=N` を上げること**
 
 ### 仕入れ商品アプリ（supplier-ranking）のカテゴリ固定ルール
