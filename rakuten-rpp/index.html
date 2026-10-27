@@ -112,12 +112,12 @@ header h1 span{font-size:12px;color:var(--gray-400);margin-left:6px;font-weight:
         <div class="setting-item"><label>⚪ データ不足（クリック数未満）</label><input type="number" id="minClicks" value="10" min="1"><small>これ未満は判定しない</small></div>
         <div class="setting-item"><label>🚫 除外を検討する広告費（円以上）</label><input type="number" id="excludeCost" value="3000" min="0"><small>売上0円でこの額以上使った商品</small></div>
         <div class="setting-item"><label>⬇️ CPCの下限（円）</label><input type="number" id="minCpc" value="10" min="1"><small>推奨CPCはこれより下げない</small></div>
-        <div class="setting-item"><label>🗓 シーズン品（手帳）</label><label class="chk"><input type="checkbox" id="seasonNew" checked> 新しい版を優先し、古い版は出稿しない</label><small>優良の中で一番新しい版より古い版を「出稿しない」にする</small></div>
+        <div class="setting-item"><label>🗓 シーズン品（手帳）</label><label class="chk"><input type="checkbox" id="seasonNew" checked> 新しい版を優先し、古い版は出稿しない</label><small>古い版でも、優良・ピーク期のものは出稿を続ける</small></div>
       </div>
       <div class="rule-box">
         <b>判定のしくみ</b><br>
         🟢 優良＝ROASが目標以上 ／ 🟡 要注意＝損益分岐〜目標 ／ 🔴 赤字＝損益分岐未満（売上0円を含む） ／ ⚪ データ不足＝クリック数が少ない<br>
-        🗓 シーズン品：手帳は商品管理番号（例：mg-<b>2</b>1- ＝10月始まり／mg-<b>4</b>1- ＝1月始まり／mg-<b>0</b>1- ＝4月始まり）とレポートの最終日から「何年何月始まり」かを判断し、優良の中で一番新しい版（例：2027年1月始まり）より古い版（例：2026年10月始まり）は「出稿しない」にします。カレンダーは毎年1月始まりで版の違いが無いので対象外です。<br>
+        🗓 シーズン品：手帳は商品管理番号（例：mg-<b>2</b>1- ＝10月始まり／mg-<b>4</b>1- ＝1月始まり／mg-<b>0</b>1- ＝4月始まり）とレポートの最終日から「何年何月始まり」かを判断し、優良の中で一番新しい版（例：2027年1月始まり）より古い版（例：2026年4月始まり）は「出稿しない」にします。<b>ただし古い版でも、優良のもの・ピーク期（10月始まり＝8〜12月／1月始まり＝11〜2月／4月始まり＝2〜5月。販売データで販売数の10%以上を売る月）のものは出稿を続けます。</b>「出稿しない」と「除外を検討」はExcelの「出稿しない」シートにまとめます。カレンダーは毎年1月始まりで版の違いが無いので対象外です。<br>
         推奨CPC＝「1クリックあたりの売上 ÷ 目標ROAS」。1回の変更は今の実績CPCの −50%〜+30% までにします（急に変えすぎないため）。<br>
         ※ 実績CPCは「広告費 ÷ クリック数」で、設定した入札単価より低くなることがあります。推奨CPCは<b>目安</b>として使ってください。
       </div>
@@ -164,10 +164,10 @@ header h1 span{font-size:12px;color:var(--gray-400);margin-left:6px;font-weight:
       </div>
     </div>
   </div>
-  <div class="footer">EL COMMUN EC事業部 — 楽天RPP広告アナリスト <span id="verBadge">v2</span></div>
+  <div class="footer">EL COMMUN EC事業部 — 楽天RPP広告アナリスト <span id="verBadge">v3</span></div>
 </div>
 <script>
-const APP_VERSION = 2;   // 変更のたびに +1（サーバー側が大きければ自動リロード）
+const APP_VERSION = 3;   // 変更のたびに +1（サーバー側が大きければ自動リロード）
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const yen = n => '¥' + Math.round(n).toLocaleString();
@@ -425,16 +425,30 @@ function editionOf(name){
   const st = +m[1] * 12 + (+m[2] - 1);
   return {type: '手帳', start: st, label: edLabel(st), guess: false};
 }
-// 優良の中で一番新しい版より古い版は「出稿しない」にする
+// ピーク期：始まり月から見て何か月前〜何か月後か。ranking の販売データ（2022年〜）で、販売数の10%以上を売る月
+// （10月始まり＝8〜12月／1月始まり＝11〜2月／4月始まり＝2〜5月）
+const PEAK = {10: [-2, 2], 1: [-2, 1], 4: [-2, 1]};
+const PEAK_LABEL = {10: '8〜12月', 1: '11〜2月', 4: '2〜5月'};
+function isPeak(ed, ref){
+  const p = PEAK[ed.start % 12 + 1];
+  const off = ref.getFullYear() * 12 + ref.getMonth() - ed.start;
+  return !!p && off >= p[0] && off <= p[1];
+}
+// 優良の中で一番新しい版より古い版は「出稿しない」にする。
+// ただし古い版でも、優良のもの・ピーク期のものは出稿を続ける（2026-10-27 ユーザー指示）
 function applySeason(c, ref){
   let newest = null;
   analyzed.forEach(r => {
     r.ed = editionOf(r.csvName) || editionFromCode(r.id, ref);
+    if(r.ed) r.ed.peak = isPeak(r.ed, ref);
     if(r.ed && r.status === 'good' && (!newest || r.ed.start > newest.start)) newest = r.ed;
   });
   if(!c.seasonNew || !newest) return;
   analyzed.forEach(r => {
-    if(r.ed && r.ed.start < newest.start){ r.action = 'stop'; r.rec = null; r.reason = r.ed.label + '。新しい版（' + newest.label + '）を優先'; }
+    if(!r.ed || r.ed.start >= newest.start) return;
+    if(r.status === 'good') r.reason += '（古い版だが優良なので出稿を続ける）';
+    else if(r.ed.peak) r.reason += '（古い版だがピーク期 ' + PEAK_LABEL[r.ed.start % 12 + 1] + ' なので出稿を続ける）';
+    else { r.action = 'stop'; r.rec = null; r.reason = r.ed.label + '。ピーク期（' + PEAK_LABEL[r.ed.start % 12 + 1] + '）を過ぎ、新しい版（' + newest.label + '）を優先'; }
   });
 }
 
@@ -488,7 +502,7 @@ function adviceItems(c){
   const pri = [];
   if(stop.length){
     const nl = Array.from(new Set(analyzed.filter(r => r.ed && r.action !== 'stop' && r.status === 'good').map(r => r.ed.label)));
-    pri.push('手帳は新しい版（' + nl.join('、') + '）を優先：古い版 ' + stop.length + '商品は出稿しない（この期間の広告費 ' + yen(stop.reduce((a, r) => a + r.cost, 0)) + '）。対象：' + stop.slice(0, 5).map(r => r.id).join('、') + (stop.length > 5 ? ' ほか' : '') + '。');
+    pri.push('手帳は新しい版（' + nl.join('、') + '）を優先：ピーク期を過ぎ、優良でもない古い版 ' + stop.length + '商品は出稿しない（この期間の広告費 ' + yen(stop.reduce((a, r) => a + r.cost, 0)) + '）。対象：' + stop.slice(0, 5).map(r => r.id).join('、') + (stop.length > 5 ? ' ほか' : '') + '。');
   }
   if(ex.length) pri.push('除外を検討：' + ex.length + '商品。この期間の広告費 ' + yen(ex.reduce((a, r) => a + r.cost, 0)) + ' が売上につながっていません（' + ex.slice(0, 5).map(r => r.id).join('、') + (ex.length > 5 ? ' ほか' : '') + '）。');
   if(down.length) pri.push('CPCを下げる：' + down.length + '商品。広告費の大きい順に ' + down.slice(0, 5).map(r => r.id + '（' + Math.round(r.cpc) + '→' + r.rec + '円）').join('、') + '。');
@@ -519,7 +533,8 @@ function renderAdvice(c){
 /* ---------- 表 ---------- */
 const TABS = [
   ['all', '📊 全商品', () => true],
-  ['todo', '🛠 要対応', r => r.action !== 'keep'],
+  ['todo', '🛠 要対応', r => r.action === 'up' || r.action === 'down'],
+  ['nogo', '🚫 出稿しない', r => r.action === 'exclude' || r.action === 'stop'],
   ['good', '🟢 優良', r => r.status === 'good'],
   ['warn', '🟡 要注意', r => r.status === 'warn'],
   ['bad', '🔴 赤字', r => r.status === 'bad'],
@@ -549,7 +564,7 @@ function renderTable(){
   el.innerHTML = head + '<tbody>' + rows.map(r => {
     const id = /^https?:\/\//.test(r.url) ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.id) + '</a>' : esc(r.id);
     const rec = r.rec == null ? '-' : '<span class="' + (r.rec > r.cpc ? 'cpc-up' : 'cpc-down') + '">¥' + r.rec + '</span>';
-    return '<tr><td class="l">' + id + '</td><td class="name">' + esc(r.name) + '</td><td class="l" style="font-size:11px">' + (r.ed ? esc(r.ed.label) : '') + '</td>' +
+    return '<tr><td class="l">' + id + '</td><td class="name">' + esc(r.name) + '</td><td class="l" style="font-size:11px">' + (r.ed ? esc(r.ed.label) + (r.ed.peak ? ' <span class="badge badge-orange">ピーク期</span>' : '') : '') + '</td>' +
       '<td class="l"><span class="badge ' + ST[r.status][1] + '">' + ST[r.status][0] + '</span></td>' +
       '<td class="l"><span class="badge ' + AC[r.action][1] + '">' + AC[r.action][0] + '</span></td>' +
       '<td>' + (r.clicks ? yen(r.cpc) : '-') + '</td><td>' + rec + '</td><td>' + yen(r.cost) + '</td><td>' + r.clicks.toLocaleString() + '</td>' +
@@ -574,13 +589,17 @@ function downloadExcel(){
   ]), 'サマリー');
   const hdr = ['商品管理番号', '商品名（参考）', '手帳の版', '判定', 'おすすめ操作', '実績CPC(円)', '推奨CPC(円)', '広告費(円)', 'クリック数', 'CTR(%)', '売上720h(円)', '件数', 'ROAS(%)', 'CVR(%)', '理由', '商品ページURL'];
   const sl = s => ST[s][0].replace(/^\S+ /, ''), al = a => AC[a][0].replace(/^\S+ /, '');
-  const toRow = r => [r.id, r.name, r.ed ? r.ed.label : '', sl(r.status), al(r.action), r.clicks ? Math.round(r.cpc) : '', r.rec == null ? '' : r.rec, Math.round(r.cost), r.clicks,
+  const toRow = r => [r.id, r.name, r.ed ? r.ed.label + (r.ed.peak ? '（ピーク期）' : '') : '', sl(r.status), al(r.action), r.clicks ? Math.round(r.cpc) : '', r.rec == null ? '' : r.rec, Math.round(r.cost), r.clicks,
     r.ctr == null ? '' : +r.ctr.toFixed(2), Math.round(r.sales), r.orders, r.cost > 0 ? Math.round(r.roas) : '', r.clicks ? +r.cvr.toFixed(2) : '', r.reason, r.url];
   const byCost = (a, b) => b.cost - a.cost;
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(analyzed.slice().sort(byCost).map(toRow))), '全商品');
   const AO = {exclude:0, stop:1, down:2, up:3};
-  const todo = analyzed.filter(r => r.action !== 'keep').sort((a, b) => (AO[a.action] - AO[b.action]) || b.cost - a.cost);
+  const byAct = (a, b) => (AO[a.action] - AO[b.action]) || b.cost - a.cost;
+  const todo = analyzed.filter(r => r.action === 'up' || r.action === 'down').sort(byAct);
   if(todo.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(todo.map(toRow))), '要対応');
+  // 出稿しない方が良い商品（除外を検討＋ピーク期を過ぎた古い版の手帳）は別シートにまとめる
+  const nogo = analyzed.filter(r => r.action === 'exclude' || r.action === 'stop').sort(byAct);
+  if(nogo.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(nogo.map(toRow))), '出稿しない');
   const adv = [];
   adviceItems(c).forEach(s => { adv.push([s.h]); s.items.forEach(i => adv.push(['・' + i])); adv.push([]); });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(adv), '改善提案');
@@ -601,7 +620,8 @@ function claudePrompt(){
   L.push('・' + $('periodNote').textContent.replace('📅 ', ''));
   L.push('・粗利率 ' + c.margin + '% → 損益分岐ROAS ' + Math.round(c.be) + '%／目標ROAS ' + c.target + '%（売上はクリック後720時間）');
   L.push('・商品名はツールが商品マスタから引いた参考値（年版が古いことがある）。手帳の版は商品管理番号から推定したもの');
-  L.push('・シーズン品（手帳）は新しい版を優先し、古い版は出稿しない方針' + (c.seasonNew ? '' : '（今回のツール判定ではオフ）'));
+  L.push('・シーズン品（手帳）のピーク期：10月始まり＝8〜12月／1月始まり＝11〜2月／4月始まり＝2〜5月');
+  L.push('・シーズン品（手帳）は新しい版を優先し、古い版は出稿しない方針。ただし古い版でも優良・ピーク期なら出稿を続ける' + (c.seasonNew ? '' : '（今回のツール判定ではオフ）'));
   L.push('・推奨CPCはツールの目安（1クリック売上÷目標ROAS、1回の変更は実績CPCの−50%〜+30%）');
   L.push('');
   L.push('【全体】広告費 ' + yen(t.cost) + '／売上 ' + yen(t.sales) + '／ROAS ' + Math.round(t.roas) + '%／クリック ' + t.clicks.toLocaleString() + '回／件数 ' + t.orders.toLocaleString() + '件／' + analyzed.length + '商品');
