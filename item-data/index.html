@@ -563,7 +563,7 @@
   </div>
   <div class="header-line"></div>
   <span class="header-tag">EL COMMUN</span>
-  <span class="header-tag" style="font-size:9px;opacity:.35;">v2026-09-01b</span>
+  <span class="header-tag" style="font-size:9px;opacity:.35;">v2026-10-27</span>
 </header>
 
 <!-- ── Page ── -->
@@ -1058,6 +1058,9 @@ function extractProductCode(pn, store) {
 
   // ② カレンダー: cal-**-CAL-NNN
   if (/^cal-/i.test(pn)) {
+    // auPAY等: 品番+楽天商品管理番号の連結（CAL-187cal-03- 等）→ 品番部分を採用
+    const cc = pn.match(/^(CAL-\d+)cal-/i);
+    if (cc) return cc[1].toUpperCase();
     const calOv = CAL_PN_OVERRIDE[pn.trim().toLowerCase()];
     if (calOv) return calOv;
     const m = pn.match(/^cal-[^-]+-(.+)$/i);
@@ -1129,6 +1132,9 @@ function extractProductCode(pn, store) {
 // コード正規化
 function normalizeCode(code) {
   if (!code) return code;
+  // auPAY等: 品番+楽天商品管理番号の連結（CAL-187cal-03- 等）→ 品番部分を採用
+  const calcat = code.match(/^(CAL-\d+)cal-/i);
+  if (calcat) return calcat[1].toUpperCase();
   // LLN-/ECL- は先頭3桁以降を切り捨て (例: LLN-002wf-brown → LLN-002)
   const m = code.match(/^((?:LLN|ECL)-\d{3})/);
   if (m) return m[1];

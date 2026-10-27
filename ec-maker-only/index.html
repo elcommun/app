@@ -156,7 +156,7 @@
   <div class="topbar">
     <div class="brand">
       <h1><span class="logo"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>メーカー商品のみ抽出</h1>
-      <div class="sub">自社を除き、メーカー販売データを税抜・掛け率付きに変換 <span class="ver">v25</span></div>
+      <div class="sub">自社を除き、メーカー販売データを税抜・掛け率付きに変換 <span class="ver">v26</span></div>
     </div>
     <button class="theme-btn" id="themeBtn" title="テーマ切替">
       <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
@@ -311,6 +311,9 @@ function extractProductCode(pn, store) {
     return null;
   }
   if (/^cal-/i.test(pn)) {
+    // auPAY等: 品番+楽天商品管理番号の連結（CAL-187cal-03- 等）→ 品番部分を採用
+    const cc = pn.match(/^(CAL-\d+)cal-/i);
+    if (cc) return cc[1].toUpperCase();
     const calOv = CAL_PN_OVERRIDE[pn.trim().toLowerCase()];
     if (calOv) return calOv;
     const m = pn.match(/^cal-[^-]+-(.+)$/i);
@@ -351,6 +354,9 @@ function extractProductCode(pn, store) {
 // コード正規化（item-data 準拠）
 function normalizeCode(code) {
   if (!code) return code;
+  // auPAY等: 品番+楽天商品管理番号の連結（CAL-187cal-03- 等）→ 品番部分を採用
+  const calcat = code.match(/^(CAL-\d+)cal-/i);
+  if (calcat) return calcat[1].toUpperCase();
   const m = code.match(/^((?:LLN|ECL)-\d{3})/);
   if (m) return m[1];
   const sa = code.match(/^([A-Z]{2,4})-(\d+)\.00$/);
