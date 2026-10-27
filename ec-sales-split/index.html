@@ -153,6 +153,10 @@
        margin-bottom:-1px;transition:.15s}
   .tab:hover{color:var(--text)}
   .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+  .unlink{margin-top:16px;padding:14px 16px;border:1px solid var(--amber-border);background:var(--amber-dim);border-radius:var(--radius-sm)}
+  .unlink-h{font-size:.86rem;font-weight:700;color:var(--amber);display:flex;align-items:center;gap:7px}
+  .unlink p{font-size:.78rem;color:var(--text);margin-top:4px;line-height:1.7}
+  .unlink .prev-wrap{margin-top:10px;max-height:260px;background:var(--surface)}
   .tab .n{font-family:var(--mono);font-size:.72rem;background:var(--bg2);padding:1px 6px;border-radius:999px;margin-left:6px}
 
   .prev-wrap{margin-top:12px;max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
@@ -183,7 +187,7 @@
   <div class="topbar">
     <div class="brand">
       <h1><span class="logo"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>EC販売データ振り分け</h1>
-      <div class="sub">受注CSVを自社商品／メーカー商品に自動判定して2ファイル生成 <span class="ver">v7</span></div>
+      <div class="sub">受注CSVを自社商品／メーカー商品に自動判定して2ファイル生成 <span class="ver">v8</span></div>
     </div>
     <button class="theme-btn" id="themeBtn" title="テーマ切替">
       <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
@@ -253,6 +257,12 @@
           <div class="big" id="skipCount">0</div><div class="small">要確認・未集計</div></div>
       </div>
 
+      <div class="unlink hidden" id="unlinkBox">
+        <div class="unlink-h">⚠ 商品データと紐付けできない自社商品があります（<span id="unlinkCount">0</span>）</div>
+        <p>商品データxlsxの品番に見つからなかったため、商品名は受注CSVの商品名をそのまま使い、大分類・中分類・小分類は空欄になっています。新商品であれば商品データに登録してから再生成するか、商品番号の変換ルールの追加が必要か確認してください。一覧は下の確認用Excelの「自社・商品データ未紐付け」シートにも入っています。</p>
+        <div class="prev-wrap" id="unlinkList"></div>
+      </div>
+
       <div class="dlrow">
         <a class="dl own" id="dlOwnBtn" href="#" download>
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -263,7 +273,7 @@
           <span class="dl-label">メーカー変換<small>XLSX・supplier-ranking用</small></span>
         </a>
       </div>
-      <a class="subtle-link" id="confirmDlBtn" href="#" download>確認用（掛け率未設定・商品番号空）をまとめてExcelダウンロード</a>
+      <a class="subtle-link" id="confirmDlBtn" href="#" download>確認用（自社・商品データ未紐付け／掛け率未設定／商品番号空）をまとめてExcelダウンロード</a>
 
       <div class="tabs">
         <div class="tab on" data-tab="own">自社プレビュー <span class="n" id="ownTabN">0</span></div>
@@ -380,6 +390,9 @@ function extractProductCode(pn, store) {
     return null;
   }
   if (/^cal-/i.test(pn)) {
+    // auPAY等: 品番+楽天商品管理番号の連結（CAL-187cal-03- 等）→ 品番部分を採用
+    const cc = pn.match(/^(CAL-\d+)cal-/i);
+    if (cc) return cc[1].toUpperCase();
     const calOv = CAL_PN_OVERRIDE[pn.trim().toLowerCase()];
     if (calOv) return calOv;
     const m = pn.match(/^cal-[^-]+-(.+)$/i);
@@ -419,6 +432,9 @@ function extractProductCode(pn, store) {
 }
 function normalizeCode(code) {
   if (!code) return code;
+  // auPAY等: 品番+楽天商品管理番号の連結（CAL-187cal-03- 等）→ 品番部分を採用
+  const calcat = code.match(/^(CAL-\d+)cal-/i);
+  if (calcat) return calcat[1].toUpperCase();
   const m = code.match(/^((?:LLN|ECL)-\d{3})/);
   if (m) return m[1];
   const sa = code.match(/^([A-Z]{2,4})-(\d+)\.00$/);
@@ -698,7 +714,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 /* ---------- generate ---------- */
 const OWN_FIELDS=['販売日','大分類','中分類','小分類','商品名','商品番号','税抜単価','数量','小計（税抜）','店舗','検索コード','マスター一致'];
 const MAKER_FIELDS=['店舗','出荷日','商品名','項目・選択肢','商品番号','税抜単価','数量','小計（税抜）','メーカー','掛け率'];
-let ownRows=null,makerRows=null,noMakerRows=null,emptyRows=null,srcFields=null,srcName='受注データ';
+let ownRows=null,makerRows=null,noMakerRows=null,emptyRows=null,unlinkedRows=[],srcFields=null,srcName='受注データ';
 const intOf=v=>{const n=parseInt(String(v==null?'':v).replace(/[^\d-]/g,''),10);return isNaN(n)?0:n;};
 
 function formatPeriodName(dates){
@@ -757,6 +773,7 @@ document.getElementById('goBtn').onclick=async()=>{
 
     // ── パス2: 全行を自社／メーカー／要確認に振り分け ──
     const own=[],maker=[],noMaker=[],empty=[];
+    const unlinkedInfo=new Map(); // 自社行 → {元の商品番号, 元の商品名}（商品データ未紐付けの行）
     const dates=[];
     for(let i=1;i<csvRows.length;i++){
       const r=csvRows[i]; const g=k=>ci[k]!==undefined?(r[ci[k]]||'').trim():'';
@@ -802,6 +819,7 @@ document.getElementById('goBtn').onclick=async()=>{
       const own_=isOwn(pn,sku,rawName,code,ownSet);
 
       if(own_){
+        const linked=name!=null; // 商品データxlsx（品番マスタ）に紐付けできたか
         if(!name)name=cleanRawNameOwn(rawName);
         const cats=categoryMap.get(code)||{cat1:'',cat2:'',cat3:''};
         // CAL_PN_OVERRIDE（cal-NN- 変換表）に一致した行は商品管理番号を検索コードにする
@@ -813,6 +831,7 @@ document.getElementById('goBtn').onclick=async()=>{
           '商品名':name,'商品番号':code,'税抜単価':net,'数量':qty,'小計（税抜）':net*qty,
           '店舗':store,'検索コード':searchCode,'マスター一致':matched?'○':'×',
         });
+        if(!linked)unlinkedInfo.set(own[own.length-1],{pn,rawName});
       }else{
         let [mk,rate]=makerFor(pn);
         if(!mk){ const fb=makerFallback(pn,rawName); if(fb[0]){ mk=fb[0]; rate=fb[1]; } }
@@ -838,11 +857,24 @@ document.getElementById('goBtn').onclick=async()=>{
       const x='X'+c;
       if(!ownCodeSet.has(x)&&!productMap.has(x))return;
       r['商品番号']=x;
-      if(productMap.has(x)){r['商品名']=productMap.get(x);r['マスター一致']='○';}
+      if(productMap.has(x)){r['商品名']=productMap.get(x);r['マスター一致']='○';unlinkedInfo.delete(r);}
       const xc=categoryMap.get(x);
       if(xc){r['大分類']=xc.cat1;r['中分類']=xc.cat2;r['小分類']=xc.cat3;}
       if(!r['検索コード'])r['検索コード']=pastSearchCode(x);
     });
+
+    // ── 商品データと紐付けできなかった自社商品を品番ごとに集約 ──
+    const ulMap=new Map();
+    unlinkedInfo.forEach((info,r)=>{
+      const c=r['商品番号'];
+      let u=ulMap.get(c);
+      if(!u){u={'商品番号':c,'元の商品番号':new Set(),'商品名':info.rawName,'店舗':new Set(),'行数':0,'数量':0};ulMap.set(c,u);}
+      u['元の商品番号'].add(info.pn); u['店舗'].add(r['店舗']); u['行数']++; u['数量']+=r['数量'];
+    });
+    unlinkedRows=[...ulMap.values()].sort((a,b)=>b['数量']-a['数量']).map(u=>({
+      ...u,'元の商品番号':[...u['元の商品番号']].join(' / '),'店舗':[...u['店舗']].join(' / '),
+    }));
+    const unlinkedLineCount=unlinkedInfo.size;
 
     ownRows=own; makerRows=maker; noMakerRows=noMaker; emptyRows=empty;
     srcName=formatPeriodName(dates);
@@ -870,7 +902,7 @@ document.getElementById('goBtn').onclick=async()=>{
     if(dlUrls['confirmDlBtn'])URL.revokeObjectURL(dlUrls['confirmDlBtn']);
     const confirmUrl=buildConfirmWbUrl();
     if(confirmUrl){ dlUrls['confirmDlBtn']=confirmUrl; confirmEl.href=confirmUrl; confirmEl.download=`${srcName}_確認用.xlsx`; confirmEl.dataset.ready='1'; }
-    else{ dlUrls['confirmDlBtn']=null; confirmEl.removeAttribute('href'); confirmEl.dataset.ready=''; confirmEl.dataset.emptyMsg='掛け率未設定・商品番号空のいずれの行もありませんでした'; }
+    else{ dlUrls['confirmDlBtn']=null; confirmEl.removeAttribute('href'); confirmEl.dataset.ready=''; confirmEl.dataset.emptyMsg='商品データ未紐付け・掛け率未設定・商品番号空のいずれの行もありませんでした'; }
 
     // 統計
     document.getElementById('result').classList.remove('hidden');
@@ -883,12 +915,21 @@ document.getElementById('goBtn').onclick=async()=>{
     document.getElementById('ownTabN').textContent=own.length.toLocaleString();
     document.getElementById('makerTabN').textContent=maker.length.toLocaleString();
 
+    const ulBox=document.getElementById('unlinkBox');
+    if(unlinkedRows.length){
+      document.getElementById('unlinkCount').textContent=`${unlinkedRows.length.toLocaleString()}品番・${unlinkedLineCount.toLocaleString()}行`;
+      renderPreview('unlinkList',UNLINK_FIELDS,unlinkedRows,{'商品名':'nm','元の商品番号':'mono','店舗':''});
+      ulBox.classList.remove('hidden');
+    }else{ ulBox.classList.add('hidden'); }
+
     renderPreview('prevOwn',OWN_FIELDS,own,{'商品名':'nm'});
     renderPreview('prevMaker',MAKER_FIELDS,maker,{'商品名':'nm','項目・選択肢':'nm'});
 
     showMsg(`完了！　自社商品 ${own.length.toLocaleString()}行・メーカー商品 ${maker.length.toLocaleString()}行に振り分けました`+
       `${noMaker.length?`　／ うち掛け率表に未登録の接頭辞 ${noMaker.length.toLocaleString()}行（メーカー・掛け率は空欄）`:''}`+
-      `${empty.length?`　／ 商品番号空 ${empty.length.toLocaleString()}行は要確認として除外`:''}。下のボタンからダウンロードできます。`,'success');
+      `${empty.length?`　／ 商品番号空 ${empty.length.toLocaleString()}行は要確認として除外`:''}。下のボタンからダウンロードできます。`+
+      `${unlinkedRows.length?`\n⚠ 商品データと紐付けできない自社商品が ${unlinkedRows.length.toLocaleString()}品番（${unlinkedLineCount.toLocaleString()}行）あります。下の一覧を確認してください。`:''}`,
+      unlinkedRows.length?'warning':'success');
   }catch(e){
     console.error(e);
     showMsg('エラー: '+e.message,'error');
@@ -932,10 +973,12 @@ function updateMakerDownloadLink(rows){
     dlUrls['dlMakerBtn']=null; el.removeAttribute('href'); el.dataset.ready=''; el.dataset.emptyMsg='メーカー商品の行がありませんでした';
   }
 }
+const UNLINK_FIELDS=['商品番号','元の商品番号','商品名','店舗','行数','数量'];
 function buildConfirmWbUrl(){
-  const hasNoMaker=noMakerRows&&noMakerRows.length, hasEmpty=emptyRows&&emptyRows.length;
-  if(!hasNoMaker&&!hasEmpty)return null;
+  const hasNoMaker=noMakerRows&&noMakerRows.length, hasEmpty=emptyRows&&emptyRows.length, hasUnlinked=unlinkedRows.length;
+  if(!hasNoMaker&&!hasEmpty&&!hasUnlinked)return null;
   const wb=XLSX.utils.book_new();
+  if(hasUnlinked)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(unlinkedRows,{header:UNLINK_FIELDS}),'自社・商品データ未紐付け');
   if(hasNoMaker)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(noMakerRows,{header:MAKER_FIELDS}),'掛け率未設定');
   if(hasEmpty)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(emptyRows,{header:srcFields}),'商品番号空');
   const arr=XLSX.write(wb,{bookType:'xlsx',type:'array'});
