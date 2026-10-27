@@ -427,6 +427,10 @@ let HAS_SUP = false;
 let SUP = { items: [], total: 0, matched: 0, bySku: 0, byMain: 0, noImage: 0, existing: 0, unmatched: [], loaded: false };
 let SUP_MASTER = null;   // 画像キー → 商品番号（data.js の商品番号）
 let SUP_HAVE = null;     // 画像キー → [幅,高さ]（すでにある画像）
+let SUP_INFO = null;     // 画像キー → {code, maker, name, vari, last, qty, qty1y}（画像が取れない商品の一覧CSV用）
+// 仕入れ商品アプリで別の商品番号にまとめて表示する旧品番（supplier-ranking/index.html の MERGE_CODE_RULES と同じ。変えるときは両方そろえる）。
+// まとめ先の商品の画像で表示されるため、画像が取れない商品の一覧には出さない
+const SUP_MERGED_RE = /^(apj-af00_00.+|made2(WH|BK)|af-made\d(BK|SV|GD|WH)|apj-wf00_00.+|apj-wf_tenugui\d+|apj-wf_zaiko-sp\d+[a-z]*|apj-wf99_97)$/i;
 function supKey(code) {
   return String(code || '').trim().toLowerCase().replace(/[^a-z0-9_-]/gu, c => '~' + c.codePointAt(0).toString(16) + '~');
 }
@@ -437,6 +441,23 @@ async function loadSupRefs() {
     const d = JSON.parse(t.slice(i, t.lastIndexOf('}') + 1));
     SUP_MASTER = {};
     Object.values(d.products).forEach(p => { if (p[3]) SUP_MASTER[supKey(p[3])] = p[3]; });
+    // 販売実績（最終販売日・累計個数・データ最終日までの直近1年の個数）。一覧を「最近売れた順」に並べるため
+    const end = d.records.reduce((m, r) => r[0] > m ? r[0] : m, '');
+    const from1y = end ? (Number(end.slice(0, 4)) - 1) + end.slice(4) : '';
+    const st = {};
+    d.records.forEach(r => {
+      const s = st[r[2]] || (st[r[2]] = { last: '', qty: 0, qty1y: 0 });
+      if (r[0] > s.last) s.last = r[0];
+      s.qty += r[3];
+      if (r[0] > from1y) s.qty1y += r[3];
+    });
+    SUP_INFO = {};
+    Object.entries(d.products).forEach(([pid, p]) => {
+      if (!p[3]) return;
+      const k = supKey(p[3]), s = st[pid] || { last: '', qty: 0, qty1y: 0 }, cur = SUP_INFO[k];
+      if (cur) { cur.qty += s.qty; cur.qty1y += s.qty1y; if (s.last > cur.last) cur.last = s.last; return; }
+      SUP_INFO[k] = { code: p[3], maker: p[0] || '', name: p[1] || '', vari: p[2] || '', last: s.last, qty: s.qty, qty1y: s.qty1y };
+    });
   } catch (e) { SUP_MASTER = null; }
   try {
     const t = await (await fetch('../supplier-ranking/image-index.js', { cache: 'no-cache' })).text();
@@ -446,7 +467,7 @@ async function loadSupRefs() {
   if (RAW_TEXT) rebuild();
 }
 function computeSup(rows, slug) {
-  SUP = { items: [], total: SUP_MASTER ? Object.keys(SUP_MASTER).length : 0, matched: 0, bySku: 0, byMain: 0, byBase: 0, needSlug: false, noImage: 0, existing: 0, unmatched: [], loaded: SUP.loaded, noMaster: !SUP_MASTER, noIndex: !SUP_HAVE };
+  SUP = { items: [], total: SUP_MASTER ? Object.keys(SUP_MASTER).length : 0, matched: 0, bySku: 0, byMain: 0, byBase: 0, needSlug: false, noImage: 0, noImageKeys: [], existing: 0, unmatched: [], missing: [], loaded: SUP.loaded, noMaster: !SUP_MASTER, noIndex: !SUP_HAVE };
   if (!rows || rows.length < 2) return false;
   const h = rows[0].map(v => (v || '').trim());
   const iSys = h.indexOf('システム連携用SKU番号');
@@ -504,7 +525,7 @@ function computeSup(rows, slug) {
     let skuImg = '';
     for (const i of iImgs) { const v = (row[i] || '').trim(); if (v) { skuImg = v; break; } }
     const r = imgOf(skuImg, mainBy[mng.toLowerCase()] || '');
-    if (!r) { SUP.noImage++; continue; }
+    if (!r) { SUP.noImage++; SUP.noImageKeys.push(key); continue; }
     push(key, r, r.kind);
   }
   // CSVにSKU行が無い商品（色違いなど）は、商品番号から商品管理番号を導き（supBase）、その商品のメイン画像で補う
@@ -517,10 +538,15 @@ function computeSup(rows, slug) {
     done.add(key);
     SUP.matched++;
     const r = imgOf('', mainImg);
-    if (!r) { SUP.noImage++; continue; }
+    if (!r) { SUP.noImage++; SUP.noImageKeys.push(key); continue; }
     push(key, r, 'base');
   }
-  SUP.unmatched = Object.keys(SUP_MASTER).filter(k => !done.has(k)).map(k => SUP_MASTER[k]);
+  const unmatchedKeys = Object.keys(SUP_MASTER).filter(k => !done.has(k));
+  SUP.unmatched = unmatchedKeys.map(k => SUP_MASTER[k]);
+  // 画像が取れない商品 = すでに画像が無く、このCSVからも取れない商品（CSVに見つからない／CSVに画像パスが無い）
+  const noHave = k => !(SUP_HAVE && SUP_HAVE[k]) && !SUP_MERGED_RE.test(SUP_MASTER[k]);
+  SUP.missing = unmatchedKeys.filter(noHave).map(k => ({ k, why: 'CSVに見つからない' }))
+    .concat(SUP.noImageKeys.filter(noHave).map(k => ({ k, why: 'CSVに画像パスなし' })));
   return true;
 }
 // 商品番号 → 楽天の商品管理番号（supplier-ranking/index.html の rakutenCodeBase と同じ規則。変えるときは両方そろえる）
@@ -557,6 +583,11 @@ function renderSupInfo() {
     ` ／ すでに画像あり ${r.existing.toLocaleString()} 件（除外）` +
     ` ／ 画像パスなし ${r.noImage.toLocaleString()} 件` +
     ` ／ <span class="${r.unmatched.length ? 'warn' : ''}">CSVに見つからなかった商品 ${r.unmatched.length.toLocaleString()} 件${ex ? '：例 ' + ex : ''}</span>`;
+  if (r.missing.length) {
+    const recent = r.missing.filter(m => (SUP_INFO && SUP_INFO[m.k] && SUP_INFO[m.k].qty1y) > 0).length;
+    html += `<br><span class="warn">📷 画像が取れない商品 <b>${r.missing.length.toLocaleString()}</b> 件（うち直近1年に販売あり ${recent.toLocaleString()} 件）</span>` +
+      ` <button type="button" class="mini-btn" onclick="downloadSupMissing()">📄 商品番号の一覧をCSVで保存</button>`;
+  }
   if (r.needSlug) html += `<br><span class="warn">⚠️ このCSVの画像パスには店舗名が含まれていないため、下の「店舗名（URLの一部）」に <b>elcommun</b> と入力してください（入力すると取り込み対象の枚数が出ます）</span>`;
   if (r.noIndex) html += `<br><span class="warn">⚠️ 既存画像の一覧（supplier-ranking/image-index.js）を読み込めなかったため、すでにある画像も対象に含まれます</span>`;
   box.className = 'rank-info show';
@@ -1003,6 +1034,20 @@ function copyCmd() {
   const btn = document.getElementById('copyBtn');
   btn.textContent = '✅ コピー済み';
   setTimeout(() => { btn.textContent = '📋 コピー'; }, 2000);
+}
+
+// 画像が取れない商品（すでに画像が無く、読み込んだCSVからも取れない商品）の一覧をCSVで保存する。
+// 最近売れた順（最終販売日の新しい順 → 直近1年の個数の多い順）。UTF-8（BOM付き）なのでExcelでそのまま開ける
+function downloadSupMissing() {
+  const rows = SUP.missing.map(m => {
+    const i = (SUP_INFO && SUP_INFO[m.k]) || { code: SUP_MASTER[m.k], maker: '', name: '', vari: '', last: '', qty: 0, qty1y: 0 };
+    return [i.code, i.maker, i.name, i.vari, m.why, i.last, i.qty1y, i.qty];
+  }).sort((a, b) => (b[5] > a[5] ? 1 : b[5] < a[5] ? -1 : 0) || b[6] - a[6] || (a[0] < b[0] ? -1 : 1));
+  const q = v => { const t = String(v == null ? '' : v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const csv = [['商品番号', 'メーカー', '商品名', 'バリエーション', '理由', '最終販売日', '直近1年の個数', '累計個数'], ...rows]
+    .map(r => r.map(q).join(',')).join('\r\n') + '\r\n';
+  const d = new Date(), ymd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+  saveBlob(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }), `supplier_no_image_${ymd}.csv`);
 }
 
 // ========== 共通 ==========
