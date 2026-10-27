@@ -555,7 +555,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v172</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v173</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -641,6 +641,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
           <input type="date" class="fsel" id="f-date-to" onchange="setQBtnActive(null);applyFilter()">
         </div>
         <div style="display:flex;gap:4px;margin-top:6px">
+          <button id="qbtn-m1" onclick="setMonthsPeriod(1)" class="qbtn">1ヶ月</button>
           <button id="qbtn-h" onclick="setHalfYearPeriod()" class="qbtn">半年</button>
           <button id="qbtn-1" onclick="setYearsPeriod(1)" class="qbtn">1年</button>
           <button id="qbtn-2" onclick="setYearsPeriod(2)" class="qbtn">2年</button>
@@ -1424,10 +1425,11 @@ function yearsFrom(years){
   const from=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   return from<PRELOADED.date_from?PRELOADED.date_from:from;
 }
-// 最新販売日から半年（6か月）遡った開始日
-function halfYearFrom(){
+// 最新販売日から n か月遡った開始日（1ヶ月・半年ボタン）
+function halfYearFrom(){ return monthsFrom(6); }
+function monthsFrom(n){
   const d=new Date(PRELOADED.date_to+'T00:00:00');
-  const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()-6);
+  const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()-n);
   d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
   d.setDate(d.getDate()+1);
   const from=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1439,6 +1441,12 @@ function setHalfYearPeriod(){
   setQBtnActive('qbtn-h');
   applyFilter();
 }
+function setMonthsPeriod(n){
+  document.getElementById('f-date-from').value=monthsFrom(n);
+  document.getElementById('f-date-to').value=PRELOADED.date_to;
+  setQBtnActive('qbtn-m'+n);
+  applyFilter();
+}
 function setYearsPeriod(years){
   document.getElementById('f-date-from').value=yearsFrom(years);
   document.getElementById('f-date-to').value=PRELOADED.date_to;
@@ -1446,7 +1454,7 @@ function setYearsPeriod(years){
   applyFilter();
 }
 function setQBtnActive(id){
-  ['qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].forEach(b=>{
+  ['qbtn-m1','qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].forEach(b=>{
     const el=document.getElementById(b);
     if(el) el.classList.toggle('on', b===id);
   });
@@ -3324,7 +3332,7 @@ function focusMonth(ym){
   const fi=document.getElementById('f-date-from'),ti=document.getElementById('f-date-to');
   // 絞り込む前の期間を控えておき、「← 期間を戻す」で元に戻せるようにする
   trendBack={from:fi.value,to:ti.value,
-    qbtn:['qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'',
+    qbtn:['qbtn-m1','qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'',
     focusedFrom:fD,focusedTo:tD};
   fi.value=fD; ti.value=tD;
   setQBtnActive('');
@@ -3487,7 +3495,7 @@ function renderOverview(cat,cats){
 const UI_STATE_KEY='ec_supplier_state_v1';
 function saveUiState(){
   try{
-    const qbtn=['qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'';
+    const qbtn=['qbtn-m1','qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'';
     localStorage.setItem(UI_STATE_KEY,JSON.stringify({
       rankMetric, groupMode, listCol, sortMode, sortDir, comparisonMode, heatmapMode,
       dateFrom:document.getElementById('f-date-from').value, dateTo:document.getElementById('f-date-to').value,
@@ -3517,7 +3525,8 @@ function restoreUiState(){
     const keep=sessionStorage.getItem('ecSupKeepView')==='1';
     const fi=document.getElementById('f-date-from'), ti=document.getElementById('f-date-to');
     const ea=PRELOADED.date_from, la=PRELOADED.date_to;
-    if(keep&&s.qbtn==='qbtn-h'){ fi.value=halfYearFrom(); ti.value=la; setQBtnActive('qbtn-h'); }
+    if(keep&&/^qbtn-m\d+$/.test(s.qbtn)){ fi.value=monthsFrom(parseInt(s.qbtn.slice(6))); ti.value=la; setQBtnActive(s.qbtn); }
+    else if(keep&&s.qbtn==='qbtn-h'){ fi.value=halfYearFrom(); ti.value=la; setQBtnActive('qbtn-h'); }
     else if(keep&&/^qbtn-[123]$/.test(s.qbtn)){ fi.value=yearsFrom(parseInt(s.qbtn.slice(5))); ti.value=la; setQBtnActive(s.qbtn); }
     else if(keep&&s.qbtn==='qbtn-all'){ fi.value=ea; ti.value=la; setQBtnActive('qbtn-all'); }
     else if(keep&&s.dateFrom&&s.dateTo){ fi.value=s.dateFrom<ea?ea:s.dateFrom; ti.value=s.dateTo>la?la:s.dateTo; setQBtnActive(''); }

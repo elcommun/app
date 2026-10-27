@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v379</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v380</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -703,6 +703,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
           <input type="date" class="fsel" id="f-date-to" onchange="applyFilter()">
         </div>
         <div style="display:flex;gap:4px;margin-top:6px">
+          <button id="qbtn-m1" onclick="setMonthsPeriod(1)" class="qbtn">1ヶ月</button>
           <button id="qbtn-h" onclick="setHalfYearPeriod()" class="qbtn">半年</button>
           <button id="qbtn-1" onclick="setYearsPeriod(1)" class="qbtn">1年</button>
           <button id="qbtn-2" onclick="setYearsPeriod(2)" class="qbtn">2年</button>
@@ -4686,7 +4687,7 @@ function focusMonth(ym){
   const fi=document.getElementById('f-date-from'),ti=document.getElementById('f-date-to');
   // 絞り込む前の期間を控えておき、「← 期間を戻す」で元に戻せるようにする
   trendBack={from:fi.value,to:ti.value,
-    qbtn:['qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'',
+    qbtn:['qbtn-m1','qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'',
     focusedFrom:fD,focusedTo:tD};
   fi.value=fD; ti.value=tD;
   setQBtnActive('');
@@ -4853,7 +4854,7 @@ function pickStore(name){
 const UI_STATE_KEY='ec_rank_state_v1';
 function saveUiState(){
   try{
-    const qbtn=['qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'';
+    const qbtn=['qbtn-m1','qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].find(id=>document.getElementById(id)?.classList.contains('on'))||'';
     const {dateFrom,dateTo}=getFilterPeriod();
     localStorage.setItem(UI_STATE_KEY,JSON.stringify({sortMode,sortDir,comparisonMode,heatmapMode,dateFrom,dateTo,qbtn,store:document.getElementById('f-store').value,cat:selectedCategory,trendMetric,trendScope,trendOpen:!!document.getElementById('trend-panel')?.open,splitOpen:!!document.getElementById('split-panel')?.open,trendBack}));
   }catch(e){}
@@ -4879,15 +4880,16 @@ function yearsFromDate(n){
   if(window._periodEarliest&&fromDate<window._periodEarliest)fromDate=window._periodEarliest;
   return fromDate;
 }
-// 最新販売日から半年（6か月）遡った開始日
-function halfYearFromDate(){
+// 最新販売日から n か月遡った開始日（1ヶ月・半年ボタン）
+function halfYearFromDate(){return monthsFromDate(6);}
+function monthsFromDate(n){
   const latest=window._periodLatest||''; if(!latest)return '';
-  const d=new Date(latest); const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()-6); d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())); d.setDate(d.getDate()+1);
+  const d=new Date(latest); const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()-n); d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())); d.setDate(d.getDate()+1);
   let fromDate=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   if(window._periodEarliest&&fromDate<window._periodEarliest)fromDate=window._periodEarliest;
   return fromDate;
 }
-function setQBtnActive(id){['qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].forEach(b=>{const el=document.getElementById(b);if(el)el.classList.toggle('on',b===id)});}
+function setQBtnActive(id){['qbtn-m1','qbtn-h','qbtn-1','qbtn-2','qbtn-3','qbtn-all'].forEach(b=>{const el=document.getElementById(b);if(el)el.classList.toggle('on',b===id)});}
 function setFullPeriod(){
   document.getElementById('f-date-from').value=window._periodEarliest||'';
   document.getElementById('f-date-to').value=window._periodLatest||'';
@@ -4900,6 +4902,14 @@ function setHalfYearPeriod(){
   document.getElementById('f-date-from').value=halfYearFromDate();
   document.getElementById('f-date-to').value=latest;
   setQBtnActive('qbtn-h');
+  applyFilter();
+}
+function setMonthsPeriod(n){
+  const latest=window._periodLatest||'';
+  if(!latest)return;
+  document.getElementById('f-date-from').value=monthsFromDate(n);
+  document.getElementById('f-date-to').value=latest;
+  setQBtnActive('qbtn-m'+n);
   applyFilter();
 }
 function setYearsPeriod(n){
@@ -4921,7 +4931,8 @@ const _uiSt=loadUiState();
     const fi=document.getElementById('f-date-from'),ti=document.getElementById('f-date-to');
     const ea=window._periodEarliest||'',la=window._periodLatest||'';
     if(keep){
-      if(_uiSt.qbtn==='qbtn-h'){fi.value=halfYearFromDate();ti.value=la;setQBtnActive('qbtn-h');window._qbtnRestored=true;}
+      if(/^qbtn-m\d+$/.test(_uiSt.qbtn)){fi.value=monthsFromDate(parseInt(_uiSt.qbtn.slice(6)));ti.value=la;setQBtnActive(_uiSt.qbtn);window._qbtnRestored=true;}
+      else if(_uiSt.qbtn==='qbtn-h'){fi.value=halfYearFromDate();ti.value=la;setQBtnActive('qbtn-h');window._qbtnRestored=true;}
       else if(/^qbtn-[123]$/.test(_uiSt.qbtn)){fi.value=yearsFromDate(parseInt(_uiSt.qbtn.slice(5)));ti.value=la;setQBtnActive(_uiSt.qbtn);window._qbtnRestored=true;}
       else if(_uiSt.qbtn==='qbtn-all'){fi.value=ea;ti.value=la;setQBtnActive('qbtn-all');window._qbtnRestored=true;}
       else if(_uiSt.dateFrom&&_uiSt.dateTo){fi.value=ea&&_uiSt.dateFrom<ea?ea:_uiSt.dateFrom;ti.value=la&&_uiSt.dateTo>la?la:_uiSt.dateTo;setQBtnActive('');window._qbtnRestored=true;}
