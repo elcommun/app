@@ -59,6 +59,13 @@ def normalize_apj_code(code):
     return c
 
 
+def apj_frame_key(code):
+    """アプリの apjFrameKey と同じ: APJ の額縁（apj-サイズ-色-管理番号）は、apj- や色が抜けた表記でも
+    サイズ＋管理番号が同じなら同じ商品とみなす。額縁以外は ''"""
+    m = re.match(r'^(?:apj-)?([a-z]+\d+_\d+(?:_\d+)?)-(?:.*-)?(\d{7,})$', str(code or ''), re.I)
+    return 'apj-%s|%s' % (m.group(1).lower(), m.group(2)) if m else ''
+
+
 def app_code(code):
     c = normalize_apj_code(code)
     for rx, to in MERGE_CODE_RULES:
@@ -120,14 +127,21 @@ def main():
             if r[0] > last.get(r[2], ''):
                 last[r[2]] = r[0]
 
+    # APJ の額縁は、同じ商品（サイズ＋管理番号）のどれかの表記に画像があれば画像あり（アプリは楽天の表記を残す）
+    frame_have = {apj_frame_key(p[3]) for p in d['products'].values()
+                  if apj_frame_key(p[3]) and img_key(normalize_apj_code(p[3])) in have}
+
     rows = {}
     for pid, q in qty.items():
         p = d['products'].get(pid)
         if not p or not p[3]:
             continue
         code = app_code(p[3])
-        if img_key(code) in have:
+        fk = apj_frame_key(code)
+        if img_key(code) in have or fk in frame_have:
             continue
+        if fk:
+            code = 'apj-' + fk.split('|')[0][4:] + '-' + (p[2] or fk.split('|')[1])
         row = rows.get(code)
         if row:
             row['qty'] += q

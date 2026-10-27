@@ -177,6 +177,8 @@ input[type=file]{display:none}
 .tbl th{position:relative;background:var(--th-bg);color:var(--th-ink);padding:10px 13px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;border-right:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th-sort{cursor:pointer;user-select:none}.th-sort:hover{color:#2d2926}.sort-ind{margin-left:3px;font-size:9px;opacity:.7}
 .tbl th:last-child{border-right:none}
+.col-rsz{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;z-index:2;touch-action:none}
+.col-rsz:hover,.col-rsz.on{background:var(--accent);opacity:.45}
 .tbl td{padding:8px 13px;border-bottom:1px solid var(--border2);vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tr:hover td{background:var(--hover)}
@@ -555,7 +557,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v173</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v174</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -1139,7 +1141,8 @@ function dedupeProductsByCode(){
   Object.keys(ALL_PRODUCTS).forEach(pid=>{
     const code=ALL_PRODUCTS[pid][3];
     if(!code) return;
-    (byCode[code]||(byCode[code]=[])).push(pid);
+    const key=apjFrameKey(code)||code;
+    (byCode[key]||(byCode[key]=[])).push(pid);
   });
   const recordsByPid={};
   ALL_RECORDS.forEach(r=>{ (recordsByPid[r[2]]||(recordsByPid[r[2]]=[])).push(r); });
@@ -1158,11 +1161,16 @@ function dedupeProductsByCode(){
       if(ALL_PRODUCTS[winner[2]]) survivor=winner[2];
     }
     const canonical=ALL_PRODUCTS[survivor];
+    // APJの額縁は、楽天の表記（apj-サイズ-色-管理番号。画像もこの名前）を残す
+    const codes=pids.map(pid=>ALL_PRODUCTS[pid][3]);
+    const fullCode=code.includes('|')&&codes.find(c=>/^apj-/i.test(c)&&c.split('-').length>=4);
+    if(fullCode) canonical[3]=fullCode;
     const macroCat=categorizeProduct(canonical[1],canonical[3]);
     canonical[5]=subcategorize(macroCat, canonical[1], canonical[3]);
     // 統合される商品が持つ非表示検索ワードも失われないよう統合先に引き継ぐ
     const extras=new Set();
     pids.forEach(pid=>{ const e=(ALL_PRODUCTS[pid][6]||'').trim(); if(e) extras.add(e); });
+    codes.forEach(c=>{ if(c!==canonical[3]) extras.add(c); });
     canonical[6]=[...extras].join(' ');
     pids.forEach(pid=>{
       if(pid!==survivor){ pidRemap[pid]=survivor; delete ALL_PRODUCTS[pid]; }
@@ -1293,6 +1301,19 @@ function cutFullwidthSlash(name){
 // ・既にapj-が付いている商品番号でも、数字の間の「x」表記は「_」に統一する
 // ・サイズだけでは楽天市場側の実際の商品番号と一致しない例外（末尾に枝番が付くもの）は個別に補正する
 // ・「apj-mgt-」は誤って登録された品番のため、「apj-」を外して「mgt-」として扱う
+// APJの額縁（apj-サイズ-色-管理番号）は、店舗によって「apj-」や色が抜けた表記（ef61_91-ブラック-…・apj-nlf30_42-…）が
+// あるため、サイズ＋管理番号が同じなら同じ商品（同じ色）とみなす。額縁以外は ''
+function apjFrameKey(code){
+  const m=/^(?:apj-)?([a-z]+\d+_\d+(?:_\d+)?)-(?:.*-)?(\d{7,})$/i.exec(code||'');
+  return m ? `apj-${m[1].toLowerCase()}|${m[2]}` : '';
+}
+// 表に出す商品番号。APJの額縁は色・管理番号を外して「apj-サイズ」だけにする（色はバリエーション名に出る。2026-10-27 ユーザー指示）。
+// 商品の区別・画像・楽天リンクは元の商品番号のまま
+function dispCode(code){
+  const c=code||'';
+  const m=/^(?:apj-)?([a-z]+\d+_\d+(?:_\d+)?)-/i.exec(c);
+  return m&&(/^apj-/i.test(c)||apjFrameKey(c)) ? 'apj-'+m[1] : c;
+}
 function normalizeApjCode(code){
   if(!code) return code;
   const c=String(code).trim();
@@ -1383,13 +1404,13 @@ function codeHtml(code){
   const c=code||'';
   // ak-から始まる商品番号は、商品番号をそのまま（末尾に / を付けず）URLに使う
   if(/^ak-/i.test(c)){
-    return `<a class="code-link" href="https://item.rakuten.co.jp/elcommun/${encodeURIComponent(c)}" target="rakuten_item" title="楽天市場の商品ページを開く">${x(c)}</a>`;
+    return `<a class="code-link" href="https://item.rakuten.co.jp/elcommun/${encodeURIComponent(c)}" target="rakuten_item" title="楽天市場の商品ページを開く">${x(dispCode(c))}</a>`;
   }
   const base=rakutenCodeBase(c);
   if(base){
-    return `<a class="code-link" href="https://item.rakuten.co.jp/elcommun/${encodeURIComponent(base)}/" target="rakuten_item" title="楽天市場の商品ページを開く">${x(c)}</a>`;
+    return `<a class="code-link" href="https://item.rakuten.co.jp/elcommun/${encodeURIComponent(base)}/" target="rakuten_item" title="楽天市場の商品ページを開く">${x(dispCode(c))}</a>`;
   }
-  return x(c);
+  return x(dispCode(c));
 }
 
 function normalize(s){
@@ -1889,7 +1910,7 @@ async function buildExportBlob(){
     usedSheetNames.add(sheetName.toLowerCase());
     const ws=wb.addWorksheet(sheetName);
     // 商品番号・商品名は、手動で幅を広げなくても内容が読める幅に自動調整する
-    const codeW=excelColWidth(rows, r=>r.code, 10, 36);
+    const codeW=excelColWidth(rows, r=>dispCode(r.code), 10, 36);
     const nameW=excelColWidth(rows, r=>r.name+(r.varName?`（${r.varName}）`:''), 20, 60);
     ws.columns=[{width:7},{width:codeW},{width:nameW},{width:9},{width:8},{width:13}];
 
@@ -1941,7 +1962,7 @@ async function buildExportBlob(){
       let rankBg=(i%2===1)?C.STR:C.WHT;
       if(rank===1) rankBg=C.GOLD; else if(rank===2) rankBg=C.SILV; else if(rank===3) rankBg=C.BRNZ;
       ws.getRow(ri).height=16;
-      const vals=[rank, it.code, it.name+(it.varName?`（${it.varName}）`:''), it.price, it.qty, Math.round(it.amount)];
+      const vals=[rank, dispCode(it.code), it.name+(it.varName?`（${it.varName}）`:''), it.price, it.qty, Math.round(it.amount)];
       vals.forEach((v,c)=>{
         const cell=ws.getCell(ri,c+1);
         cell.value=v; cell.fill=fill(rankBg); cell.border=thinAll;
@@ -2487,7 +2508,7 @@ function cgCardHtml(it,maxV,showMaker){
           <div class="cg-imgbox">${imgHas(it.code)?prodImgHtml(it.code,'cg-img',''):'<span class="cg-noimg">画像なし</span>'}</div>
           <div class="cg-pname">${x(it.name)}</div>
           <div class="cg-var">${x(it.varName||'')}</div>
-          <div class="cg-line">${showMaker?`<span class="cg-mk">${x(it.maker)}</span>`:''}<span class="cg-code">${x(it.code)}</span><span class="cg-price">¥${(it.price||0).toLocaleString()}</span></div>
+          <div class="cg-line">${showMaker?`<span class="cg-mk">${x(it.maker)}</span>`:''}<span class="cg-code">${x(dispCode(it.code))}</span><span class="cg-price">¥${(it.price||0).toLocaleString()}</span></div>
           <div class="cg-qty" style="${m==='qty'?hs:''}">${it.qty.toLocaleString()}個</div>
           <div class="cg-amt" style="${m==='amount'?hs:''}">¥${Math.round(it.amount).toLocaleString()}</div>
         </div>`;
@@ -3086,6 +3107,13 @@ function syncTableWidth(table){
 // （画面が狭くなれば縮み、広がれば伸びる）。余った幅は重みに応じて配分し、
 // 商品名以外は上限あり（上限を超えた分は商品名列へ回る）
 // [列クラス, 余り配分の重み, 上限px]。基本幅はHTMLのstyle widthを初回に記憶して使う
+// 見出しの右端をドラッグして変えた列幅（メーカー・商品番号・商品名。2026-10-27 ユーザー指示）。
+// この端末に保存し、ランキング表・検索結果の表で共通。ダブルクリックで自動の幅に戻す
+const COL_W_KEY='ec_sup_colw_v1';
+const RESIZABLE_COLS={'tag-col':50,'code-col':60,'name-col':120}; // 列クラス→最小幅px
+let USER_COL_W={};
+try{ USER_COL_W=JSON.parse(localStorage.getItem(COL_W_KEY)||'{}')||{}; }catch(e){ USER_COL_W={}; }
+function saveUserColW(){ try{ localStorage.setItem(COL_W_KEY, JSON.stringify(USER_COL_W)); }catch(e){} }
 const FLEX_COLS=[['code-col',15,260],['cat-col',5,195],['tag-col',5,124]];
 const FLEX_NAME_WEIGHT=70, FLEX_NAME_MIN=120;
 function fillRemainingWidth(table){
@@ -3101,15 +3129,17 @@ function fillRemainingWidth(table){
     const th=table.querySelector('thead th.'+cls);
     if(!th) continue;
     if(!th.dataset.baseW) th.dataset.baseW=String(parseInt(th.style.width)||100);
+    if(USER_COL_W[cls]){ th.style.width=USER_COL_W[cls]+'px'; continue; } // 手で変えた幅は固定（残りの幅の配分に入れない）
     if(visible(th)) flex.push({th, base:parseInt(th.dataset.baseW), weight, max});
   }
+  const nameMin=USER_COL_W['name-col']||FLEX_NAME_MIN; // 商品名は手で広げた幅を最小幅にし、余りがあればさらに広げる
   const flexThs=new Set(flex.map(f=>f.th));
   const otherThs=[...table.querySelectorAll('thead th')].filter(th=>th!==nameTh && !flexThs.has(th) && visible(th));
   const othersWidth=otherThs.reduce((sum,th)=>sum+colIntendedWidth(th),0);
   const remaining=avail-othersWidth;
   const baseSum=flex.reduce((s,f)=>s+f.base,0);
-  const extra=remaining-baseSum-FLEX_NAME_MIN;
-  let nameW=Math.max(FLEX_NAME_MIN, remaining-baseSum);
+  const extra=remaining-baseSum-nameMin;
+  let nameW=Math.max(nameMin, remaining-baseSum);
   if(extra>0){
     const totalWeight=FLEX_NAME_WEIGHT+flex.reduce((s,f)=>s+f.weight,0);
     let used=0;
@@ -3118,7 +3148,7 @@ function fillRemainingWidth(table){
       f.th.style.width=w+'px';
       used+=w;
     }
-    nameW=remaining-used;
+    nameW=Math.max(nameMin, remaining-used);
   } else {
     for(const f of flex){ f.th.style.width=f.base+'px'; }
   }
@@ -3142,6 +3172,56 @@ function initTableWidth(tableId){
 }
 initTableWidth('rank-tbl');
 initTableWidth('search-tbl');
+(function(){
+  let drag=null;
+  function onMove(e){
+    if(!drag) return;
+    const w=Math.max(RESIZABLE_COLS[drag.cls], Math.round(drag.startW+e.clientX-drag.startX));
+    if(w===USER_COL_W[drag.cls]) return;
+    USER_COL_W[drag.cls]=w;
+    drag.moved=true;
+    fillRemainingWidth(drag.table);
+  }
+  function onUp(){
+    if(!drag) return;
+    drag.handle.classList.remove('on');
+    document.body.style.cursor='';
+    if(drag.moved){
+      saveUserColW();
+      // 見出しのクリック（並べ替え）が続けて起きないようにする
+      const stop=ev=>{ ev.stopPropagation(); ev.preventDefault(); };
+      window.addEventListener('click', stop, true);
+      setTimeout(()=>window.removeEventListener('click', stop, true), 0);
+    }
+    drag=null;
+    refreshVisibleTableWidth();
+  }
+  document.querySelectorAll('#rank-tbl thead th, #search-tbl thead th').forEach(th=>{
+    const cls=Object.keys(RESIZABLE_COLS).find(c=>th.classList.contains(c));
+    if(!cls) return;
+    const h=document.createElement('span');
+    h.className='col-rsz';
+    h.title='ドラッグで列の幅を変更（ダブルクリックで元に戻す）';
+    h.addEventListener('pointerdown', e=>{
+      if(e.button!==0) return;
+      e.preventDefault(); e.stopPropagation();
+      drag={cls, th, handle:h, table:th.closest('table'), startX:e.clientX, startW:th.offsetWidth, moved:false};
+      h.classList.add('on');
+      document.body.style.cursor='col-resize';
+    });
+    h.addEventListener('click', e=>e.stopPropagation());
+    h.addEventListener('dblclick', e=>{
+      e.stopPropagation();
+      delete USER_COL_W[cls];
+      saveUserColW();
+      refreshVisibleTableWidth();
+    });
+    th.appendChild(h);
+  });
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+})();
 let resizeDebounce=null;
 window.addEventListener('resize',()=>{
   clearTimeout(resizeDebounce);
