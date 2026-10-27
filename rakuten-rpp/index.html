@@ -164,10 +164,10 @@ header h1 span{font-size:12px;color:var(--gray-400);margin-left:6px;font-weight:
       </div>
     </div>
   </div>
-  <div class="footer">EL COMMUN EC事業部 — 楽天RPP広告アナリスト <span id="verBadge">v3</span></div>
+  <div class="footer">EL COMMUN EC事業部 — 楽天RPP広告アナリスト <span id="verBadge">v4</span></div>
 </div>
 <script>
-const APP_VERSION = 3;   // 変更のたびに +1（サーバー側が大きければ自動リロード）
+const APP_VERSION = 4;   // 変更のたびに +1（サーバー側が大きければ自動リロード）
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const yen = n => '¥' + Math.round(n).toLocaleString();
@@ -250,7 +250,10 @@ const normH = h => String(h || '').normalize('NFKC').replace(/\s+/g, '').toLower
 
 function parseReport(text){
   const all = parseCSV(text);
-  let hi = all.findIndex(r => r.some(c => c.includes('コントロールカラム')) && r.some(c => c.trim() === '日付'));
+  // RMSのRPPレポートは上から7行目（「コントロールカラム」のある行）が見出し（1〜6行目は実行日時・検索条件など）。
+  // 7行目に無いときだけ、ほかの行から探す
+  const isHead = r => r.some(c => c.includes('コントロールカラム'));
+  let hi = all[6] && isHead(all[6]) ? 6 : all.findIndex(r => isHead(r) && r.some(c => c.trim() === '日付'));
   if(hi < 0) hi = all.findIndex(r => r.some(c => c.trim() === '商品管理番号'));
   if(hi < 0) throw new Error('ヘッダー行（商品管理番号）が見つかりません');
   const H = all[hi].map(normH);
@@ -298,9 +301,9 @@ async function handleFiles(files){
 function fileMsg(cls, html){ $('fileStatus').insertAdjacentHTML('beforeend', '<div class="file-status ' + cls + '">' + html + '</div>'); }
 
 /* ---------- 期間 ---------- */
-function toDate(s){
-  const m = String(s).match(/(\d{4})[\/\-年.](\d{1,2})[\/\-月.](\d{1,2})/);
-  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+// 日付の欄にある日付をすべて取り出す（「2026/10/01」も「2026年10月01日～2026年10月26日」のような期間も）
+function toDates(s){
+  return Array.from(String(s).matchAll(/(\d{4})[\/\-年.](\d{1,2})[\/\-月.](\d{1,2})/g), m => new Date(+m[1], +m[2] - 1, +m[3]));
 }
 const fmtD = d => d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
 
@@ -328,7 +331,7 @@ function runAnalysis(silent){
   }
 
   // 期間
-  const ds = rows.map(r => toDate(r.date)).filter(Boolean).sort((a, b) => a - b);
+  const ds = rows.flatMap(r => toDates(r.date)).sort((a, b) => a - b);
   let days = 0;
   if(ds.length){
     days = Math.round((ds[ds.length - 1] - ds[0]) / 864e5) + 1;
