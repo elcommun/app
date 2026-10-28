@@ -1,0 +1,5 @@
+{
+  "name": "Remix: EL COMMUN 画像生成AI Nano Banana 2",
+  "description": "Nano Banana 2 (gemini-3.1-flash-image-preview)を使用して、テキストや画像、スケッチから新しい画像を生成するアプリケーションです。複数の画像を組み合わせて編集したり、プロンプトから画像を生成したりできます。",
+  "requestFramePermissions": []
+}

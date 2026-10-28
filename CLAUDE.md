@@ -107,6 +107,12 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - Claude での詳しい分析は、依頼文をコピーして claude.ai を開くボタン（`copyForClaude()`）。API は使わない
 - 商品名は ranking の商品マスタから作った `rakuten-rpp/item-names.js`（検索コード＝楽天の商品管理番号 → 商品名）。ranking 更新を反映したいときは `python3 rakuten-rpp/build-names.py` → `<script src="item-names.js?v=N">` の `?v=N` を上げる
 
+### image-generator（画像生成AI。2026-10-28 新規）
+- Google AI Studio で作ったアプリ（元: `curio0930/image-generator`。AI Studio の GitHub sync の送り先）を移したもの。React + Vite。**ソースは `image-generator/src/`、公開物は `image-generator/index.html` と `assets/`（ビルドで生成）**
+- 変更したら `cd image-generator/src && npm install && npm run build`（`index.html` と `assets/` を1つ上に出力）。古い `assets/*.js` は消してから入れ直す。`src/package.json` はルートの .gitignore に当たるので `git add -f`
+- **APIキーはコードに書かない**（Public リポジトリのため）。使う人が右上「APIキー」から入力し、その端末の localStorage（`ecImageGen_apiKey`）にだけ保存。モデルは `gemini-3.1-flash-image-preview`（1回で3枚生成＝有料APIの料金がかかる）
+- AI Studio 側で直した場合は、`curio0930/image-generator` の中身を `src/` に取り込み直し、上の変更（APIキー入力・vite.config の base/outDir・importmap の削除）を保つ
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）

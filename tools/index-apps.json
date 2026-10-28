@@ -33,6 +33,7 @@
     {"id": "files", "title": "🖼 画像・ファイル", "apps": [
       {"dir": "catalog-check", "name": "カタログ校正チェック"},
       {"dir": "design-preview", "name": "デザインプレビュー（PSD/AI/PDF）"},
+      {"dir": "image-generator", "name": "画像生成AI（Nano Banana 2）", "desc": "Google AI Studio で作成。画像・プロンプト・スケッチから画像を生成（Gemini APIキーが必要）"},
       {"dir": "image-resize", "name": "画像かんたん縮小"},
       {"dir": "zip-tool", "name": "ZIP圧縮ツール"}
     ]},
