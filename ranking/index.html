@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v386</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v387</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -2565,6 +2565,9 @@ async function downloadCheckedCategories(){
 // rows=[{code, yc(その商品の年版カテゴリ名。年版でなければ無し)}] → {prev:{code:[数,金額]|null}, prev2:{…}}
 // 年版でない商品・検索コードの無い商品は結果に入らない（呼び出し側で従来どおり同じ品番自身の前期間を使う）。
 // 手帳は末尾の英字デザイン名で照合（位置照合なし）、カレンダーは検索コードのみ。前年版が無い新デザインは null（-）。
+// 毎年デザイン名・色が変わる同じシリーズの検索コード（干支シリーズなど）。名前・色で照合できなかった分は品番順に1対1で前年版と対応させる。
+// 今後増えたらここに足す（2026-10-30 ユーザー指示: mg-43-）
+const EDITION_SERIES_SC=new Set(['mg-43-']);
 function calcEditionPrev(rows){
   const itemPrevQA={},itemPrev2QA={};
   function designName(n){const m=(n||'').match(/([A-Za-z][A-Za-z0-9 &]*)\s*$/);return m?m[1].trim():'';}
@@ -2613,6 +2616,12 @@ function calcEditionPrev(rows){
           if(new Set(uc).size===uc.length&&new Set(lc.map(x=>x[1])).size===lc.length&&uc.every(c=>c&&lc.some(x=>x[1]===c))){
             for(const it of unm){const pc=lc.find(x=>x[1]===colorOf(it.dn))[0];used.add(pc);const qa=pAgg[prevCat][pc];tgt[it.code]=qa&&qa[0]>0?[qa[0],qa[1]]:null;}
           }
+        }
+        // 毎年同じシリーズの検索コード（EDITION_SERIES_SC）は、残った今年の商品と前年版の商品を品番順に1対1で対応させる
+        if(EDITION_SERIES_SC.has(g.sc)){
+          const unm2=g.items.filter(it=>tgt[it.code]===undefined);
+          const left2=pCodes.filter(c=>!used.has(c)).sort(codeCompare);
+          unm2.forEach((it,i)=>{const pc=left2[i];if(!pc)return;used.add(pc);const qa=pAgg[prevCat][pc];tgt[it.code]=qa&&qa[0]>0?[qa[0],qa[1]]:null;});
         }
         for(const it of unm)if(tgt[it.code]===undefined)tgt[it.code]=null;
       }
