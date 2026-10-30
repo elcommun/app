@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v381</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v382</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -1052,6 +1052,7 @@ const DIARY_FORMATS=[
   {prefix:'WB-',name:'B6ウィークリー｜レフト'},
   {prefix:'WK-',name:'B6ウィークリー｜ブロック'},
   {prefix:'WV-',name:'A5ウィークリー｜バーチカルノート'},
+  {prefix:'WN-',name:'B6ウィークリー｜バーチカルノート'},   // XDR-WN-（ロフト販路限定 2027年1月始まり〜）
   {prefix:'WL-',name:'ロングウィークリー'},
   {prefix:'WS-',name:'Nitte 新書判 ウィークリー'},
   {prefix:'WX-',name:'B6ウィークリー｜インデックス レフト'},
@@ -3905,6 +3906,31 @@ const TRANS_GROUPS=[
 ['Note','ノート'],
 // 2026-10-21〜10-26 取り込み分の新商品（MTT-009・MTT-012 matita 長ぽち袋）から
 ['ぽち袋','お年玉袋','おとしだま袋'],
+// 2026-10-27〜10-29 取り込み分の新商品（2027年1月始まりダイアリー 150品番・LNC-1706）の商品名から
+['Kung Fu','カンフー'],
+['Mike','ミケ','みけ','三毛'],
+['Pile','パイル'],
+['Desert','デザート','砂漠','さばく'],
+['Engi','縁起','えんぎ'],
+['Buddy','バディ'],
+['Kompis','コンピス'],
+['Drowse','ドラウズ'],
+['Fluffy','フラッフィー','ふわふわ'],
+['BaaBaa','Baa Baa','バーバー'],
+['Etomoji','エトモジ','えともじ','干支文字'],
+['Sheepsleep','シープスリープ'],
+['Criosphinx','クリオスフィンクス'],
+['Merino','メリノ'],
+['Mokomoko','モコモコ','もこもこ'],
+['Moco','モコ'],
+['Mauve','モーブ','モーヴ'],
+['Tanuki','タヌキ','たぬき','狸'],
+['Chaton','シャトン'],
+['Famille','ファミーユ'],
+['Baum Dog','Baumdog','バウムドッグ'],
+['Spacefaring','スペースフェアリング','宇宙'],
+['Mame','マメ','まめ','豆'],
+['French Bull','French Bulldog','フレンチブル','フレンチブルドッグ'],
 ];
 for(const g of TRANS_GROUPS){
   const ng=g.map(normalize);
