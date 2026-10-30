@@ -117,6 +117,7 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
 - `index.html` の `MAIL_WEBHOOK_URL` にデプロイ済みのウェブアプリURLを設定すると有効になる（空の間は送信しない）
+- **現在は停止中（2026-10-30 ユーザー指示：変換が終わっても通知は不要）**。`MAIL_WEBHOOK_URL` を空にしてあり、再開用のURLは `index.html` のコメントに残してある
 - 送信はページを開いてから最初の変換完了時の1通のみ（`MAIL_SENT` フラグ）
 
 ---
