@@ -249,8 +249,7 @@
         <div class="hint" id="stepHint">
           完了すると「ダウンロード」フォルダ内の <code>rakuten_images</code> フォルダに
           <b>R-Cabinetと同じフォルダ構成</b>で画像が保存され、自動で開きます（Cyberduck等でそのまま再アップロードできます）。<br>
-          ・保存先を選ぶ画面が出た場合は「ダウンロード」フォルダを選んでください<br>
-          ・何度か保存すると <code>download_rakuten_images (1).txt</code> のような名前になります。その場合は古いファイルをゴミ箱に入れてから、もう一度保存してください
+          ・保存先を選ぶ画面が出た場合は「ダウンロード」フォルダを選んでください
         </div>
       </div>
     </div>
@@ -982,17 +981,20 @@ function saveScript() {
   const rank = isRankMode();
   const supMode = rankKind() === 'supplier';
   const DIR = supMode ? 'supplier_images' : 'ranking_images';
-  const fname = rank ? 'download_' + DIR + '.txt' : 'download_rakuten_images.txt';
+  // ファイル名に保存した日時を付ける。同じ名前のファイルがあるとブラウザは「(1)」付きの別名で保存し、
+  // 表示しているコマンドが古い命令を実行してしまうため（2026-11-05 に実際に起きた）
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`;
+  const fname = (rank ? 'download_' + DIR : 'download_rakuten_images') + '_' + stamp + '.txt';
   document.getElementById('cmdText').value = 'bash ~/Downloads/' + fname;
-  document.getElementById('stepSaved').innerHTML = `<code>${fname}</code> を「ダウンロード」フォルダに保存しました✅（実行コマンドもコピー済み）`;
+  document.getElementById('stepSaved').innerHTML = `<code>${fname}</code> を「ダウンロード」フォルダに保存しました✅（実行コマンドもコピー済み）<br><small>※ ファイル名は保存のたびに日時で変わります。ターミナルには必ず下の最新のコマンドを貼ってください（前に保存したファイルを実行すると、前回の画像になります）</small>`;
   document.getElementById('stepHint').innerHTML = rank
     ? '完了すると「ダウンロード」フォルダ内の <code>' + DIR + '</code> フォルダに <b>' + DIR + '_1.zip、' + DIR + '_2.zip …</b>（1個 約25MB以下に自動で分かれます）ができ、自動で開きます。<br>' +
       '・<b>できたZIPを全部、Claudeとのチャットに添付してください</b>（画像を追加してアプリに反映します）<br>' +
       '・時間がかかります（数百〜数千枚で10〜30分ほど）。止まったり失敗が出たときは、もう一度同じコマンドを実行すると続きから取得します<br>' +
       (supMode ? '・保存名は「商品番号（小文字。記号は ~16進~ に置き換え）.jpg」、大きさは長辺800pxまでに縮小されます' : '・保存名は「品番（ハイフンはアンダースコア）.jpg」、大きさは長辺800pxまでに縮小されます')
     : '完了すると「ダウンロード」フォルダ内の <code>rakuten_images</code> フォルダに <b>R-Cabinetと同じフォルダ構成</b>で画像が保存され、自動で開きます（Cyberduck等でそのまま再アップロードできます）。<br>' +
-      '・保存先を選ぶ画面が出た場合は「ダウンロード」フォルダを選んでください<br>' +
-      '・何度か保存すると <code>download_rakuten_images (1).txt</code> のような名前になります。その場合は古いファイルをゴミ箱に入れてから、もう一度保存してください';
+      '・保存先を選ぶ画面が出た場合は「ダウンロード」フォルダを選んでください';
   saveBlob(new Blob([buildScript()], { type: 'text/plain' }), fname);
   navigator.clipboard.writeText(document.getElementById('cmdText').value).catch(() => {});
   const steps = document.getElementById('scriptSteps');
