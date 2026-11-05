@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v387</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v388</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -1015,6 +1015,7 @@ const CODE_PREFIX_TO_CAT=[
   // ブックカバー各シリーズ
   {prefix:'BBC-',cat:'ブックカバー'},      // 文豪ブックカバー
   {prefix:'MM-08',cat:'ブックカバー'},     // miyuki matsuo 刺繍ブックカバー (MM-09はブローチで上に定義済)
+  {prefix:'MTP-2',cat:'メガネケース'},    // Masterpiece メガネケース（MTP-201〜）
   {prefix:'MTP-',cat:'ブックカバー'},      // Masterpiece ブックカバー
   {prefix:'PRT-2',cat:'ブックカバー'},     // printemps ブックカバー
   {prefix:'PRT-3',cat:'メガネケース'},     // printemps 刺繍メガネケース
@@ -1305,6 +1306,7 @@ const COOL_NAME_RULES=[
   [/保冷ﾗﾝﾁﾄｰﾄ/,'ランチバッグ'],
   [/LUNCH\s+CLOTH|ﾗﾝﾁｸﾛｽ/i,'ランチクロス'],
   [/LUNCH\s+SACK|MINI\s+SACK|CANVAS\s+COOLER\s+BAG/i,'ランチサック・巾着'],
+  [/巾着|あづま/,'ランチサック・巾着'],   // 保冷でない巾着（minimini ﾐﾆ巾着袋 など）も同じカテゴリ
 ];
 // 食器は商品名で、マグ・カップ／プレート・皿／ボウル／マグボトルに分ける（2026-10-04 ユーザー指示）。どれにも当たらないものは「食器」（受け皿）のまま
 const TABLEWARE_NAME_RULES=[
@@ -3940,6 +3942,15 @@ const TRANS_GROUPS=[
 ['Spacefaring','スペースフェアリング','宇宙'],
 ['Mame','マメ','まめ','豆'],
 ['French Bull','French Bulldog','フレンチブル','フレンチブルドッグ'],
+// 2026-11-05 追加（10/30〜11/4 新商品）
+['Delica','Delicat','デリカ'],
+['Fleurie','フルーリー','フルリー'],
+['Quadrille','カドリーユ','カドリール'],
+['Coloris','コロリス'],
+['PUKEA','プケア'],
+['Bowl','ボウル'],
+['巾着','巾着袋','きんちゃく','Kinchaku','Drawstring','ドローストリング'],
+['ぽち袋','ポチ袋','Pochibukuro','お年玉','おとしだま','Otoshidama'],
 ];
 for(const g of TRANS_GROUPS){
   const ng=g.map(normalize);
