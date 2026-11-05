@@ -880,6 +880,9 @@ function buildRankScript() {
     'IMG="$OUT/images"; TMP="$OUT/_tmp"',
     'mkdir -p "$IMG" "$TMP"',
     ': > "$OUT/failed.txt"',
+    // ZIPに入れるのは、このスクリプトの対象の画像だけ（images/ に残っている前回までの画像は入れない。
+    // 途中で止まって再実行したときは、前回取れた分もこのスクリプトの対象なので入る）
+    ': > "$OUT/_this.txt"',
     'dl() {',
     '  local key="$1" url="$2" src="$TMP/$1.src" w h m',
     '  [ -s "$IMG/$key.jpg" ] && return 0',
@@ -899,7 +902,7 @@ function buildRankScript() {
     '  [ -s "$IMG/$key.jpg" ] || { echo "$key $url (変換に失敗)" >> "$OUT/failed.txt"; return 1; }',
     '}',
     'N=0',
-    'run() { dl "$1" "$2" & N=$((N+1)); if [ $((N % 6)) -eq 0 ]; then wait; echo "  ... $N / ' + targets.length + '"; fi; }',
+    'run() { echo "$1.jpg" >> "$OUT/_this.txt"; dl "$1" "$2" & N=$((N+1)); if [ $((N % 6)) -eq 0 ]; then wait; echo "  ... $N / ' + targets.length + '"; fi; }',
     `echo "🖼️ ${targets.length}枚を取得して縮小します（6枚ずつ同時に処理）..."`,
     ''
   ];
@@ -907,7 +910,7 @@ function buildRankScript() {
   lines.push(
     'wait',
     'rm -rf "$TMP"',
-    'TOTAL=$(ls "$IMG" | wc -l | tr -d " ")',
+    'TOTAL=0',
     'FAIL=$(wc -l < "$OUT/failed.txt" | tr -d " ")',
     'cd "$IMG" || exit 1',
     // ZIPは枚数ではなく合計サイズで分ける（チャットに添付できる上限30MBに合わせ、1個が LIMIT_MB を超えないよう品番順に詰める）。
@@ -915,18 +918,18 @@ function buildRankScript() {
     `rm -f "$OUT"/${DIR}_*.zip "$OUT"/_part_*`,
     'LIMIT=$((LIMIT_MB*1024*1024)); N=1; SZ=0; CNT=0',
     ': > "$OUT/_part_$N"',
-    'for f in *.jpg; do',
-    '  [ -e "$f" ] || continue',
+    'while IFS= read -r f; do',
+    '  [ -s "$f" ] || continue',
     '  s=$(wc -c < "$f" | tr -d " ")',
     '  if [ "$CNT" -gt 0 ] && [ $((SZ + s)) -gt "$LIMIT" ]; then N=$((N+1)); SZ=0; CNT=0; : > "$OUT/_part_$N"; fi',
-    '  echo "$f" >> "$OUT/_part_$N"; SZ=$((SZ + s)); CNT=$((CNT+1))',
-    'done',
+    '  echo "$f" >> "$OUT/_part_$N"; SZ=$((SZ + s)); CNT=$((CNT+1)); TOTAL=$((TOTAL+1))',
+    'done < "$OUT/_this.txt"',
     'P=0',
     'for i in $(seq 1 $N); do',
     '  [ -s "$OUT/_part_$i" ] || continue',
     '  P=$((P+1)); zip -q "$OUT/' + DIR + '_$P.zip" -@ < "$OUT/_part_$i"',
     'done',
-    'rm -f "$OUT"/_part_*',
+    'rm -f "$OUT"/_part_* "$OUT/_this.txt"',
     'echo "════════════════════"',
     `echo "✅ 画像 $TOTAL 枚 → ZIP $P 個（${DIR}_1.zip 〜。1個 約$LIMIT_MB MB以下）を作りました"`,
     `[ "$P" -gt 0 ] && for i in $(seq 1 $P); do z="$OUT/${DIR}_$i.zip"; echo "   ${DIR}_$i.zip  $(( $(wc -c < "$z" | tr -d " ") / 1048576 )) MB"; done`,

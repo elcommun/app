@@ -254,7 +254,7 @@ const colspan = 7 + (showCmp ? 2 : 0) + (showSo ? 1 : 0) + (showImg ? 1 : 0);
 
 ### 楽天の「SKU画像パス」から商品画像を一括で追加する
 1. ユーザーが `rakuten-image-dl/index.html`（楽天画像ダウンローダー）に楽天の商品CSV（dl-normal-item）を読み込み、**「🏷 販売ランキング用」にチェック**する（品番は「システム連携用SKU番号」から「商品管理番号」を除いた部分。マスタに無い品番・すでに画像がある品番は除外される）
-2. 保存した `download_ranking_images.txt` をMacのターミナルで実行 → 取得・縮小（長辺800px・JPEG品質82）され、約25MBごと（チャットの添付上限30MB対策。スクリプト先頭の `LIMIT_MB`）の `ranking_images_N.zip` ができる（楽天の画像サーバーにはこの環境から届かないため、取得はユーザーのMacで行う）
+2. 保存した `download_ranking_images.txt` をMacのターミナルで実行 → 取得・縮小（長辺800px・JPEG品質82）され、約25MBごと（チャットの添付上限30MB対策。スクリプト先頭の `LIMIT_MB`）の `ranking_images_N.zip` ができる（楽天の画像サーバーにはこの環境から届かないため、取得はユーザーのMacで行う）。**ZIPに入るのは、そのスクリプトの対象の画像だけ**（`images/` フォルダに残る前回までの画像は入れない。途中で止まって再実行したときは、前回取れた分も入る。1枚も取れなかったときは ZIP を作らず、古い ZIP も消す。2026-11-05 ユーザー指示：前回のZIPを取り違えて添付する事故があったため）。メーカー販売データ用も同じ
 3. ユーザーがZIPをチャットに添付 → **`python3 tools/import-image-zips.py <zip...>`** で `ranking/images/` に取り込む（すでにある画像は飛ばす。読めない画像・不正な名前は取り込まない）
 4. `python3 tools/build-images.py` → `ranking/index.html` のバージョンを上げてコミット（一度に大量にならないよう、ZIP 1〜2個ずつ順にPRを分ける）
 
