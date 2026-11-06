@@ -270,10 +270,12 @@ td.cat-col{text-align:left}
   .bb{width:56px}
   #hd-search{width:130px}
   .hd-btn{padding:5px 9px;font-size:10px}
-  .hd-date{display:none}
   #hd-update-btn{display:none}
   .sb-update-mobile{display:block}
 }
+/* 販売期間（左上）は自社商品と同じく iPad mini（744〜768px）でも出し、スマホ（≤600px）と幅の狭い横持ちだけ省く */
+@media(max-width:600px){.hd-date{display:none}}
+@media(max-height:500px) and (orientation:landscape) and (pointer:coarse) and (max-width:740px){.hd-date{display:none}}
 @media(max-width:480px){
   /* ヘッダーの余白・仕切りを詰めて ☰・検索・ボタン類・↓↑ を1行に収める */
   .hdr{padding:0 10px;gap:8px}
@@ -557,7 +559,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v178</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v179</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -1542,7 +1544,10 @@ function updateSidebarTotal(dF,dT){
     `SKU ${skus.toLocaleString()}種 / ${cnt}${cntLabel}`;
 }
 function updateHeaderDate(dF,dT){
-  document.getElementById('hd-date').innerHTML='<b>'+dF+'</b> 〜 <b>'+dT+'</b>';
+  // 自社商品（ranking）と同じ表記：2025年11月05日 〜 2026年11月04日（終了日を太字）
+  if(!dF||!dT){document.getElementById('hd-date').textContent='データなし';return;}
+  const fmt=d=>d.slice(0,4)+'年'+d.slice(5,7)+'月'+d.slice(8,10)+'日';
+  document.getElementById('hd-date').innerHTML=`${fmt(dF)} 〜 <b>${fmt(dT)}</b>`;
 }
 // 日付文字列の年・日をずらす（UTCで計算。ローカル時刻で toISOString すると日本時間では1日ずれるため）
 function shiftYear(dateStr,offset,days=0){
