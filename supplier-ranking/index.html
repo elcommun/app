@@ -433,7 +433,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 /* ── 下メニュー時（body.hd-bottom）のスマホ: サイドバーを右から出し、行の中身も左右反転（チェック=右端、▶=左端）。
    ドロワー表示になる幅（≤768px）のみ。タブレットで左に常設表示のときは反転しない ── */
 /* ── スマホ横持ち（高さ500px以下の横向きタッチ端末）: 表はPCに近いまま（カード化しない）。左のサイドメニューだけ常設せず、
-   画面の左端から右へのスワイプ（または☰）で出す。JS の isDrawerMode()/isPhoneLandscape() と同じ条件 ── */
+   画面の左端から右へ・右端から左へのスワイプ（または☰）で出す。JS の isDrawerMode()/isPhoneLandscape() と同じ条件 ── */
 @media(max-height:500px) and (orientation:landscape) and (pointer:coarse){
   :root{--hh:52px}
   .sb-resize{display:none}
@@ -559,7 +559,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v179</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v180</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -2973,23 +2973,25 @@ document.getElementById('sb-overlay').addEventListener('click', ()=>{
   document.getElementById('sb-overlay').classList.remove('open');
 });
 // 画面端からのスワイプでサイドメニューを開く（スマホ・タブレット表示時のみ）。
-// 上メニュー時は左端から右へ、下メニュー時（body.hd-bottom＝サイドバーが右出し）は右端から左へ
+// 左端から右へ・右端から左へのどちらでも開く（メニューバーが上でも下でも。2026-11-08 ユーザー指示：iPad mini で右端からも）
 (function(){
   const sbEl=document.querySelector('.sb'), ovEl=document.getElementById('sb-overlay');
   function isDrawerMode(){ return window.innerWidth<=768 || isPhoneLandscape(); }
   function openSb(){ sbEl.classList.add('open'); ovEl.classList.add('open'); }
   const rightSide=()=>document.body.classList.contains('hd-bottom');
-  let sx=0, sy=0, tracking=false;
+  let sx=0, sy=0, tracking=false, fromRight=false;
   document.addEventListener('touchstart', e=>{
     if(!isDrawerMode()||sbEl.classList.contains('open')) return;
     const t=e.touches[0];
-    const edge = rightSide() ? t.clientX>=window.innerWidth-24 : t.clientX<=24;
-    if(edge){ sx=t.clientX; sy=t.clientY; tracking=true; }
+    if(t.clientX<=24){ fromRight=false; }
+    else if(t.clientX>=window.innerWidth-24){ fromRight=true; }
+    else return;
+    sx=t.clientX; sy=t.clientY; tracking=true;
   }, {passive:true});
   document.addEventListener('touchmove', e=>{
     if(!tracking) return;
     const t=e.touches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    const ok = rightSide() ? dx<-50 : dx>50;
+    const ok = fromRight ? dx<-50 : dx>50;
     if(ok && Math.abs(dx)>Math.abs(dy)){ openSb(); tracking=false; }
   }, {passive:true});
   document.addEventListener('touchend', ()=>{ tracking=false; }, {passive:true});
