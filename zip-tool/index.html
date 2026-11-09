@@ -701,13 +701,13 @@
                 <div class="file-list" id="fileList"></div>
             </div>
 
-            <div class="exp-box hidden" id="expBox">
+            <div class="exp-box hidden off" id="expBox">
                 <label class="exp-toggle">
-                    <input type="checkbox" id="expChk" checked>
+                    <input type="checkbox" id="expChk">
                     <span class="switch" aria-hidden="true"></span>
                     <span class="opt-text">
-                        経費精算書を作成する
-                        <span class="opt-sub">ファイル名「日付 店舗名 金額円 氏名.pdf」とPDFの中身から自動で読み取り、xlsxを別ファイルでダウンロード（ZIPにも同梱）します</span>
+                        経費精算書を作成する（請求書発行用）
+                        <span class="opt-sub">オフ＝通常の圧縮（ZIPのみ）。オンにするとファイル名「日付 店舗名 金額円 氏名.pdf」とPDFの中身から精算書を自動作成し、xlsxを別ダウンロード（ZIPにも同梱）します</span>
                     </span>
                 </label>
                 <div class="exp-body" id="expBody">
@@ -809,6 +809,7 @@
         });
         expChk.addEventListener('change', () => {
             expBox.classList.toggle('off', !expChk.checked);
+            if (expChk.checked) ensureExpParsed();
         });
         filenameInput.addEventListener('input', () => { filenameTouched = true; });
 
@@ -1383,13 +1384,21 @@
             const newFiles = Array.from(files);
             selectedFiles = [...selectedFiles, ...newFiles];
             newFiles.forEach(f => {
-                if (isPdfFile(f)) {
-                    const row = newExpRow(f);
-                    expMap.set(f, row);
+                if (isPdfFile(f)) expMap.set(f, newExpRow(f));
+            });
+            // PDF本文の読み取りは精算書スイッチがオンのときだけ行う
+            if (expChk.checked) ensureExpParsed();
+            updateFileList();
+        }
+
+        // まだ本文を読んでいないPDFを読み取る（スイッチON時・後からONにした時）
+        function ensureExpParsed() {
+            expRowsList().forEach(row => {
+                if (!row.parsed) {
+                    row.parsed = true;
                     fillExpRowFromPdf(row);
                 }
             });
-            updateFileList();
         }
 
         // ファイルリスト更新
