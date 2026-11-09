@@ -796,7 +796,7 @@
         // 店舗名の先頭がこれらなら「店舗名」と「項目」に分けて読み取る（2つ目は項目の初期値）
         const EXP_BRANDS = [
             ['OpenAI', 'Chat GPT'], ['Anthropic', 'Claude'], ['Shopify', 'サイト利用料'],
-            ['ZAP', ''], ['Amazon', ''], ['楽天', '']
+            ['ZAP', ''], ['Amazon', ''], ['楽天市場', '']
         ];
         // ファイル名・店舗名にこれらを含むものは区分の初期値が「精算済み」
         // （それ以外＝楽天市場・Yahoo・Amazon・Yodobashi などの購入は「未精算」）
@@ -882,10 +882,11 @@
             const m = base.match(/^(\d{4})(\d{2})(\d{2})[ _\-]*(.*?)[ _\-]*([\d,]+(?:\.\d+)?)[ ]*(円|ドル|\$|USD)[ _\-]*(.*)$/i);
             if (!m) {
                 const d = base.match(/^(\d{4})(\d{2})(\d{2})/);
-                return { date: d ? `${d[1]}-${d[2]}-${d[3]}` : '', vendor: '', item: '', amount: null, currency: '円', person: '' };
+                return { date: d ? `${d[1]}-${d[2]}-${d[3]}` : '', vendor: '', item: '', amount: null, currency: '円', person: '', raw: '' };
             }
             const currency = /円/.test(m[6]) ? '円' : 'ドル';
-            let vendor = m[4].replace(/_+/g, ' ').trim();
+            const raw = m[4].replace(/_+/g, ' ').trim();
+            let vendor = raw;
             let item = '';
             for (const [brand, hint] of EXP_BRANDS) {
                 if (vendor.toLowerCase().startsWith(brand.toLowerCase())) {
@@ -901,7 +902,8 @@
                 item: item,
                 amount: parseFloat(m[5].replace(/,/g, '')),
                 currency: currency,
-                person: m[7].replace(/_+/g, ' ').trim()
+                person: m[7].replace(/_+/g, ' ').trim(),
+                raw: raw
             };
         }
 
@@ -955,7 +957,8 @@
                 currency: p.currency,
                 kubun: mem != null ? mem : defKubun,
                 kubunTouched: false,
-                person: p.person
+                person: p.person,
+                rawVendor: p.raw
             };
         }
 
@@ -1029,20 +1032,61 @@
                     }
                 }
 
-                if (!row.vendor) {
-                    const v = text.match(/店舗名[\]：:\s]*([^\s\[]+)/) || text.match(/会社名[\]：:\s]*([^\s\[]+)/) || text.match(/領収者[\]：:\s]*([^\s\[]+)/);
-                    if (v) {
-                        row.vendor = v[1].replace(/^(株式会社|有限会社)/, '').trim();
-                        if (!row.kubunTouched) {
-                            const mem = rememberedKubun(row.vendor, row.currency);
-                            if (mem != null) row.kubun = mem;
-                            else if (row.currency === '円' && isSettledVendor(row.vendor)) row.kubun = 1;
+                // 本文から店舗名の候補を集める（店舗名・会社名・領収者。「領収者情報」等の見出しは除外）
+                const vendorCands = [];
+                for (const re of [/店舗名[\]:\s]*([^\s\[]+)/, /会社名[\]:\s]*([^\s\[]+)/, /領収者[:]\s*([^\s\[]+)/]) {
+                    const vm = text.match(re);
+                    if (vm) {
+                        const name = vm[1].replace(/^(株式会社|有限会社|合同会社)/, '').trim();
+                        if (name && !/^(情報|名|住所)/.test(name) && !vendorCands.includes(name)) vendorCands.push(name);
+                    }
+                }
+
+                const prevVendor = row.vendor;
+
+                // ファイル名の「店舗名＋商品名」を本文の店舗名で分割して項目を取り出す
+                // （例: 澤井珈琲コーヒー豆 → 店舗名「澤井珈琲」＋項目「コーヒー豆」）
+                if (row.rawVendor && !row.item) {
+                    let best = null;
+                    for (const c of vendorCands) {
+                        if (row.rawVendor.length > c.length
+                            && row.rawVendor.toLowerCase().startsWith(c.toLowerCase())
+                            && (!best || c.length > best.length)) best = c;
+                    }
+                    if (best) {
+                        row.vendor = best;
+                        row.item = row.rawVendor.slice(best.length).trim();
+                    }
+                }
+
+                if (!row.vendor && vendorCands.length) row.vendor = vendorCands[0];
+
+                // 店舗名が決まり直したら、区分の初期値も付け直す（手動変更は除く）
+                if (row.vendor !== prevVendor && !row.kubunTouched && row.currency === '円') {
+                    const mem = rememberedKubun(row.vendor, row.currency);
+                    if (mem != null) row.kubun = mem;
+                    else row.kubun = (isSettledVendor(row.vendor) || isSettledVendor(row.file.name)) ? 1 : 0;
+                }
+
+                // 項目: 本文の「商品名」から簡略化した名前を取る（サイズ・型番・入数は落とす。
+                // 「商品名 数量 単価」のような表の見出し行は商品名ではないので飛ばす）
+                if (!row.item) {
+                    for (const pm of text.matchAll(/商品名\s*[:：]?\s*(.{2,60}?)(?:\s+(?:数量|単価|金額|商品番号|小計)|$)/g)) {
+                        let item = pm[1].replace(/[【（(].*$/, '').replace(/\s*[ＷW]\d.*$/, '').trim();
+                        if (item.length > 24) item = item.slice(0, 24);
+                        if (item && !/^(数量|単価|金額|小計|商品番号|税率|税込|税抜)/.test(item)) {
+                            row.item = item;
+                            break;
                         }
                     }
                 }
+                // 項目: 但し書き（「〜との取引」「商品代」などの定型文は商品名ではないので使わない）
                 if (!row.item) {
                     const t = text.match(/但し[:：\s]*(.*?)として/);
-                    if (t) row.item = t[1].trim();
+                    if (t) {
+                        const note = t[1].trim();
+                        if (note && !/との取引|商品代|お品代|品代/.test(note)) row.item = note;
+                    }
                 }
                 if (row.currency === '円' && /(^|[^0-9])8\s*%/.test(text) && !/10\s*%/.test(text)) {
                     row.rate = 0.08;
