@@ -1196,7 +1196,8 @@
                 if (value !== undefined && value !== null && value !== '') cell.value = value;
                 cell.font = opt.font || FONT(11);
                 if (opt.fmt) cell.numFmt = opt.fmt;
-                if (opt.align) cell.alignment = { horizontal: opt.align, vertical: 'middle' };
+                // すべてのセルを上下中央揃えにする
+                cell.alignment = opt.align ? { horizontal: opt.align, vertical: 'middle' } : { vertical: 'middle' };
                 if (opt.border) cell.border = opt.border;
                 return cell;
             }
@@ -1242,8 +1243,11 @@
             }
 
             function sectionTitle(r, label) {
+                // 結合前に全セルへ揃え・罫線を入れる（結合後は結合先セルに書けないため）
+                for (let c = 1; c <= 7; c++) {
+                    setCell(r, c, c === 1 ? label : null, { font: FONT(14, true), align: 'center', border: { bottom: medium } });
+                }
                 ws.mergeCells(r, 1, r, 7);
-                setCell(r, 1, label, { font: FONT(14, true), align: 'center', border: { bottom: medium } });
                 ws.getRow(r).height = 24;
             }
 
@@ -1252,8 +1256,9 @@
             setCell(1, 3, ` 経費清算書　${info.y}年`, { font: FONT(14, true), align: 'center' });
             setCell(1, 4, `${info.m}月分`, { font: FONT(14, true), align: 'center' });
             setCell(1, 5, '預かり金額', { font: FONT(12, true), align: 'center' });
-            ws.mergeCells(1, 6, 1, 7);
             setCell(1, 6, parseFloat(expAdvance.value) || 0, { font: FONT(12, true), fmt: YEN, align: 'center' });
+            setCell(1, 7, null, { font: FONT(12, true), align: 'center' });
+            ws.mergeCells(1, 6, 1, 7);
             ws.getRow(1).height = 24;
 
             // 未精算（立替分）
