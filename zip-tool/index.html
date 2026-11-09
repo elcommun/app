@@ -729,7 +729,7 @@
                             <tbody id="expTbody"></tbody>
                         </table>
                     </div>
-                    <div class="exp-note">読み取れなかった欄は空欄になります。区分は「精算済み（会社カード等）」が初期値なので、立替払いの行だけ「未精算」に変えてください。変更した区分は店舗名ごとに記憶され、次回から自動で設定されます。</div>
+                    <div class="exp-note">読み取れなかった欄は空欄になります。区分の初期値は、ファイル名にChatGPT・Claude・Shopify・ZAPを含むものが「精算済み」（円とドルは自動で振り分け）、それ以外（楽天市場・Yahoo・Amazon・Yodobashi等での購入）が「未精算」です。変更した区分は店舗名ごとに記憶され、次回から自動で設定されます。</div>
                 </div>
             </div>
 
@@ -798,6 +798,9 @@
             ['OpenAI', 'Chat GPT'], ['Anthropic', 'Claude'], ['Shopify', 'サイト利用料'],
             ['ZAP', ''], ['Amazon', ''], ['楽天', '']
         ];
+        // ファイル名・店舗名にこれらを含むものは区分の初期値が「精算済み」
+        // （それ以外＝楽天市場・Yahoo・Amazon・Yodobashi などの購入は「未精算」）
+        const EXP_SETTLED_KEYWORDS = ['chatgpt', 'chat gpt', 'claude', 'shopify', 'zap', 'openai', 'anthropic'];
         let filenameTouched = false;
 
         expName.value = localStorage.getItem('zip_tool_exp_name') || '';
@@ -927,11 +930,19 @@
             }
         }
 
+        // ファイル名・店舗名が「精算済み」の対象かどうか
+        function isSettledVendor(s) {
+            if (!s) return false;
+            const t = String(s).normalize('NFKC').toLowerCase();
+            return EXP_SETTLED_KEYWORDS.some(k => t.includes(k));
+        }
+
         function newExpRow(file) {
             const p = parseExpFilename(file.name);
-            // 会社カード払いが基本のため、区分の初期値は「精算済み」
-            // （店舗名ごとに記憶した区分があればそれを優先）
-            const defKubun = p.currency === 'ドル' ? 2 : 1;
+            // 区分の初期値: ChatGPT・Claude・Shopify・ZAP等は「精算済み」、それ以外は「未精算」
+            // ドル建ては常に「精算済み（ドル）」。店舗名ごとに記憶した区分があればそれを優先
+            const settled = isSettledVendor(file.name) || isSettledVendor(p.vendor);
+            const defKubun = p.currency === 'ドル' ? 2 : (settled ? 1 : 0);
             const mem = rememberedKubun(p.vendor, p.currency);
             return {
                 file: file,
@@ -1022,8 +1033,11 @@
                     const v = text.match(/店舗名[\]：:\s]*([^\s\[]+)/) || text.match(/会社名[\]：:\s]*([^\s\[]+)/) || text.match(/領収者[\]：:\s]*([^\s\[]+)/);
                     if (v) {
                         row.vendor = v[1].replace(/^(株式会社|有限会社)/, '').trim();
-                        const mem = rememberedKubun(row.vendor, row.currency);
-                        if (mem != null && !row.kubunTouched) row.kubun = mem;
+                        if (!row.kubunTouched) {
+                            const mem = rememberedKubun(row.vendor, row.currency);
+                            if (mem != null) row.kubun = mem;
+                            else if (row.currency === '円' && isSettledVendor(row.vendor)) row.kubun = 1;
+                        }
                     }
                 }
                 if (!row.item) {
