@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style>
         :root {
             --bg: #fafafa;
@@ -99,7 +100,7 @@
 
         .wrap {
             width: 100%;
-            max-width: 560px;
+            max-width: 700px;
             position: relative;
             z-index: 1;
         }
@@ -454,6 +455,141 @@
             color: var(--text-faint);
         }
 
+        .exp-box {
+            margin-top: 18px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .exp-toggle {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: var(--item-bg);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .exp-toggle input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .exp-toggle input:checked + .switch {
+            background: var(--accent);
+        }
+
+        .exp-toggle input:checked + .switch::after {
+            transform: translateX(18px);
+        }
+
+        .exp-box.off .exp-body {
+            display: none;
+        }
+
+        .exp-body {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .exp-fields {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .exp-field {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .exp-field > span {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+
+        .exp-field input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1.5px solid var(--input-border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .exp-field input:focus {
+            border-color: var(--accent);
+        }
+
+        .exp-table-wrap {
+            overflow-x: auto;
+        }
+
+        .exp-table {
+            width: 100%;
+            min-width: 630px;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .exp-table th {
+            text-align: left;
+            color: var(--text-faint);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 4px;
+            white-space: nowrap;
+        }
+
+        .exp-table td {
+            padding: 3px 2px;
+        }
+
+        .exp-table input,
+        .exp-table select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 12px;
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+        }
+
+        .exp-table input:focus,
+        .exp-table select:focus {
+            border-color: var(--accent);
+        }
+
+        .exp-table .c-date { width: 112px; }
+        .exp-table .c-reg { width: 58px; }
+        .exp-table .c-amt { width: 84px; }
+        .exp-table .c-rate { width: 58px; }
+        .exp-table .c-kubun { width: 122px; }
+
+        .exp-note {
+            font-size: 11px;
+            color: var(--text-faint);
+            line-height: 1.6;
+        }
+
         .go-btn {
             width: 100%;
             margin-top: 18px;
@@ -565,6 +701,38 @@
                 <div class="file-list" id="fileList"></div>
             </div>
 
+            <div class="exp-box hidden" id="expBox">
+                <label class="exp-toggle">
+                    <input type="checkbox" id="expChk" checked>
+                    <span class="switch" aria-hidden="true"></span>
+                    <span class="opt-text">
+                        経費精算書を作成してZIPに入れる
+                        <span class="opt-sub">ファイル名「日付 店舗名 金額円 氏名.pdf」とPDFの中身から自動で読み取ります</span>
+                    </span>
+                </label>
+                <div class="exp-body" id="expBody">
+                    <div class="exp-fields">
+                        <div class="exp-field">
+                            <span>氏名</span>
+                            <input type="text" id="expName" autocomplete="off" placeholder="例: 小栗佳月">
+                        </div>
+                        <div class="exp-field">
+                            <span>預かり金額（円）</span>
+                            <input type="number" id="expAdvance" value="0" min="0">
+                        </div>
+                    </div>
+                    <div class="exp-table-wrap">
+                        <table class="exp-table">
+                            <thead>
+                                <tr><th>月日</th><th>店舗名</th><th>項目</th><th>登録番号</th><th>金額</th><th>税率</th><th>区分</th></tr>
+                            </thead>
+                            <tbody id="expTbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="exp-note">読み取れなかった欄は空欄になります。項目・区分（未精算＝立替払い／精算済み＝会社カード等）は確認して直してください。</div>
+                </div>
+            </div>
+
             <div class="name-field">
                 <div class="name-label">
                     <span>保存ファイル名</span>
@@ -616,6 +784,32 @@
         const filenameResetBtn = document.getElementById('filenameResetBtn');
         const themeBtn = document.getElementById('themeBtn');
         const shrinkChk = document.getElementById('shrinkChk');
+        const expBox = document.getElementById('expBox');
+        const expChk = document.getElementById('expChk');
+        const expName = document.getElementById('expName');
+        const expAdvance = document.getElementById('expAdvance');
+        const expTbody = document.getElementById('expTbody');
+
+        // 経費精算書の行データ（File → 行）
+        const expMap = new Map();
+        const EXP_KUBUN = ['未精算', '精算済み（円）', '精算済み（ドル）'];
+        // 店舗名の先頭がこれらなら「店舗名」と「項目」に分けて読み取る（2つ目は項目の初期値）
+        const EXP_BRANDS = [
+            ['OpenAI', 'Chat GPT'], ['Anthropic', 'Claude'], ['Shopify', 'サイト利用料'],
+            ['ZAP', ''], ['Amazon', ''], ['楽天', '']
+        ];
+        let filenameTouched = false;
+
+        expName.value = localStorage.getItem('zip_tool_exp_name') || '';
+        expName.addEventListener('input', () => {
+            localStorage.setItem('zip_tool_exp_name', expName.value.trim());
+            syncZipName();
+        });
+        expChk.addEventListener('change', () => {
+            expBox.classList.toggle('off', !expChk.checked);
+            syncZipName();
+        });
+        filenameInput.addEventListener('input', () => { filenameTouched = true; });
 
         // pdf.jsのワーカー設定（PDF軽量化に使用）
         if (window.pdfjsLib) {
@@ -641,8 +835,10 @@
             status.className = 'status' + (cls ? ' ' + cls : '');
         }
 
-        // デフォルトのファイル名（拡張子なし）: YYYYMMDD-領収書PDF
+        // デフォルトのファイル名（拡張子なし）
+        // 経費精算書を作るときは「YYYY年M月経費精算_氏名」、通常は「YYYYMMDD-領収書PDF」
         function defaultFilenameBase() {
+            if (expActive()) return expReportBase().base;
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -662,11 +858,366 @@
         }
 
         function resetFilename() {
+            filenameTouched = false;
             filenameInput.value = defaultFilenameBase();
+        }
+
+        // ユーザーが手入力していなければZIP名をデフォルトに合わせる
+        function syncZipName() {
+            if (!filenameTouched) filenameInput.value = defaultFilenameBase();
         }
 
         resetFilename();
         filenameResetBtn.addEventListener('click', resetFilename);
+
+        // ===== 経費精算書 =====
+        function isPdfFile(file) {
+            return /\.pdf$/i.test(file.name);
+        }
+
+        function expRowsList() {
+            return selectedFiles.filter(isPdfFile).map(f => expMap.get(f)).filter(Boolean);
+        }
+
+        function expActive() {
+            return expChk.checked && expRowsList().length > 0;
+        }
+
+        // ファイル名「YYYYMMDD 店舗名 金額(円|ドル) 氏名.pdf」を読み取る
+        function parseExpFilename(name) {
+            const base = name.replace(/\.pdf$/i, '').normalize('NFKC');
+            const m = base.match(/^(\d{4})(\d{2})(\d{2})[ _\-]*(.*?)[ _\-]*([\d,]+(?:\.\d+)?)[ ]*(円|ドル|\$|USD)[ _\-]*(.*)$/i);
+            if (!m) {
+                const d = base.match(/^(\d{4})(\d{2})(\d{2})/);
+                return { date: d ? `${d[1]}-${d[2]}-${d[3]}` : '', vendor: '', item: '', amount: null, currency: '円', person: '' };
+            }
+            const currency = /円/.test(m[6]) ? '円' : 'ドル';
+            let vendor = m[4].replace(/_+/g, ' ').trim();
+            let item = '';
+            for (const [brand, hint] of EXP_BRANDS) {
+                if (vendor.toLowerCase().startsWith(brand.toLowerCase())) {
+                    const rest = vendor.slice(brand.length).trim();
+                    item = rest || hint;
+                    vendor = brand;
+                    break;
+                }
+            }
+            return {
+                date: `${m[1]}-${m[2]}-${m[3]}`,
+                vendor: vendor,
+                item: item,
+                amount: parseFloat(m[5].replace(/,/g, '')),
+                currency: currency,
+                person: m[7].replace(/_+/g, ' ').trim()
+            };
+        }
+
+        function newExpRow(file) {
+            const p = parseExpFilename(file.name);
+            return {
+                file: file,
+                date: p.date,
+                vendor: p.vendor,
+                item: p.item,
+                reg: '有',
+                amount: p.amount,
+                rate: 0.1,
+                currency: p.currency,
+                kubun: p.currency === 'ドル' ? 2 : 0,
+                person: p.person
+            };
+        }
+
+        const EXP_EN_MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+
+        // PDFの中身から不足している欄を補う（登録番号は常に本文で判定）
+        async function fillExpRowFromPdf(row) {
+            if (!window.pdfjsLib) return;
+            try {
+                const data = await row.file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data }).promise;
+                let text = '';
+                for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
+                    const tc = await (await pdf.getPage(i)).getTextContent();
+                    text += tc.items.map(it => it.str).join(' ') + ' ';
+                }
+                pdf.destroy();
+                text = text.normalize('NFKC');
+
+                // インボイス登録番号（T+13桁）の有無
+                row.reg = /T\d{13}/.test(text) ? '有' : '無';
+
+                if (!row.date) {
+                    const d = text.match(/(?:初回)?領収日[:：\s]*(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/)
+                        || text.match(/(?:お?支払い?日|決済日)[:：\s]*(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/)
+                        || text.match(/(?:発行日|注文日)[:：\s]*(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/)
+                        || text.match(/(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/);
+                    if (d) {
+                        row.date = `${d[1]}-${String(d[2]).padStart(2, '0')}-${String(d[3]).padStart(2, '0')}`;
+                    } else {
+                        const e = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/i);
+                        if (e) {
+                            const mo = EXP_EN_MONTHS[e[1].toLowerCase()];
+                            row.date = `${e[3]}-${String(mo).padStart(2, '0')}-${String(e[2]).padStart(2, '0')}`;
+                        }
+                    }
+                }
+
+                if (row.amount == null) {
+                    if (/\$\s*[\d,.]+\s*(?:USD\s*)?(?:due|paid)/i.test(text)) {
+                        const m = text.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+                        if (m) {
+                            row.amount = parseFloat(m[1].replace(/,/g, ''));
+                            row.currency = 'ドル';
+                            row.kubun = 2;
+                        }
+                    } else {
+                        // 「領収」「支払総額」などのラベル付き金額を優先し、無ければ最大の金額
+                        const pats = [
+                            /([\d,]+)\s*円\s*を?領収/,
+                            /([\d,]+)\s*円[^0-9]{0,10}領収金額/,
+                            /領収金額[^0-9]{0,20}?([\d,]+)\s*円/,
+                            /(?:支払総額|お?支払い?金額|ご?請求金額|合計金額)[^0-9¥￥]{0,10}[¥￥]?\s*([\d,]+)/,
+                            /[¥￥]\s*([\d,]+)\s*(?:paid|JPY)/i
+                        ];
+                        let amount = null;
+                        for (const p of pats) {
+                            const m = text.match(p);
+                            if (m) {
+                                const v = parseInt(m[1].replace(/,/g, ''), 10);
+                                if (v) { amount = v; break; }
+                            }
+                        }
+                        if (amount == null) {
+                            for (const m of text.matchAll(/[¥￥]\s*([\d,]+)|([\d,]+)\s*円/g)) {
+                                const v = parseInt((m[1] || m[2]).replace(/,/g, ''), 10);
+                                if (v && (amount == null || v > amount)) amount = v;
+                            }
+                        }
+                        if (amount != null) row.amount = amount;
+                    }
+                }
+
+                if (!row.vendor) {
+                    const v = text.match(/店舗名[\]：:\s]*([^\s\[]+)/) || text.match(/会社名[\]：:\s]*([^\s\[]+)/) || text.match(/領収者[\]：:\s]*([^\s\[]+)/);
+                    if (v) row.vendor = v[1].replace(/^(株式会社|有限会社)/, '').trim();
+                }
+                if (!row.item) {
+                    const t = text.match(/但し[:：\s]*(.*?)として/);
+                    if (t) row.item = t[1].trim();
+                }
+                if (row.currency === '円' && /(^|[^0-9])8\s*%/.test(text) && !/10\s*%/.test(text)) {
+                    row.rate = 0.08;
+                }
+            } catch (error) {
+                // 読めないPDFはファイル名の情報だけで続行
+            }
+            renderExp();
+        }
+
+        function escapeAttr(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+
+        function renderExp() {
+            const rows = expRowsList();
+            if (rows.length === 0) {
+                expBox.classList.add('hidden');
+                syncZipName();
+                return;
+            }
+            expBox.classList.remove('hidden');
+            expBox.classList.toggle('off', !expChk.checked);
+            // 氏名が未入力ならファイル名の末尾の名前を入れる
+            if (!expName.value.trim()) {
+                const p = rows.find(r => r.person);
+                if (p) {
+                    expName.value = p.person;
+                    localStorage.setItem('zip_tool_exp_name', p.person);
+                }
+            }
+            // 表の入力中は再描画しない（非同期の読み取り完了時に入力が消えるのを防ぐ）
+            if (expTbody.contains(document.activeElement)) {
+                syncZipName();
+                return;
+            }
+            expTbody.innerHTML = rows.map((r, i) => `
+                <tr>
+                    <td class="c-date"><input type="date" data-i="${i}" data-f="date" value="${r.date || ''}"></td>
+                    <td><input type="text" data-i="${i}" data-f="vendor" value="${escapeAttr(r.vendor)}" placeholder="店舗名"></td>
+                    <td><input type="text" data-i="${i}" data-f="item" value="${escapeAttr(r.item)}" placeholder="例: 消耗品代"></td>
+                    <td class="c-reg"><select data-i="${i}" data-f="reg">${['有', '無'].map(v => `<option${v === r.reg ? ' selected' : ''}>${v}</option>`).join('')}</select></td>
+                    <td class="c-amt"><input type="number" step="any" data-i="${i}" data-f="amount" value="${r.amount != null ? r.amount : ''}" placeholder="${r.currency === 'ドル' ? '$' : '¥'}"></td>
+                    <td class="c-rate"><select data-i="${i}" data-f="rate">${[[0.1, '10%'], [0.08, '8%'], [0, '0%']].map(([v, l]) => `<option value="${v}"${Math.abs(v - r.rate) < 0.001 ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
+                    <td class="c-kubun"><select data-i="${i}" data-f="kubun">${EXP_KUBUN.map((v, k) => `<option value="${k}"${k === r.kubun ? ' selected' : ''}>${v}</option>`).join('')}</select></td>
+                </tr>
+            `).join('');
+            syncZipName();
+        }
+
+        function onExpEdit(e) {
+            const el = e.target;
+            const rows = expRowsList();
+            const r = rows[+el.dataset.i];
+            if (!r || !el.dataset.f) return;
+            const f = el.dataset.f;
+            if (f === 'amount') r.amount = el.value === '' ? null : parseFloat(el.value);
+            else if (f === 'rate') r.rate = parseFloat(el.value);
+            else if (f === 'kubun') {
+                r.kubun = +el.value;
+                r.currency = r.kubun === 2 ? 'ドル' : '円';
+            } else r[f] = el.value;
+            syncZipName();
+        }
+        expTbody.addEventListener('input', onExpEdit);
+        expTbody.addEventListener('change', onExpEdit);
+
+        // 精算書名「YYYY年M月経費精算_氏名」（年月は領収書の日付で一番多い月）
+        function expReportBase() {
+            const rows = expRowsList();
+            const count = {};
+            rows.forEach(r => {
+                if (r.date) {
+                    const key = r.date.slice(0, 7);
+                    count[key] = (count[key] || 0) + 1;
+                }
+            });
+            let ym = Object.keys(count).sort((a, b) => count[b] - count[a] || (a < b ? 1 : -1))[0];
+            if (!ym) {
+                const now = new Date();
+                ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            }
+            const [y, m] = ym.split('-').map(Number);
+            const nm = expName.value.trim().replace(/[\\/:*?"<>|]/g, '');
+            return { y: y, m: m, base: `${y}年${m}月経費精算` + (nm ? `_${nm}` : '') };
+        }
+
+        // 経費精算書のExcelを作る（社内テンプレート「原本」と同じレイアウト）
+        async function buildExpenseXlsx() {
+            const info = expReportBase();
+            const sec = [[], [], []];
+            expRowsList().forEach(r => sec[r.kubun].push(r));
+            sec.forEach(s => s.sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : 1)));
+
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('経費精算書');
+            ws.columns = [
+                { width: 10.2 }, { width: 14.2 }, { width: 23.7 }, { width: 8.2 },
+                { width: 14.7 }, { width: 6.5 }, { width: 7.7 }
+            ];
+            const FONT = (size, bold) => ({ name: 'メイリオ', size: size, bold: !!bold });
+            const YEN = '"¥"#,##0;[Red]"¥"-#,##0';
+            const USD = '$#,##0.00;[Red]-$#,##0.00';
+            const DATE_FMT = 'm"月"d"日"';
+            const thin = { style: 'thin' }, medium = { style: 'medium' }, hair = { style: 'hair' }, dbl = { style: 'double' };
+
+            function setCell(r, c, value, opt) {
+                const cell = ws.getCell(r, c);
+                if (value !== undefined && value !== null && value !== '') cell.value = value;
+                cell.font = opt.font || FONT(11);
+                if (opt.fmt) cell.numFmt = opt.fmt;
+                if (opt.align) cell.alignment = { horizontal: opt.align, vertical: 'middle' };
+                if (opt.border) cell.border = opt.border;
+                return cell;
+            }
+
+            function headerRow(r) {
+                const labels = ['月日', '店舗名', '項目', '登録番号の有無', '金額', '税率', '領収書'];
+                for (let c = 1; c <= 7; c++) {
+                    setCell(r, c, labels[c - 1], {
+                        align: 'center',
+                        border: { top: medium, bottom: dbl, left: c === 1 ? medium : thin, right: c === 7 ? medium : thin }
+                    });
+                }
+                ws.getRow(r).height = 20;
+            }
+
+            function dataRow(r, row, isUsd, hline) {
+                const b = c => ({ top: hline, bottom: hline, left: c === 1 ? medium : thin, right: c === 7 ? medium : thin });
+                let dateVal = null;
+                if (row && row.date) {
+                    const p = row.date.split('-').map(Number);
+                    dateVal = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+                }
+                setCell(r, 1, dateVal, { fmt: DATE_FMT, align: 'right', border: b(1) });
+                setCell(r, 2, row ? row.vendor : null, { align: 'center', border: b(2) });
+                setCell(r, 3, row ? row.item : null, { border: b(3) });
+                setCell(r, 4, row ? row.reg : null, { align: 'center', border: b(4) });
+                setCell(r, 5, row && row.amount != null ? row.amount : null, { fmt: isUsd ? USD : YEN, border: b(5) });
+                setCell(r, 6, row ? row.rate : null, { fmt: '0%', align: 'center', border: b(6) });
+                setCell(r, 7, row ? '有' : null, { align: 'center', border: b(7) });
+                ws.getRow(r).height = 20;
+            }
+
+            function totalRow(r, label, formula, isUsd, big) {
+                setCell(r, 1, label, { font: FONT(big ? 12 : 11, true), align: 'right', border: { left: medium, right: thin, bottom: medium } });
+                for (let c = 2; c <= 7; c++) {
+                    setCell(r, c, null, { border: { bottom: medium, left: thin, right: c === 7 ? medium : thin } });
+                }
+                const cell = ws.getCell(r, 5);
+                cell.value = { formula: formula };
+                cell.numFmt = isUsd ? USD : YEN;
+                cell.font = FONT(11, true);
+                ws.getRow(r).height = 21;
+            }
+
+            function sectionTitle(r, label) {
+                ws.mergeCells(r, 1, r, 7);
+                setCell(r, 1, label, { font: FONT(14, true), align: 'center', border: { bottom: medium } });
+                ws.getRow(r).height = 24;
+            }
+
+            // 1行目: タイトル・預かり金額
+            setCell(1, 2, expName.value.trim() || null, { font: FONT(14, true), align: 'right' });
+            setCell(1, 3, ` 経費清算書　${info.y}年`, { font: FONT(14, true), align: 'center' });
+            setCell(1, 4, `${info.m}月分`, { font: FONT(14, true), align: 'center' });
+            setCell(1, 5, '預かり金額', { font: FONT(12, true), align: 'center' });
+            ws.mergeCells(1, 6, 1, 7);
+            setCell(1, 6, parseFloat(expAdvance.value) || 0, { font: FONT(12, true), fmt: YEN, align: 'center' });
+            ws.getRow(1).height = 24;
+
+            // 未精算（立替分）
+            let r = 2;
+            headerRow(r);
+            const aStart = r + 1;
+            const nA = Math.max(sec[0].length, 16);
+            for (let i = 0; i < nA; i++) dataRow(aStart + i, sec[0][i], false, hair);
+            r = aStart + nA;
+            totalRow(r, '総合計金額', `SUM(E${aStart}:E${r - 1})`, false, true);
+            const totalARow = r;
+            r++;
+            setCell(r, 1, '差引金額', { font: FONT(11, true), align: 'right', border: { left: medium, right: thin, top: medium, bottom: medium } });
+            for (let c = 2; c <= 7; c++) {
+                setCell(r, c, null, { border: { top: medium, bottom: medium, left: thin, right: c === 7 ? medium : thin } });
+            }
+            const diff = ws.getCell(r, 5);
+            diff.value = { formula: `F1-E${totalARow}` };
+            diff.numFmt = YEN;
+            diff.font = FONT(11, true);
+            ws.getRow(r).height = 20;
+            r += 2;
+
+            // 精算済み（円）
+            sectionTitle(r, '精算済み（円）');
+            headerRow(r + 1);
+            const bStart = r + 2;
+            const nB = Math.max(sec[1].length, 4);
+            for (let i = 0; i < nB; i++) dataRow(bStart + i, sec[1][i], false, thin);
+            r = bStart + nB;
+            totalRow(r, '合計金額', `SUM(E${bStart}:E${r - 1})`, false, false);
+            r += 2;
+
+            // 精算済み（ドル）
+            sectionTitle(r, '精算済み（ドル）');
+            headerRow(r + 1);
+            const cStart = r + 2;
+            const nC = Math.max(sec[2].length, 2);
+            for (let i = 0; i < nC; i++) dataRow(cStart + i, sec[2][i], true, thin);
+            r = cStart + nC;
+            totalRow(r, '合計金額', `SUM(E${cStart}:E${r - 1})`, true, false);
+
+            return wb.xlsx.writeBuffer();
+        }
 
         // JSZipの読み込みを待つ
         let checkCount = 0;
@@ -738,6 +1289,7 @@
         clearBtn.addEventListener('click', () => {
             selectedFiles = [];
             fileInput.value = '';
+            expMap.clear();
             updateFileList();
         });
 
@@ -745,6 +1297,13 @@
         function handleFiles(files) {
             const newFiles = Array.from(files);
             selectedFiles = [...selectedFiles, ...newFiles];
+            newFiles.forEach(f => {
+                if (isPdfFile(f)) {
+                    const row = newExpRow(f);
+                    expMap.set(f, row);
+                    fillExpRowFromPdf(row);
+                }
+            });
             updateFileList();
         }
 
@@ -754,6 +1313,7 @@
                 filesBox.classList.add('hidden');
                 compressBtn.disabled = true;
                 setStatus('');
+                renderExp();
                 return;
             }
 
@@ -770,10 +1330,12 @@
             `).join('');
 
             setStatus('');
+            renderExp();
         }
 
         // ファイル削除
         function removeFile(index) {
+            expMap.delete(selectedFiles[index]);
             selectedFiles.splice(index, 1);
             updateFileList();
         }
@@ -847,7 +1409,15 @@
             try {
                 const zip = new JSZip();
                 const shrink = shrinkChk.checked && window.pdfjsLib && window.jspdf;
+                const expOn = expActive() && window.ExcelJS;
                 let totalSize = 0;
+
+                // 経費精算書を作ってZIPに入れる
+                if (expOn) {
+                    status.innerHTML = '<span class="spinner"></span>経費精算書を作成中...';
+                    const xlsxBuf = await buildExpenseXlsx();
+                    zip.file(`${expReportBase().base}.xlsx`, xlsxBuf);
+                }
 
                 // ファイルを追加（軽量化ONならPDFを再圧縮してから格納）
                 for (let i = 0; i < selectedFiles.length; i++) {
@@ -911,6 +1481,7 @@
                 setTimeout(() => {
                     selectedFiles = [];
                     fileInput.value = '';
+                    expMap.clear();
                     resetFilename();
                     updateFileList();
                 }, 3000);
