@@ -113,6 +113,13 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - **APIキーはコードに書かない**（Public リポジトリのため）。使う人が右上「APIキー」から入力し、その端末の localStorage（`ecImageGen_apiKey`）にだけ保存。モデルは `gemini-3.1-flash-image-preview`（1回で3枚生成＝有料APIの料金がかかる）
 - AI Studio 側で直した場合は、`curio0930/image-generator` の中身を `src/` に取り込み直し、上の変更（APIキー入力・vite.config の base/outDir・importmap の削除）を保つ
 
+### zip-tool（ZIP圧縮・経費精算書。2026-11-09 更新）
+- `zip-tool/index.html`。領収書PDFをWindows互換ZIPに圧縮するMac用ツール。`APP_VERSION` の自動リロードは付けていない。デザインはパターンA（モダン・パープル）
+- **保存ZIP名のデフォルトは「YYYYMMDD-領収書PDF」**（2026-11-09 ユーザー指示。精算書名に自動で変えない）。入力欄で変更可・「.zip」は自動付与
+- 「PDFを軽量化してから圧縮」トグル（pdf.js+jsPDFで150dpi/JPEG72%に再構成。小さくならないファイル・読めないPDFは元のまま格納）
+- **経費精算書の自動作成**: PDFを入れるとファイル名「日付 店舗名 金額円(ドル) 氏名.pdf」（社内テンプレート「例」シートの命名規則）とPDF本文（領収日・ラベル付き金額・店舗名・但し書き・8%税率・T+13桁の登録番号）から明細を読み取り、編集できる表で確認 → ExcelJSでテンプレート「原本」と同じレイアウトのxlsxを生成。**「YYYY年M月経費精算_氏名.xlsx」として別ファイルでダウンロードし、ZIPにも同梱**（2026-11-09 ユーザー指示）。年月は領収書の日付で一番多い月、氏名はファイル名末尾から取得しlocalStorageに記憶
+- **区分の初期値は「精算済み」**（円→精算済み（円）、ドル→精算済み（ドル）。2026-11-09 ユーザー指示「澤井珈琲以外は精算済みになるはず」）。立替払いだけ手動で「未精算」に変える。変更した区分は店舗名ごとにlocalStorage（`zip_tool_exp_kubun`）に記憶され、次回から自動で設定される
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
