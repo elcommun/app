@@ -729,7 +729,7 @@
                             <tbody id="expTbody"></tbody>
                         </table>
                     </div>
-                    <div class="exp-note">読み取れなかった欄は空欄になります。項目・区分（未精算＝立替払い／精算済み＝会社カード等）は確認して直してください。</div>
+                    <div class="exp-note">読み取れなかった欄は空欄になります。区分は「精算済み（会社カード等）」が初期値なので、立替払いの行だけ「未精算」に変えてください。変更した区分は店舗名ごとに記憶され、次回から自動で設定されます。</div>
                 </div>
             </div>
 
@@ -902,8 +902,37 @@
             };
         }
 
+        // 店舗名ごとに記憶した区分を返す（ドル建ては常にドル区分）
+        function rememberedKubun(vendor, currency) {
+            if (!vendor) return null;
+            try {
+                const map = JSON.parse(localStorage.getItem('zip_tool_exp_kubun') || '{}');
+                const k = map[vendor.trim().toLowerCase()];
+                if (k == null) return null;
+                if (currency === 'ドル') return 2;
+                return k === 2 ? 1 : k;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function rememberKubun(vendor, kubun) {
+            if (!vendor) return;
+            try {
+                const map = JSON.parse(localStorage.getItem('zip_tool_exp_kubun') || '{}');
+                map[vendor.trim().toLowerCase()] = kubun;
+                localStorage.setItem('zip_tool_exp_kubun', JSON.stringify(map));
+            } catch (error) {
+                // 保存できなくても続行
+            }
+        }
+
         function newExpRow(file) {
             const p = parseExpFilename(file.name);
+            // 会社カード払いが基本のため、区分の初期値は「精算済み」
+            // （店舗名ごとに記憶した区分があればそれを優先）
+            const defKubun = p.currency === 'ドル' ? 2 : 1;
+            const mem = rememberedKubun(p.vendor, p.currency);
             return {
                 file: file,
                 date: p.date,
@@ -913,7 +942,8 @@
                 amount: p.amount,
                 rate: 0.1,
                 currency: p.currency,
-                kubun: p.currency === 'ドル' ? 2 : 0,
+                kubun: mem != null ? mem : defKubun,
+                kubunTouched: false,
                 person: p.person
             };
         }
@@ -959,7 +989,7 @@
                         if (m) {
                             row.amount = parseFloat(m[1].replace(/,/g, ''));
                             row.currency = 'ドル';
-                            row.kubun = 2;
+                            if (!row.kubunTouched) row.kubun = 2;
                         }
                     } else {
                         // 「領収」「支払総額」などのラベル付き金額を優先し、無ければ最大の金額
@@ -990,7 +1020,11 @@
 
                 if (!row.vendor) {
                     const v = text.match(/店舗名[\]：:\s]*([^\s\[]+)/) || text.match(/会社名[\]：:\s]*([^\s\[]+)/) || text.match(/領収者[\]：:\s]*([^\s\[]+)/);
-                    if (v) row.vendor = v[1].replace(/^(株式会社|有限会社)/, '').trim();
+                    if (v) {
+                        row.vendor = v[1].replace(/^(株式会社|有限会社)/, '').trim();
+                        const mem = rememberedKubun(row.vendor, row.currency);
+                        if (mem != null && !row.kubunTouched) row.kubun = mem;
+                    }
                 }
                 if (!row.item) {
                     const t = text.match(/但し[:：\s]*(.*?)として/);
@@ -1053,6 +1087,8 @@
             else if (f === 'kubun') {
                 r.kubun = +el.value;
                 r.currency = r.kubun === 2 ? 'ドル' : '円';
+                r.kubunTouched = true;
+                rememberKubun(r.vendor, r.kubun);
             } else r[f] = el.value;
         }
         expTbody.addEventListener('input', onExpEdit);
