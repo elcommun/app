@@ -706,8 +706,8 @@
                     <input type="checkbox" id="expChk" checked>
                     <span class="switch" aria-hidden="true"></span>
                     <span class="opt-text">
-                        経費精算書を作成してZIPに入れる
-                        <span class="opt-sub">ファイル名「日付 店舗名 金額円 氏名.pdf」とPDFの中身から自動で読み取ります</span>
+                        経費精算書を作成する
+                        <span class="opt-sub">ファイル名「日付 店舗名 金額円 氏名.pdf」とPDFの中身から自動で読み取り、xlsxを別ファイルでダウンロード（ZIPにも同梱）します</span>
                     </span>
                 </label>
                 <div class="exp-body" id="expBody">
@@ -803,11 +803,9 @@
         expName.value = localStorage.getItem('zip_tool_exp_name') || '';
         expName.addEventListener('input', () => {
             localStorage.setItem('zip_tool_exp_name', expName.value.trim());
-            syncZipName();
         });
         expChk.addEventListener('change', () => {
             expBox.classList.toggle('off', !expChk.checked);
-            syncZipName();
         });
         filenameInput.addEventListener('input', () => { filenameTouched = true; });
 
@@ -835,10 +833,8 @@
             status.className = 'status' + (cls ? ' ' + cls : '');
         }
 
-        // デフォルトのファイル名（拡張子なし）
-        // 経費精算書を作るときは「YYYY年M月経費精算_氏名」、通常は「YYYYMMDD-領収書PDF」
+        // デフォルトのファイル名（拡張子なし）: YYYYMMDD-領収書PDF
         function defaultFilenameBase() {
-            if (expActive()) return expReportBase().base;
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -858,13 +854,7 @@
         }
 
         function resetFilename() {
-            filenameTouched = false;
             filenameInput.value = defaultFilenameBase();
-        }
-
-        // ユーザーが手入力していなければZIP名をデフォルトに合わせる
-        function syncZipName() {
-            if (!filenameTouched) filenameInput.value = defaultFilenameBase();
         }
 
         resetFilename();
@@ -1023,7 +1013,6 @@
             const rows = expRowsList();
             if (rows.length === 0) {
                 expBox.classList.add('hidden');
-                syncZipName();
                 return;
             }
             expBox.classList.remove('hidden');
@@ -1038,7 +1027,6 @@
             }
             // 表の入力中は再描画しない（非同期の読み取り完了時に入力が消えるのを防ぐ）
             if (expTbody.contains(document.activeElement)) {
-                syncZipName();
                 return;
             }
             expTbody.innerHTML = rows.map((r, i) => `
@@ -1052,7 +1040,6 @@
                     <td class="c-kubun"><select data-i="${i}" data-f="kubun">${EXP_KUBUN.map((v, k) => `<option value="${k}"${k === r.kubun ? ' selected' : ''}>${v}</option>`).join('')}</select></td>
                 </tr>
             `).join('');
-            syncZipName();
         }
 
         function onExpEdit(e) {
@@ -1067,7 +1054,6 @@
                 r.kubun = +el.value;
                 r.currency = r.kubun === 2 ? 'ドル' : '円';
             } else r[f] = el.value;
-            syncZipName();
         }
         expTbody.addEventListener('input', onExpEdit);
         expTbody.addEventListener('change', onExpEdit);
@@ -1412,11 +1398,15 @@
                 const expOn = expActive() && window.ExcelJS;
                 let totalSize = 0;
 
-                // 経費精算書を作ってZIPに入れる
+                // 経費精算書を作成（ZIPに同梱し、あとで別ファイルとしてもダウンロード）
+                let xlsxBlob = null;
+                let xlsxName = '';
                 if (expOn) {
                     status.innerHTML = '<span class="spinner"></span>経費精算書を作成中...';
                     const xlsxBuf = await buildExpenseXlsx();
-                    zip.file(`${expReportBase().base}.xlsx`, xlsxBuf);
+                    xlsxName = `${expReportBase().base}.xlsx`;
+                    xlsxBlob = new Blob([xlsxBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    zip.file(xlsxName, xlsxBuf);
                 }
 
                 // ファイルを追加（軽量化ONならPDFを再圧縮してから格納）
@@ -1448,17 +1438,22 @@
                     }
                 });
 
-                // ダウンロード（入力欄で指定されたファイル名を使用）
+                // ダウンロード（ZIPは入力欄のファイル名、精算書は別ファイルとしても保存）
                 const now = new Date();
                 const filename = `${getFilenameBase()}.zip`;
 
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(content);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
+                function downloadBlob(blob, name) {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                }
+
+                downloadBlob(content, filename);
+                if (xlsxBlob) downloadBlob(xlsxBlob, xlsxName);
 
                 // Googleスプレッドシートに使用ログを送信
                 const datetime = now.toLocaleString('ja-JP', {
@@ -1476,7 +1471,8 @@
                     filename
                 );
 
-                setStatus(`「${filename}」をダウンロードしました ✓（${formatFileSize(totalSize)} → ${formatFileSize(content.size)}）`, 'ok');
+                const dlNames = xlsxBlob ? `「${filename}」と「${xlsxName}」` : `「${filename}」`;
+                setStatus(`${dlNames}をダウンロードしました ✓（${formatFileSize(totalSize)} → ${formatFileSize(content.size)}）`, 'ok');
 
                 setTimeout(() => {
                     selectedFiles = [];
