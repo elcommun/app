@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v390</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v391</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -3992,6 +3992,11 @@ for(const g of TRANS_GROUPS){
     for(let j=0;j<ng.length;j++){if(i!==j)arr.push(ng[j]);}
   }
 }
+// 商品名に出てこない柄で検索させる語（片方向：柄の語 → 商品名の語。「猫」で Fluide は出るが、「Fluide」で猫の商品全部は出ない）
+// 2026-11-11 ユーザー指示：Fluide（DR-WB-508・509）は猫柄。同じような依頼が来たらここに足す
+const MOTIF_TERMS={'Fluide':['猫','ねこ','ネコ','cat','cats','キャット','neko','にゃんこ']};
+for(const[term,words] of Object.entries(MOTIF_TERMS))
+  for(const w of words)(TRANS_N[normalize(w)]=TRANS_N[normalize(w)]||[]).push(normalize(term));
 
 // ── Search ────────────────────────────────────────────────────────────────────
 // 手帳/カレンダーのカテゴリを年月の若い順に並べるためのキー（年*100+開始月、
