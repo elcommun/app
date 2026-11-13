@@ -429,6 +429,12 @@ let HAS_SUP = false;
 let SUP = { items: [], total: 0, matched: 0, bySku: 0, byMain: 0, noImage: 0, existing: 0, unmatched: [], loaded: false };
 let SUP_MASTER = null;   // 画像キー → 商品番号（data.js の商品番号）
 let SUP_HAVE = null;     // 画像キー → [幅,高さ]（すでにある画像）
+let SUP_FRAME = null;    // APJ額縁の「サイズ＋管理番号」→ 画像キー（販売データでは色が抜けた商品番号 apj-hpf50_70-0020678317 でも、楽天の apj-hpf50_70-ホワイト-0020678317 と照合する）
+// supplier-ranking/index.html の apjFrameKey と同じ規則（変えるときはそろえる）
+function apjFrameKey(code) {
+  const m = /^(?:apj-)?([a-z]+\d+_\d+(?:_\d+)?)-(?:.*-)?(\d{7,})$/i.exec(code || '');
+  return m ? `apj-${m[1].toLowerCase()}|${m[2]}` : '';
+}
 function supKey(code) {
   return String(code || '').trim().toLowerCase().replace(/[^a-z0-9_-]/gu, c => '~' + c.codePointAt(0).toString(16) + '~');
 }
@@ -439,6 +445,8 @@ async function loadSupRefs() {
     const d = JSON.parse(t.slice(i, t.lastIndexOf('}') + 1));
     SUP_MASTER = {};
     Object.values(d.products).forEach(p => { if (p[3]) SUP_MASTER[supKey(p[3])] = p[3]; });
+    SUP_FRAME = {};
+    Object.keys(SUP_MASTER).forEach(k => { const f = apjFrameKey(SUP_MASTER[k]); if (f && !SUP_FRAME[f]) SUP_FRAME[f] = k; });
   } catch (e) { SUP_MASTER = null; }
   try {
     const t = await (await fetch('../supplier-ranking/image-index.js', { cache: 'no-cache' })).text();
@@ -500,6 +508,7 @@ function computeSup(rows, slug) {
     const cands = [sys, sku ? mng + sku : '', sku, (!sys && !sku) ? mng : ''].filter(Boolean);
     let key = '';
     for (const c of cands) { const k = supKey(c); if (SUP_MASTER[k]) { key = k; break; } }
+    if (!key && SUP_FRAME) { const f = apjFrameKey(sys || mng + sku); if (f && SUP_FRAME[f]) key = SUP_FRAME[f]; }
     if (!key || done.has(key)) continue;
     done.add(key);
     SUP.matched++;
