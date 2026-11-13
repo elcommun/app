@@ -48,6 +48,11 @@ GitHub (main) ──git fetch──▶ ~/.elcommun-app-backup/repo   （全履�
 macOS は、自動実行のプログラムがデスクトップに書くのを止めることがある。`backup.log` に「デスクトップに書き込めません」と出たら:
 システム設定 → プライバシーとセキュリティ → **フルディスクアクセス** → `+` → `Cmd+Shift+G` で `/bin/bash` を入れて許可 → ターミナルで `bash ~/.elcommun-app-backup/bin/backup.sh`
 
+## デスクトップが iCloud などと同期されているとき
+- ログに `rsync … mmap: Resource deadlock avoided` と出て更新が止まることがある（2026-11-13 に発生）。デスクトップのファイルの中身がクラウドに退避されていて、自動実行のプログラムからは古いファイルを読めないのが原因
+- `backup.sh` は、rsync が失敗したらフォルダを**丸ごと作り直す**（古いファイルを読まない）ので、自動で復旧する。ログには「フォルダを丸ごと作り直します」→「作り直しました」と出る
+- 毎回の作り直し（約0.6GBのコピーと再アップロード）を避けたいときは、保存先を同期されない場所にする: `BACKUP_DEST="$HOME/app-backup"` を付けて `install.sh` を実行し直す
+
 ## 保守メモ（Claude 向け）
 - `install.sh` は `backup.sh` を `~/.elcommun-app-backup/bin/` にコピーして launchd から呼ぶ。`make-offline.py` は毎回 `repo/` の最新を使うので、これは自動で最新になる。`backup.sh` / `install.sh` を変えたら、ユーザーに install.sh の再実行を案内する
 - 新しい外部ライブラリ（CDN）をアプリに追加しても、`make-offline.py` が自動で取り込む。ただし CDN のホストを増やすときは `CDN` の正規表現に足す
