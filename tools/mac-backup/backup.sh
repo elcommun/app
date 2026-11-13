@@ -34,10 +34,33 @@ log "更新を取り込みます: ${OLD:0:7} -> ${NEW:0:7}"
 git reset -q --hard origin/main 2>>"$LOG" || { log "ERROR: git reset 失敗"; notify "更新の取り込みに失敗しました"; exit 1; }
 
 mkdir -p "$DEST" 2>>"$LOG" || { log "ERROR: デスクトップに書き込めません（README の「権限」を参照）"; notify "デスクトップに書き込めません。README の権限設定を確認してください"; exit 1; }
+# 保存先を丸ごと作り直す（保存先に今あるファイルを読まない）。rsync が失敗したときの予備の方法。
+# デスクトップが iCloud などと同期されていて、ファイルの中身がクラウドに退避されていると、
+# rsync は差分を調べるために保存先の古いファイルを読もうとして失敗する（mmap: Resource deadlock avoided）。
+rebuild_dest(){
+  local NEWD="$DEST.new.$$" OLDD="$DEST.old.$$"
+  rm -rf "$NEWD" 2>>"$LOG"; mkdir -p "$NEWD" 2>>"$LOG" || return 1
+  if ! ( set -o pipefail; cd "$REPO" && tar -cf - --exclude='./.git' --exclude='.git' . | ( cd "$NEWD" && tar -xf - ) ) 2>>"$LOG"; then
+    rm -rf "$NEWD" 2>>"$LOG"; return 1
+  fi
+  if [ -e "$DEST" ]; then mv "$DEST" "$OLDD" 2>>"$LOG" || { rm -rf "$NEWD" 2>>"$LOG"; return 1; }; fi
+  if ! mv "$NEWD" "$DEST" 2>>"$LOG"; then
+    [ -e "$OLDD" ] && mv "$OLDD" "$DEST" 2>>"$LOG"   # 入れ替えに失敗したら元に戻す
+    rm -rf "$NEWD" 2>>"$LOG"; return 1
+  fi
+  rm -rf "$OLDD" 2>>"$LOG" || log "古いフォルダを消せませんでした（手で捨ててください）: $OLDD"
+  return 0
+}
+
 if ! rsync -a --delete --exclude='.git' --exclude='_libs' --exclude='バックアップ情報.txt' "$REPO/" "$DEST/" 2>>"$LOG"; then
-  log "ERROR: rsync 失敗（デスクトップへの書き込み権限の可能性）"
-  notify "デスクトップへのコピーに失敗しました。README の権限設定を確認してください"
-  exit 1
+  log "rsync で更新できなかったため、フォルダを丸ごと作り直します"
+  if rebuild_dest; then
+    log "作り直しました"
+  else
+    log "ERROR: デスクトップへのコピーに失敗（書き込み権限の可能性。README の「権限」を参照）"
+    notify "デスクトップへのコピーに失敗しました。README の権限設定を確認してください"
+    exit 1
+  fi
 fi
 
 python3 "$REPO/tools/mac-backup/make-offline.py" "$DEST" "$BASE/libs" >>"$LOG" 2>&1
