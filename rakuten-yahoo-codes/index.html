@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>楽天 ⇔ Yahoo コード対応表 | EL COMMUN</title>
+<style>
+  :root {
+    --primary:#E85D26;--primary-light:#FFF3EE;--primary-dark:#C4461B;
+    --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;
+    --gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;
+    --green:#10B981;--green-light:#ECFDF5;
+    --yellow-light:#FFFBEB;--blue-light:#EFF6FF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Sans','Noto Sans JP','Meiryo',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
+  header{background:white;border-bottom:3px solid var(--primary);padding:16px 32px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;flex-shrink:0;}
+  header h1{font-size:18px;font-weight:700;}
+  header span{font-size:12px;color:var(--gray-400);margin-left:4px;}
+  .container{max-width:1200px;margin:0 auto;padding:24px 16px;}
+  .card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;}
+  .search-card{position:sticky;top:8px;z-index:5;padding:14px 16px;}
+  .search-row{display:flex;gap:10px;align-items:center;}
+  #q{flex:1;min-width:0;padding:12px 14px;font-size:16px;border:2px solid var(--gray-200);border-radius:10px;outline:none;font-family:inherit;}
+  #q:focus{border-color:var(--primary);}
+  .clear-btn{padding:11px 14px;border:1px solid var(--gray-200);background:var(--gray-50);border-radius:8px;font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;white-space:nowrap;}
+  .clear-btn:hover{border-color:var(--primary);color:var(--primary);}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:10px;font-size:12px;color:var(--gray-600);}
+  .meta b{color:var(--primary);font-size:14px;}
+  .hint{color:var(--gray-400);}
+  .table-wrap{overflow-x:auto;border-radius:12px;}
+  .data-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .data-table th{background:var(--gray-100);padding:10px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);white-space:nowrap;font-size:12px;}
+  .data-table td{padding:10px 12px;border-bottom:1px solid var(--gray-200);vertical-align:top;line-height:1.6;}
+  .data-table tr:last-child td{border-bottom:none;}
+  .data-table tbody tr:hover{background:var(--gray-50);}
+  .path{color:var(--gray-400);font-size:11px;}
+  .leaf{font-weight:600;}
+  .code{display:inline-block;font-family:'SF Mono','Menlo','Consolas',monospace;font-size:13px;font-weight:700;padding:3px 9px;border-radius:6px;border:1px solid transparent;cursor:pointer;white-space:nowrap;transition:all .12s;}
+  .code:hover{border-color:currentColor;}
+  .code.r{background:#FEE2E2;color:#991B1B;}
+  .code.y{background:#DBEAFE;color:#1D4ED8;}
+  .code.s{background:var(--gray-100);color:#374151;font-weight:600;font-size:12px;margin:0 4px 4px 0;}
+  .code.copied{background:var(--green)!important;color:white!important;}
+  mark{background:#FDE68A;color:inherit;border-radius:2px;padding:0 1px;}
+  .empty{padding:40px 16px;text-align:center;color:var(--gray-400);font-size:14px;}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--gray-800);color:white;padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:all .2s;z-index:20;}
+  #toast.show{opacity:1;transform:translateX(-50%);}
+  footer{text-align:center;font-size:11px;color:var(--gray-400);padding:8px 16px 28px;}
+  @media (max-width:700px){
+    header{padding:12px 16px;}
+    header h1{font-size:15px;}
+    .container{padding:12px 10px;}
+    .data-table thead{display:none;}
+    .data-table,.data-table tbody,.data-table tr,.data-table td{display:block;width:100%;}
+    .data-table tr{padding:10px 12px;border-bottom:1px solid var(--gray-200);}
+    .data-table td{padding:3px 0;border:none;}
+    .data-table td[data-l]::before{content:attr(data-l);display:inline-block;min-width:92px;font-size:11px;color:var(--gray-400);}
+    .hint{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RY</div>
+  <div><h1>楽天 ⇔ Yahoo コード対応表 <span>EL COMMUN</span></h1></div>
+</header>
+
+<div class="container">
+
+  <div class="card search-card">
+    <div class="search-row">
+      <input id="q" type="search" placeholder="🔍 ジャンルID・カテゴリ名・Yahooコード・spec_id で検索（例：111377 / トート / 44099）" autocomplete="off" autofocus>
+      <button class="clear-btn" id="clearBtn">クリア</button>
+    </div>
+    <div class="meta">
+      <span><b id="cnt">0</b> 件 / 全 <span id="total">0</span> 件</span>
+      <span class="hint">スペース区切りで絞り込み・コードをクリックでコピー</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>楽天ジャンルID</th><th>楽天カテゴリ</th><th>Yahoo product-category</th><th>Yahooカテゴリ名</th><th>Yahoo spec_id</th>
+        </tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+      <div class="empty" id="empty" style="display:none">該当するコードがありません</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>楽天 ⇔ Yahoo コード対応表 <span id="verBadge"></span> | EL COMMUN EC事業部</footer>
+<div id="toast"></div>
+
+<script src="data.js?v=1"></script>
+<script>
+const APP_VERSION = 1;
+document.getElementById('verBadge').textContent = 'v' + APP_VERSION;
+
+// 検索用に正規化：全角英数→半角、カタカナ→ひらがな、小文字
+function norm(s){
+  return String(s).normalize('NFKC').toLowerCase()
+    .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const ROWS = CODE_TABLE.map(([gid, path, ycat, yname, specs]) => ({
+  gid, path, ycat, yname, specs,
+  key: norm([gid, path, ycat, yname, specs.join(' ')].join(' '))
+}));
+
+// 検索語に当たる部分を目立たせる（正規化で文字数が変わらない前提：NFKCで長さが変わる文字は対象外にする）
+function hl(text, terms){
+  const t = String(text), n = norm(t);
+  if (!terms.length || n.length !== t.length) return esc(t);
+  const hit = new Array(t.length).fill(false);
+  for (const w of terms){
+    let i = n.indexOf(w);
+    while (i >= 0){ for (let k = i; k < i + w.length; k++) hit[k] = true; i = n.indexOf(w, i + 1); }
+  }
+  let out = '', on = false;
+  for (let i = 0; i < t.length; i++){
+    if (hit[i] !== on){ out += on ? '</mark>' : '<mark>'; on = hit[i]; }
+    out += esc(t[i]);
+  }
+  return out + (on ? '</mark>' : '');
+}
+
+function codeBtn(v, cls, terms, label){
+  return `<span class="code ${cls}" data-copy="${esc(v)}" title="クリックで ${esc(label)} をコピー">${hl(v, terms)}</span>`;
+}
+
+function render(){
+  const terms = norm(document.getElementById('q').value).split(/\s+/).filter(Boolean);
+  const list = ROWS.filter(r => terms.every(w => r.key.includes(w)));
+  document.getElementById('tb').innerHTML = list.map(r => {
+    const i = r.path.lastIndexOf('>');
+    const parent = i >= 0 ? r.path.slice(0, i).replace(/>/g, ' › ') : '';
+    const leaf = i >= 0 ? r.path.slice(i + 1) : r.path;
+    return `<tr>
+      <td data-l="楽天ジャンルID">${codeBtn(r.gid, 'r', terms, '楽天ジャンルID')}</td>
+      <td>${parent ? `<div class="path">${hl(parent, terms)}</div>` : ''}<div class="leaf">${hl(leaf, terms)}</div></td>
+      <td data-l="Yahooカテゴリ">${codeBtn(r.ycat, 'y', terms, 'Yahoo product-category')}</td>
+      <td data-l="Yahoo名">${hl(r.yname, terms)}</td>
+      <td data-l="spec_id">${r.specs.map(s => codeBtn(s, 's', terms, 'spec_id')).join('')}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('cnt').textContent = list.length;
+  document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+}
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) {}
+    ta.remove();
+    return ok;
+  }
+}
+document.getElementById('tb').addEventListener('click', async e => {
+  const el = e.target.closest('.code');
+  if (!el) return;
+  if (await copyText(el.dataset.copy)){
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 700);
+    toast('コピーしました：' + el.dataset.copy);
+  } else {
+    toast('コピーできませんでした');
+  }
+});
+
+const q = document.getElementById('q');
+q.addEventListener('input', render);
+document.getElementById('clearBtn').addEventListener('click', () => { q.value = ''; render(); q.focus(); });
+document.getElementById('total').textContent = ROWS.length;
+render();
+
+// 3分ごとに新しい版を確認（検索中は入力を消さないようリロードしない）
+setInterval(async () => {
+  try {
+    const res = await fetch(location.pathname + '?t=' + Date.now(), {cache: 'no-store'});
+    const m = (await res.text()).match(/const APP_VERSION = (\d+);/);
+    if (m && Number(m[1]) > APP_VERSION && !q.value) location.reload();
+  } catch (e) {}
+}, 180000);
+</script>
+</body>
+</html>

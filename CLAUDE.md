@@ -121,6 +121,11 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - **項目は商品名を簡略化したものにする**（2026-11-09 ユーザー指示。例:「コーヒー豆」）。取得の優先順: ①ファイル名の店舗名部分を本文の店舗名（店舗名/会社名/領収者）で分割した残り（澤井珈琲コーヒー豆→澤井珈琲＋コーヒー豆）②本文の「商品名」欄（サイズ・型番・入数・表の見出し行は除く）③但し書き（「〜との取引」「商品代」等の定型文は使わない）。既知ブランドの分割は `EXP_BRANDS`
 - **区分の初期値はキーワードで決める**（2026-11-09 ユーザー指示）: ファイル名・店舗名に ChatGPT・Claude・Shopify・ZAP（＋OpenAI・Anthropic）を含むものは「精算済み」（円→精算済み（円）、ドル→精算済み（ドル）に自動振り分け）、それ以外（楽天市場・Yahooストア・Amazon・Yodobashi等での購入）は「未精算」。キーワードは `EXP_SETTLED_KEYWORDS` に足す。手動で変更した区分は店舗名ごとにlocalStorage（`zip_tool_exp_kubun`）に記憶され、次回から自動で設定される（記憶がキーワードより優先）
 
+### rakuten-yahoo-codes（楽天 ⇔ Yahoo コード対応表。2026-11-16 新規）
+- `rakuten-yahoo-codes/index.html`。楽天ジャンルID → Yahoo product-category・Yahooカテゴリ名・spec_id の対応表を検索して確認するだけのアプリ（ファイル読み込みなし。デザインはパターンB）。楽天ジャンルIDごとに1行にまとめ、spec_id は重複を除いて並べる。コードはクリックでコピー。検索はスペース区切りのAND・全角半角とカタカナ/ひらがなを区別しない
+- `const APP_VERSION = N;`（フッターの `#verBadge`）あり。**変更してコミットするたびに +1**。3分ごとに確認し、検索欄が空なら自動リロード
+- データは `code-table.csv`（ユーザー提供の対応表をUTF-8にしたもの。129ジャンル・225行）→ `python3 rakuten-yahoo-codes/build-data.py` → `data.js`。**対応表を差し替えたら build-data.py を実行し、`APP_VERSION` と `<script src="data.js?v=N">` を +1**。spec_id の意味（項目名）は対応表に無いので表示していない
+
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
 - GAS側のコードと設定手順は `laikle-convert/mail-gas/`（`Code.gs` / `README.md`）
