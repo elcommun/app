@@ -124,7 +124,9 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 ### rakuten-yahoo-codes（楽天 ⇔ Yahoo コード対応表。2026-11-16 新規）
 - `rakuten-yahoo-codes/index.html`。楽天ジャンルID → Yahoo product-category・Yahooカテゴリ名・spec_id の対応表を検索して確認するだけのアプリ（ファイル読み込みなし。デザインはパターンB）。楽天ジャンルIDごとに1行にまとめ、spec_id は重複を除いて並べる。コードはクリックでコピー。検索はスペース区切りのAND・全角半角とカタカナ/ひらがなを区別しない
 - `const APP_VERSION = N;`（フッターの `#verBadge`）あり。**変更してコミットするたびに +1**。3分ごとに確認し、検索欄が空なら自動リロード
-- データは `code-table.csv`（ユーザー提供の対応表をUTF-8にしたもの。129ジャンル・225行）→ `python3 rakuten-yahoo-codes/build-data.py` → `data.js`。**対応表を差し替えたら build-data.py を実行し、`APP_VERSION` と `<script src="data.js?v=N">` を +1**。spec_id の意味（項目名）は対応表に無いので表示していない
+- データは `code-table.csv`（ユーザー提供の対応表をUTF-8にしたもの。129ジャンル・225行）→ `python3 rakuten-yahoo-codes/build-data.py` → `data.js`。spec_id の意味（項目名）は対応表に無いので表示していない
+- **この対応表は `rakuten-yahoo`（楽天 → Yahoo 商品データ作成）と共通（2026-11-16 ユーザー指示：ここで変更した内容は同時に rakuten-yahoo にも反映する）**。`rakuten-yahoo/index.html` は内蔵の `GENRE_MAP` をやめ、`<script src="../rakuten-yahoo-codes/data.js?v=N">` の `CODE_TABLE` から `GENRE_MAP` を作る。**対応表を変えるときは `code-table.csv` だけを直し → `python3 rakuten-yahoo-codes/build-data.py` → 両アプリの `APP_VERSION` と `data.js?v=N` を +1（`v=N` は両方同じ数字）**。rakuten-yahoo 側にだけジャンルを足さない
+- 131ジャンル（ユーザー提供の129＋rakuten-yahoo に後から足していた 111384 置物→44048・569310→13591。この2件は楽天パス名が未登録）
 
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）

@@ -22,7 +22,7 @@
 | 部分 | 内容 |
 |---|---|
 | `LINK_MAP` | 楽天カテゴリ番号 → YahooページID（87件） |
-| `GENRE_MAP` | 楽天ジャンルID → Yahoo product-category と spec_id（131件。569310 → 13591 を v24、111384（置物）→ 44048 を v29 で追加。44048 のスペックは代表カラー(10011)のみ＝未確認） |
+| `GENRE_MAP` | **`../rakuten-yahoo-codes/data.js`（コード対応表アプリと共通。元は `rakuten-yahoo-codes/code-table.csv`）から作る。index.html には持たない（v31）。変更は code-table.csv で行う。** 楽天ジャンルID → Yahoo product-category と spec_id（131件。569310 → 13591 を v24、111384（置物）→ 44048 を v29 で追加。44048 のスペックは代表カラー(10011)のみ＝未確認） |
 | 変換ロジック | `convertAll`、`convName`、`convPcDesc`、`convAdditional`、`convSp`、`convertUrls`、`shippingFor`、`buildRequest`、`parseResponse`、`buildImageScript` など。DOMに依存しない |
 | 画面まわり | `APP_VERSION` 以降。ファイル読み込み、確認画面、設定（localStorage）、ダウンロード |
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """code-table.csv（楽天ジャンルID → Yahoo product-category / spec_id の対応表・UTF-8）から data.js を作る。
-対応表を差し替えたら: python3 rakuten-yahoo-codes/build-data.py → index.html の APP_VERSION と data.js?v=N を +1"""
+この data.js は rakuten-yahoo（楽天 → Yahoo 商品データ作成）も読む共通データ。
+対応表を変えたら: python3 rakuten-yahoo-codes/build-data.py → rakuten-yahoo-codes/index.html と rakuten-yahoo/index.html の
+両方で APP_VERSION と data.js?v=N を +1（v=N は両方同じ数字にする）"""
 import csv, json, os, sys
 here = os.path.dirname(os.path.abspath(__file__))
 rows = list(csv.reader(open(os.path.join(here, 'code-table.csv'), encoding='utf-8-sig')))[1:]
