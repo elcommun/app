@@ -363,6 +363,7 @@
         <div class="field"><label>スペックIDと楽天の属性名</label><textarea id="set-specAttr" rows="4" class="mono"></textarea><small>spec_id,楽天の商品属性の項目名　例：10011,代表カラー</small></div>
         <div class="field"><label>ジャンルごとの固定スペック</label><textarea id="set-genreSpec" rows="4" class="mono"></textarea><small>楽天ジャンルID,spec_id,Yahooの値ID　例：567236,52,259</small></div>
         <div class="field"><label>ブランドルール</label><textarea id="set-brandRules" rows="4" class="mono"></textarea><small>楽天の表示先カテゴリ,brand-code</small></div>
+        <div class="field"><label>追加したジャンル（このブラウザだけに記憶）</label><textarea id="set-genreAdd" rows="3" class="mono"></textarea><small>楽天ジャンルID,YahooプロダクトカテゴリID,カテゴリ名,スペックID（色の10011など。:で区切って複数）。要確認の「候補を探す」から自動で入ります。共通の対応表（コード対応表アプリ）には入りません。</small></div>
         <div class="field"><label>空欄で出力して消す列（上書き時に以前の値を消す）</label><textarea id="set-clearCols" rows="3" class="mono"></textarea><small>1行に1列。data_add.csv の右端に、値が空の列として追加します（既定：セール価格・販売期間の開始／終了）。列名はYahooのCSVの見出しと同じにしてください。</small></div>
       </div>
       <div class="btn-row" style="margin-top:16px"><button class="sub-btn main" id="btnSaveSet">💾 設定を保存</button><button class="sub-btn" id="btnResetSet">初期値に戻す</button></div>
@@ -1043,7 +1044,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 32;
+var APP_VERSION = 33;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',
@@ -1055,6 +1056,7 @@ var DEFAULT_SETTINGS = {
   specValues: '10011,イエロー,10673\n10011,ブラック,10676\n10011,レッド,10677\n10011,ホワイト,10678\n10011,グリーン,10680\n10011,ブラウン,10681\n10011,オレンジ,10682\n10011,グレー,10684\n10011,ゴールド,10686\n10011,ブルー,10688\n10011,ベージュ,10690\n10011,ネイビー,58106\n10011,カーキ,236353\n10011,ピンク,10683\n10011,シルバー,10685\n10011,パープル,10687\n10011,マルチカラー,81577\n10011,クリア,236354\n10011,イエロー系,10673\n10011,ブラック系,10676\n10011,レッド系,10677\n10011,ホワイト系,10678\n10011,グリーン系,10680\n10011,ブラウン系,10681\n10011,オレンジ系,10682\n10011,グレー系,10684\n10011,ゴールド系,10686\n10011,ブルー系,10688\n10011,ベージュ系,10690\n10011,ネイビー系,58106\n10011,カーキ系,236353\n10011,ピンク系,10683\n10011,シルバー系,10685\n10011,パープル系,10687',
   genreSpec: '567236,52,259\n111167,1145,431',
   brandRules: 'メーカー・ブランド\\MATOKA｜マトカ,64324',
+  genreAdd: '',
   clearCols: 'sale-price\nsale-period-start\nsale-period-end'
 };
 var settings = loadSettings();
@@ -1080,7 +1082,9 @@ function saveSettings() { try { localStorage.setItem(LS_KEY, JSON.stringify(sett
 function lines(text) { return String(text || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l && l[0] !== '#'; }); }
 function buildCfg() {
   var cfg = { store: settings.store.trim() || 'el-market', singleOptName: optToken(settings.singleOptName) || 'デザイン', limits: settings.limits,
-    linkMap: {}, genreMap: GENRE_MAP, specAttr: {}, specValues: {}, genreSpec: {}, brandRules: [] };
+    linkMap: {}, genreMap: {}, specAttr: {}, specValues: {}, genreSpec: {}, brandRules: [] };
+  Object.keys(GENRE_MAP).forEach(function (k) { cfg.genreMap[k] = GENRE_MAP[k]; });
+  lines(settings.genreAdd).forEach(function (l) { var p = l.split(','); if (p.length >= 2 && /^\d+$/.test(p[0].trim()) && /^\d+$/.test(p[1].trim())) cfg.genreMap[p[0].trim()] = { pc: p[1].trim(), name: (p[2] || '').trim(), specs: String(p[3] || '10011').split(':').map(function (x) { return x.trim(); }).filter(Boolean) }; });
   Object.keys(LINK_MAP).forEach(function (k) { cfg.linkMap[k] = LINK_MAP[k]; });
   lines(settings.linkAdd).forEach(function (l) {
     var p = l.split(','), id = (/(\d{6,})/.exec(p[0] || '') || [])[1], y = String(p[1] || '').trim().replace(/^.*\//, '').replace(/\.html$/, '');
@@ -1238,6 +1242,65 @@ function renderStats() {
   $('dlWarn').style.display = over.length ? '' : 'none';
   $('imgCount').textContent = (result.itemImages.length + libN).toLocaleString();
 }
+/* ---------- 未登録の楽天ジャンルID → Yahooカテゴリの候補探し ----------
+   楽天のジャンル一覧（ジャンルID,パス名）とYahooのカテゴリ一覧（id,name,path_name,relation）を読み込み、
+   名前の近さで候補を出す。使うのは未登録のジャンルだけ（一覧そのものは覚えない）。登録分は設定「追加したジャンル」に保存。 */
+var GM = { R: null, Y: null, cache: null };
+function gmNorm(t) {
+  return String(t || '').normalize('NFKC').replace(/[ぁ-ゖ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) + 0x60); }).toLowerCase().replace(/[\s、，,・･\/／()（）\-ー_]/g, '');
+}
+function gmGrams(t) {
+  var s2 = gmNorm(t), m = {}, n = 0;
+  if (s2.length < 2) { m[s2] = 1; return { m: m, n: 1 }; }
+  for (var i = 0; i < s2.length - 1; i++) { var g = s2.substr(i, 2); m[g] = (m[g] || 0) + 1; n++; }
+  return { m: m, n: n };
+}
+function gmSim(a, b) {
+  var inter = 0; for (var g in a.m) { if (b.m[g]) inter += Math.min(a.m[g], b.m[g]); }
+  return 2 * inter / Math.max(1, a.n + b.n);
+}
+function gmCandidates(rpath, k) {
+  if (!GM.cache) GM.cache = GM.Y.map(function (y) { return { y: y, leaf: gmGrams(y.path[y.path.length - 1]), name: gmGrams(y.name), full: gmGrams(y.path.join(' ')) }; });
+  var leaf = gmGrams(rpath[rpath.length - 1]), full = gmGrams(rpath.join(' '));
+  var out = GM.cache.map(function (c) { return { y: c.y, score: 0.65 * Math.max(gmSim(leaf, c.leaf), gmSim(leaf, c.name)) + 0.35 * gmSim(full, c.full) }; });
+  out.sort(function (a, b) { return b.score - a.score; });
+  return out.slice(0, k);
+}
+function genrePanelHtml() {
+  var h = '<div class="warn-group gm-panel"><div class="warn-title">🔎 候補を探す</div><div class="warn-hint">楽天の「ジャンルID,パス名」の一覧と、Yahooの「id,name,path_name,relation」の一覧（どちらもCSV）を読み込むと、未登録のジャンルごとに、名前の近いYahooカテゴリの候補を出します。<b>自動で決めるのではなく候補なので、正しいものを選んで「登録」してください</b>（ほかの一覧の項目は覚えません）。</div>' +
+    '<div class="btn-row" style="padding:0 12px 10px"><label class="sub-btn">📄 楽天のジャンル一覧' + (GM.R ? ' ✅' : '') + '<input type="file" accept=".csv,.txt" data-gm="R"></label><label class="sub-btn">📄 Yahooのカテゴリ一覧' + (GM.Y ? ' ✅' : '') + '<input type="file" accept=".csv,.txt" data-gm="Y"></label></div>';
+  if (GM.R && GM.Y) {
+    h += '<table class="data-table"><thead><tr><th>楽天ジャンルID／パス</th><th>Yahooの候補（近い順）</th><th>スペックID</th><th></th></tr></thead><tbody>';
+    Object.keys(result.missGenre).forEach(function (gid) {
+      var rp = GM.R[gid];
+      if (!rp) { h += '<tr><td>' + escHtml(gid) + '</td><td colspan="3">楽天の一覧にこのIDが見つかりません</td></tr>'; return; }
+      var c = gmCandidates(rp, 5);
+      h += '<tr><td><b>' + escHtml(gid) + '</b><div class="rv-src">' + escHtml(rp.join(' > ')) + '</div></td><td><select class="gm-sel" data-gid="' + escHtml(gid) + '">' +
+        c.map(function (x) { return '<option value="' + escHtml(x.y.id + '|' + x.y.path[x.y.path.length - 1]) + '">' + escHtml(x.y.id + '（近さ ' + Math.round(x.score * 100) + '％）' + x.y.path.join(' > ')) + '</option>'; }).join('') +
+        '</select></td><td><input type="text" class="gm-spec" value="10011" style="width:110px"></td><td><button class="sub-btn main gm-reg" type="button" data-gid="' + escHtml(gid) + '">登録</button></td></tr>';
+    });
+    h += '</tbody></table><div class="note" id="gmNote"></div>';
+  }
+  return h + '</div>';
+}
+function genreLoad(kind, file) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var rows = parseCSV(decodeAuto(fr.result)), map = {};
+    if (kind === 'R') { GM.R = {}; rows.slice(1).forEach(function (r) { if (r[0]) GM.R[String(r[0]).trim()] = String(r[1] || '').split('>').map(function (t) { return t.trim(); }); }); }
+    else { GM.Y = []; GM.cache = null; rows.slice(1).forEach(function (r) { if (r[0]) GM.Y.push({ id: String(r[0]).trim(), name: String(r[1] || ''), path: String(r[2] || r[1] || '').split(' > ').map(function (t) { return t.trim(); }) }); }); }
+    renderWarnings();
+  };
+  fr.readAsArrayBuffer(file);
+}
+function genreRegister(gid, btn) {
+  var tr = btn.closest('tr'), sel = tr.querySelector('.gm-sel'), spec = tr.querySelector('.gm-spec').value.replace(/[\s、，]+/g, ':').replace(/^:+|:+$/g, '');
+  var v = sel.value.split('|'), line = gid + ',' + v[0] + ',' + v[1] + ',' + (spec || '10011');
+  var cur = String(settings.genreAdd || '').split(/\r?\n/).filter(function (l) { return l.trim() && l.split(',')[0].trim() !== gid; });
+  cur.push(line); settings.genreAdd = cur.join('\n'); saveSettings(); fillSettings();
+  tr.querySelector('.gm-reg').textContent = '✅ 登録済み';
+  var n = $('gmNote'); n.textContent = '登録しました（' + line + '）。変換し直すと反映されます（「変換する」をもう一度押す）。'; n.classList.add('show');
+}
 function renderWarnings() {
   var h = '';
   var group = function (title, hint, obj) {
@@ -1250,7 +1313,8 @@ function renderWarnings() {
   group('リンク表にない楽天カテゴリリンク', '楽天のURLのまま出力されます。下の「設定」→「リンク表の追加」に登録して再変換するか、Yahoo側で差し替えてください。', result.missLink);
   group('変換できなかった楽天URL', '楽天のURLのまま出力されます。', result.otherUrl);
   group('値IDが未登録のスペック', 'spec は空欄で出力されます。「設定」→「スペック値」に登録すると次回から自動で入ります。', result.missSpec);
-  group('対応表にない楽天ジャンルID', 'product-category と spec が空欄で出力されます。', result.missGenre);
+  group('対応表にない楽天ジャンルID', 'product-category と spec が空欄で出力されます。下の「候補を探す」で、楽天・Yahooのジャンル一覧から候補を出して登録できます。', result.missGenre);
+  if (Object.keys(result.missGenre).length) h += genrePanelHtml();
   group('配送パターンに当てはまらない商品', 'ship-weight と postage-set が空欄で出力されます。', asObj(result.noShip));
   group('カテゴリが見つからない商品', 'path が空欄で出力されます（dl-item-cat.csv に載っていない商品です）。', asObj(result.noCat));
   $('warnCount').textContent = Object.keys(result.missLink).length + Object.keys(result.otherUrl).length + Object.keys(result.missSpec).length + Object.keys(result.missGenre).length + result.noShip.length + result.noCat.length;
@@ -1379,7 +1443,7 @@ function imageCommand() {
 function copyImageCommand() { copyText(imageCommand(), function () { flash('imgNote', '✅ コマンドをコピーしました。ターミナルに貼り付けて Enter を押してください。'); }); }
 
 /* ---------- 設定 ---------- */
-var SET_TEXT = ['linkAdd', 'specAttr', 'specValues', 'genreSpec', 'brandRules', 'clearCols'];
+var SET_TEXT = ['linkAdd', 'specAttr', 'specValues', 'genreSpec', 'brandRules', 'clearCols', 'genreAdd'];
 function fillSettings() {
   $('setStore').value = settings.store; $('setSingle').value = settings.singleOptName; $('setZip').value = settings.zipMb;
   Object.keys(DEFAULT_LIMITS).forEach(function (k) { $('lim-' + k).value = settings.limits[k]; });
@@ -1434,6 +1498,8 @@ function init() {
   $('dlOpt').addEventListener('click', downloadOption);
   $('dlQty').addEventListener('click', downloadQuantity);
   $('btnImg').addEventListener('click', copyImageCommand);
+  $('warnArea').addEventListener('change', function (e) { var t = e.target; if (t.dataset && t.dataset.gm && t.files[0]) { genreLoad(t.dataset.gm, t.files[0]); t.value = ''; } });
+  $('warnArea').addEventListener('click', function (e) { var t = e.target; if (t.classList && t.classList.contains('gm-reg')) genreRegister(t.dataset.gid, t); });
   $('btnSaveSet').addEventListener('click', applySettings);
   $('btnResetSet').addEventListener('click', resetSettings);
   fillSettings(); checkAppVersion(); setInterval(checkAppVersion, 5 * 60 * 1000);
