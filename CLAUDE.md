@@ -127,6 +127,7 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - データは `code-table.csv`（ユーザー提供の対応表をUTF-8にしたもの。129ジャンル・225行）→ `python3 rakuten-yahoo-codes/build-data.py` → `data.js`。spec_id の意味（項目名）は対応表に無いので表示していない
 - **この対応表は `rakuten-yahoo`（楽天 → Yahoo 商品データ作成）と共通（2026-11-16 ユーザー指示：ここで変更した内容は同時に rakuten-yahoo にも反映する）**。`rakuten-yahoo/index.html` は内蔵の `GENRE_MAP` をやめ、`<script src="../rakuten-yahoo-codes/data.js?v=N">` の `CODE_TABLE` から `GENRE_MAP` を作る。**対応表を変えるときは `code-table.csv` だけを直し → `python3 rakuten-yahoo-codes/build-data.py` → 両アプリの `APP_VERSION` と `data.js?v=N` を +1（`v=N` は両方同じ数字）**。rakuten-yahoo 側にだけジャンルを足さない
 - 131ジャンル（ユーザー提供の129＋rakuten-yahoo に後から足していた 111384 置物→44048・569310→13591。この2件は楽天パス名が未登録）
+- **スペック（spec_id）の名前と値のID（2026-11-16）**: ユーザー提供の Yahoo「スペック一覧」CSV（列 id,name,path_name,spec_id,spec_name,spec_value_name,spec_value_id,selection_type,data_type。約38MB・リポジトリには入れない）から、対応表で使っている spec_id だけを抜き出した `rakuten-yahoo-codes/spec-data.js`（`SPEC_DEF`。`python3 rakuten-yahoo-codes/build-spec.py "<CSV>"` で作る）。コード対応表アプリは spec_id の横に項目名を出し、`rakuten-yahoo` は**Yahooのスペック名と同じ名前の楽天の商品属性があれば自動で使い、値は名前の一致でIDにする**。対応表のスペック構成を変えたら build-spec.py をもう一度走らせる（両アプリの `spec-data.js?v=N` と `APP_VERSION` を +1）
 
 ### laikle-convert の変換完了メール
 - 変換完了時に `ec@elcommun.co.jp` へ自動送信する仕組み（Google Apps Script のウェブアプリ経由）
