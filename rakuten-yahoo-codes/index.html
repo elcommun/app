@@ -42,6 +42,8 @@
   .code.r{background:#FEE2E2;color:#991B1B;}
   .code.y{background:#DBEAFE;color:#1D4ED8;}
   .code.s{background:var(--gray-100);color:#374151;font-weight:600;font-size:12px;margin:0 4px 4px 0;}
+  .sp{display:inline-block;margin:0 10px 4px 0;white-space:nowrap;}
+  .spn{font-size:11px;color:var(--gray-600);margin-left:2px;}
   .code.copied{background:var(--green)!important;color:white!important;}
   mark{background:#FDE68A;color:inherit;border-radius:2px;padding:0 1px;}
   .empty{padding:40px 16px;text-align:center;color:var(--gray-400);font-size:14px;}
@@ -128,8 +130,9 @@
 <div id="toast"></div>
 
 <script src="data.js?v=3"></script>
+<script src="spec-data.js?v=1"></script>
 <script>
-const APP_VERSION = 4;
+const APP_VERSION = 5;
 document.getElementById('verBadge').textContent = 'v' + APP_VERSION;
 
 // 検索用に正規化：全角英数→半角、カタカナ→ひらがな、小文字
@@ -143,7 +146,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 const ADD_KEY = 'ec_genre_added_v1';
 function loadAdded(){ try { const a = JSON.parse(localStorage.getItem(ADD_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function saveAdded(a){ try { localStorage.setItem(ADD_KEY, JSON.stringify(a)); } catch (e) {} }
-const mkRow = (r, added) => { const [gid, path, ycat, yname, specs] = r; return { gid, path, ycat, yname, specs, added, key: norm([gid, path, ycat, yname, specs.join(' ')].join(' ')) }; };
+const specName = id => (typeof SPEC_DEF !== 'undefined' && SPEC_DEF[id]) ? SPEC_DEF[id][0] : '';
+const mkRow = (r, added) => { const [gid, path, ycat, yname, specs] = r; return { gid, path, ycat, yname, specs, added, key: norm([gid, path, ycat, yname, specs.map(x => x + ' ' + specName(x)).join(' ')].join(' ')) }; };
 let ROWS = [];
 function buildRows(){
   const have = new Set(CODE_TABLE.map(r => r[0]));
@@ -184,7 +188,7 @@ function render(){
       <td>${parent ? `<div class="path">${hl(parent, terms)}</div>` : ''}<div class="leaf">${hl(leaf, terms)}</div></td>
       <td data-l="Yahooカテゴリ">${codeBtn(r.ycat, 'y', terms, 'Yahoo product-category')}</td>
       <td data-l="Yahoo名">${hl(r.yname, terms)}</td>
-      <td data-l="spec_id">${r.specs.map(s => codeBtn(s, 's', terms, 'spec_id')).join('')}</td>
+      <td data-l="spec_id">${r.specs.map(s => `<span class="sp">${codeBtn(s, 's', terms, 'spec_id')}${specName(s) ? `<span class="spn">${hl(specName(s), terms)}</span>` : ''}</span>`).join('')}</td>
     </tr>`;
   }).join('');
   document.getElementById('cnt').textContent = list.length;
