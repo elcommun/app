@@ -715,7 +715,7 @@ function convertAll(rakRows, catRows, cfg) {
   var g = function (row, col) { var i = ix[col]; return i == null ? '' : String(row[i] == null ? '' : row[i]).trim(); };
   var raw = function (row, col) { var i = ix[col]; return i == null ? '' : String(row[i] == null ? '' : row[i]); };
 
-  var res = { catTotal: 0, items: [], lib: {}, itemImages: [], missLink: {}, otherUrl: {}, warns: [], missSpec: {}, missGenre: {}, noShip: [], noCat: [] };
+  var res = { catTotal: 0, items: [], lib: {}, itemImages: [], missLink: {}, otherUrl: {}, warns: [], missSpec: {}, noAttrSpec: {}, missGenre: {}, noShip: [], noCat: [] };
   var warn = function (code, msg) { res.warns.push({ code: code, msg: msg }); };
 
   // カテゴリ
@@ -846,7 +846,7 @@ function convertAll(rakRows, catRows, cfg) {
               });
             }
           });
-        } else { var k2 = 'spec ' + sid + '（' + gm.name + '）の値'; res.missSpec[k2] = (res.missSpec[k2] || []); if (res.missSpec[k2].indexOf(code) < 0) res.missSpec[k2].push(code); }
+        } else { var k2 = 'spec ' + sid + '（' + gm.name + '）'; res.noAttrSpec[k2] = (res.noAttrSpec[k2] || []); if (res.noAttrSpec[k2].indexOf(code) < 0) res.noAttrSpec[k2].push(code); }  // 楽天の属性との結びつけが未登録のスペックは、空欄で出力（警告には出さない。変換ログに1行）
         if (ids.length) specOut.push(sid + '|' + ids.join(':'));
       });
       specOut.slice(0, 5).forEach(function (v, i) { o['spec' + (i + 1)] = v; });
@@ -1044,7 +1044,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 34;
+var APP_VERSION = 35;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',
@@ -1162,6 +1162,7 @@ function doConvert() {
   result.cfg = cfg;
   result.stamp = (function (d) { var p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()); })(new Date());
   result.items.forEach(function (it) { log('✅ [' + escHtml(it.code) + '] ' + escHtml(it.notes.join('／') || '変換完了'), 'log-ok'); });
+  var na = Object.keys(result.noAttrSpec || {}); if (na.length) log('ℹ️ 楽天の属性との結びつけが無いため、次のスペックは空欄で出力しました（カテゴリ・代表カラーは入っています）：' + escHtml(na.map(function (k) { return k.replace(/（.*$/, ''); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join('・')) + '（' + na.length + '種類）', 'log-info');
   if (!state.cat) log('⚠️ カテゴリCSVが未読み込みのため、path（ストアカテゴリ）は空欄です', 'log-warn');
   else log('ℹ️ カテゴリCSVは全商品分でOK：dl-normal-item.csv の ' + result.items.length + ' 商品に該当するカテゴリだけを使用しました（' + result.catTotal + ' 商品分のうち）', 'log-ok');
   result.warns.forEach(function (w) { log('⚠️ [' + escHtml(w.code) + '] ' + escHtml(w.msg), 'log-warn'); });
