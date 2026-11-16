@@ -1044,7 +1044,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 33;
+var APP_VERSION = 34;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',
@@ -1084,6 +1084,8 @@ function buildCfg() {
   var cfg = { store: settings.store.trim() || 'el-market', singleOptName: optToken(settings.singleOptName) || 'デザイン', limits: settings.limits,
     linkMap: {}, genreMap: {}, specAttr: {}, specValues: {}, genreSpec: {}, brandRules: [] };
   Object.keys(GENRE_MAP).forEach(function (k) { cfg.genreMap[k] = GENRE_MAP[k]; });
+  // コード対応表アプリで「追加」した分（同じブラウザの共通の保存先）。表にあるジャンルは上書きしない
+  try { (JSON.parse(localStorage.getItem('ec_genre_added_v1') || '[]') || []).forEach(function (r) { if (r && r[0] && !cfg.genreMap[r[0]]) cfg.genreMap[r[0]] = { pc: String(r[2]), name: String(r[3] || ''), specs: (r[4] || []).map(String) }; }); } catch (e) { /* 読めなければ無視 */ }
   lines(settings.genreAdd).forEach(function (l) { var p = l.split(','); if (p.length >= 2 && /^\d+$/.test(p[0].trim()) && /^\d+$/.test(p[1].trim())) cfg.genreMap[p[0].trim()] = { pc: p[1].trim(), name: (p[2] || '').trim(), specs: String(p[3] || '10011').split(':').map(function (x) { return x.trim(); }).filter(Boolean) }; });
   Object.keys(LINK_MAP).forEach(function (k) { cfg.linkMap[k] = LINK_MAP[k]; });
   lines(settings.linkAdd).forEach(function (l) {
@@ -1298,6 +1300,8 @@ function genreRegister(gid, btn) {
   var v = sel.value.split('|'), line = gid + ',' + v[0] + ',' + v[1] + ',' + (spec || '10011');
   var cur = String(settings.genreAdd || '').split(/\r?\n/).filter(function (l) { return l.trim() && l.split(',')[0].trim() !== gid; });
   cur.push(line); settings.genreAdd = cur.join('\n'); saveSettings(); fillSettings();
+  // コード対応表アプリと共通の保存先にも入れる（そちらの表に「追加」で出る）
+  try { var sh = (JSON.parse(localStorage.getItem('ec_genre_added_v1') || '[]') || []).filter(function (r) { return r[0] !== gid; }); sh.push([gid, (GM.R[gid] || []).join('>'), v[0], v[1], (spec || '10011').split(':')]); localStorage.setItem('ec_genre_added_v1', JSON.stringify(sh)); } catch (e) { /* 保存できなくても設定には入っている */ }
   tr.querySelector('.gm-reg').textContent = '✅ 登録済み';
   var n = $('gmNote'); n.textContent = '登録しました（' + line + '）。変換し直すと反映されます（「変換する」をもう一度押す）。'; n.classList.add('show');
 }

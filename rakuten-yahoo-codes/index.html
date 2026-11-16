@@ -45,6 +45,21 @@
   .code.copied{background:var(--green)!important;color:white!important;}
   mark{background:#FDE68A;color:inherit;border-radius:2px;padding:0 1px;}
   .empty{padding:40px 16px;text-align:center;color:var(--gray-400);font-size:14px;}
+  .lk{padding:0;}
+  .lk>summary{cursor:pointer;padding:14px 16px;font-weight:700;font-size:14px;list-style:none;}
+  .lk>summary::-webkit-details-marker{display:none;}
+  .lk-body{padding:0 16px 16px;font-size:13px;color:var(--gray-600);line-height:1.7;}
+  .lk-body .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0;}
+  .lk-body label.btn,.lk-body button.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:1px solid var(--gray-200);background:var(--gray-50);border-radius:8px;font-size:13px;font-weight:600;color:var(--gray-800);cursor:pointer;font-family:inherit;}
+  .lk-body .btn:hover{border-color:var(--primary);color:var(--primary);}
+  .lk-body .btn.main{background:var(--primary);border-color:var(--primary);color:white;}
+  .lk-body input[type=file]{display:none;}
+  .lk-body textarea{width:100%;min-height:60px;padding:8px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;}
+  .lk-body select{max-width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;}
+  .lk-body .spec{width:120px;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;}
+  .badge-add{display:inline-block;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;}
+  .del{cursor:pointer;color:var(--gray-400);font-size:11px;margin-left:6px;}
+  .del:hover{color:#DC2626;}
   #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--gray-800);color:white;padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:all .2s;z-index:20;}
   #toast.show{opacity:1;transform:translateX(-50%);}
   footer{text-align:center;font-size:11px;color:var(--gray-400);padding:8px 16px 28px;}
@@ -81,6 +96,20 @@
     </div>
   </div>
 
+  <details class="card lk" id="lk">
+    <summary>🔎 表にない楽天ジャンルIDを調べる（楽天・Yahooのカテゴリ一覧から候補を出す）</summary>
+    <div class="lk-body">
+      楽天の「ジャンルID,パス名」の一覧と、Yahooの「id,name,path_name,relation」の一覧（どちらもCSV）を読み込み、下に楽天のジャンルIDを入れると、名前の近いYahooカテゴリの候補を出します。<b>候補は自動で決めた目安</b>です（既存の対応表で試すと、第1候補が正解になるのは約5割）。正しいものを選んで「追加」してください。追加した分は、<b>このブラウザだけ</b>に記憶され、表に出ます（一覧そのものは覚えません）。共通の表に入れたいものは、「CSV行をコピー」して、担当に送ってください。
+      <div class="row">
+        <label class="btn">📄 楽天のジャンル一覧 <span id="stR"></span><input type="file" accept=".csv,.txt" id="fR"></label>
+        <label class="btn">📄 Yahooのカテゴリ一覧 <span id="stY"></span><input type="file" accept=".csv,.txt" id="fY"></label>
+      </div>
+      <textarea id="lkIds" placeholder="楽天のジャンルIDを入れる（複数は改行・カンマ・スペース区切り）　例：301714"></textarea>
+      <div class="row"><button class="btn main" id="lkGo" type="button">候補を探す</button></div>
+      <div class="table-wrap" id="lkOut"></div>
+    </div>
+  </details>
+
   <div class="card">
     <div class="table-wrap">
       <table class="data-table">
@@ -100,7 +129,7 @@
 
 <script src="data.js?v=3"></script>
 <script>
-const APP_VERSION = 3;
+const APP_VERSION = 4;
 document.getElementById('verBadge').textContent = 'v' + APP_VERSION;
 
 // 検索用に正規化：全角英数→半角、カタカナ→ひらがな、小文字
@@ -110,10 +139,17 @@ function norm(s){
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const ROWS = CODE_TABLE.map(([gid, path, ycat, yname, specs]) => ({
-  gid, path, ycat, yname, specs,
-  key: norm([gid, path, ycat, yname, specs.join(' ')].join(' '))
-}));
+// このブラウザだけに追加した分（rakuten-yahoo も同じ保存先を読む）
+const ADD_KEY = 'ec_genre_added_v1';
+function loadAdded(){ try { const a = JSON.parse(localStorage.getItem(ADD_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function saveAdded(a){ try { localStorage.setItem(ADD_KEY, JSON.stringify(a)); } catch (e) {} }
+const mkRow = (r, added) => { const [gid, path, ycat, yname, specs] = r; return { gid, path, ycat, yname, specs, added, key: norm([gid, path, ycat, yname, specs.join(' ')].join(' ')) }; };
+let ROWS = [];
+function buildRows(){
+  const have = new Set(CODE_TABLE.map(r => r[0]));
+  ROWS = CODE_TABLE.map(r => mkRow(r, false)).concat(loadAdded().filter(r => !have.has(r[0])).map(r => mkRow(r, true)));
+}
+buildRows();
 
 // 検索語に当たる部分を目立たせる（正規化で文字数が変わらない前提：NFKCで長さが変わる文字は対象外にする）
 function hl(text, terms){
@@ -144,7 +180,7 @@ function render(){
     const parent = i >= 0 ? r.path.slice(0, i).replace(/>/g, ' › ') : '';
     const leaf = i >= 0 ? r.path.slice(i + 1) : r.path;
     return `<tr>
-      <td data-l="楽天ジャンルID">${codeBtn(r.gid, 'r', terms, '楽天ジャンルID')}</td>
+      <td data-l="楽天ジャンルID">${codeBtn(r.gid, 'r', terms, '楽天ジャンルID')}${r.added ? `<span class="badge-add">追加</span><span class="del" data-del="${esc(r.gid)}" title="この追加を削除">✕削除</span>` : ''}</td>
       <td>${parent ? `<div class="path">${hl(parent, terms)}</div>` : ''}<div class="leaf">${hl(leaf, terms)}</div></td>
       <td data-l="Yahooカテゴリ">${codeBtn(r.ycat, 'y', terms, 'Yahoo product-category')}</td>
       <td data-l="Yahoo名">${hl(r.yname, terms)}</td>
@@ -153,6 +189,12 @@ function render(){
   }).join('');
   document.getElementById('cnt').textContent = list.length;
   document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+  // 数字だけの検索で見つからないときは、調べる欄を開いてIDを入れておく
+  const nums = terms.filter(w => /^\d{5,}$/.test(w));
+  if (!list.length && nums.length && nums.length === terms.length){
+    document.getElementById('lk').open = true;
+    if (!lkIds.value.trim()) lkIds.value = nums.join('\n');
+  }
 }
 
 let toastTimer;
@@ -175,6 +217,8 @@ async function copyText(text){
   }
 }
 document.getElementById('tb').addEventListener('click', async e => {
+  const d = e.target.closest('.del');
+  if (d){ saveAdded(loadAdded().filter(r => r[0] !== d.dataset.del)); buildRows(); document.getElementById('total').textContent = ROWS.length; render(); toast('削除しました'); return; }
   const el = e.target.closest('.code');
   if (!el) return;
   if (await copyText(el.dataset.copy)){
@@ -183,6 +227,94 @@ document.getElementById('tb').addEventListener('click', async e => {
     toast('コピーしました：' + el.dataset.copy);
   } else {
     toast('コピーできませんでした');
+  }
+});
+
+
+// ---------- 表にないジャンルIDの候補探し（楽天・Yahooの一覧は覚えない） ----------
+const lkIds = document.getElementById('lkIds');
+const GM = { R: null, Y: null, cache: null };
+function parseCSV(t){
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++){
+    const c = t[i];
+    if (q){ if (c === '"'){ if (t[i+1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ row.push(f); f = ''; }
+    else if (c === '\n'){ row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f || row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+function decodeBuf(buf){
+  try { return new TextDecoder('utf-8', {fatal: true}).decode(buf).replace(/^﻿/, ''); }
+  catch (e) { return new TextDecoder('shift_jis').decode(buf); }
+}
+function gnorm(t){
+  return String(t || '').normalize('NFKC').replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).toLowerCase().replace(/[\s、，,・･\/／()（）\-ー_]/g, '');
+}
+function ggrams(t){
+  const s = gnorm(t), m = {}; let n = 0;
+  if (s.length < 2) { m[s] = 1; return {m, n: 1}; }
+  for (let i = 0; i < s.length - 1; i++){ const g = s.substr(i, 2); m[g] = (m[g] || 0) + 1; n++; }
+  return {m, n};
+}
+function gsim(a, b){
+  let inter = 0; for (const g in a.m) if (b.m[g]) inter += Math.min(a.m[g], b.m[g]);
+  return 2 * inter / Math.max(1, a.n + b.n);
+}
+function candidates(rpath, k){
+  if (!GM.cache) GM.cache = GM.Y.map(y => ({y, leaf: ggrams(y.path[y.path.length - 1]), name: ggrams(y.name), full: ggrams(y.path.join(' '))}));
+  const leaf = ggrams(rpath[rpath.length - 1]), full = ggrams(rpath.join(' '));
+  const out = GM.cache.map(c => ({y: c.y, score: 0.65 * Math.max(gsim(leaf, c.leaf), gsim(leaf, c.name)) + 0.35 * gsim(full, c.full)}));
+  out.sort((a, b) => b.score - a.score);
+  return out.slice(0, k);
+}
+function readFile(file, kind){
+  const fr = new FileReader();
+  fr.onload = () => {
+    const rows = parseCSV(decodeBuf(fr.result));
+    if (kind === 'R'){ GM.R = {}; rows.slice(1).forEach(r => { if (r[0]) GM.R[r[0].trim()] = String(r[1] || '').split('>').map(t => t.trim()); }); document.getElementById('stR').textContent = '✅ ' + Object.keys(GM.R).length + '件'; }
+    else { GM.Y = rows.slice(1).filter(r => r[0]).map(r => ({id: r[0].trim(), name: r[1] || '', path: String(r[2] || r[1] || '').split(' > ').map(t => t.trim())})); GM.cache = null; document.getElementById('stY').textContent = '✅ ' + GM.Y.length + '件'; }
+  };
+  fr.readAsArrayBuffer(file);
+}
+document.getElementById('fR').addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0], 'R'); });
+document.getElementById('fY').addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0], 'Y'); });
+document.getElementById('lkGo').addEventListener('click', () => {
+  const out = document.getElementById('lkOut');
+  if (!GM.R || !GM.Y){ out.innerHTML = '<div class="empty">先に、楽天とYahooの一覧を、どちらも読み込んでください</div>'; return; }
+  const ids = [...new Set((lkIds.value.match(/\d{3,}/g) || []))];
+  if (!ids.length){ out.innerHTML = '<div class="empty">楽天のジャンルIDを入れてください</div>'; return; }
+  const byId = new Map(ROWS.map(r => [r.gid, r]));
+  out.innerHTML = '<table class="data-table"><thead><tr><th>楽天ジャンルID／パス</th><th>Yahooの候補（近い順）</th><th>spec_id</th><th></th></tr></thead><tbody>' + ids.map(gid => {
+    const have = byId.get(gid);
+    if (have) return `<tr><td>${esc(gid)}</td><td colspan="3">すでに表にあります：Yahoo ${esc(have.ycat)}（${esc(have.yname)}）</td></tr>`;
+    const rp = GM.R[gid];
+    if (!rp) return `<tr><td>${esc(gid)}</td><td colspan="3">楽天の一覧に、このIDが見つかりません</td></tr>`;
+    const c = candidates(rp, 5);
+    return `<tr data-gid="${esc(gid)}" data-path="${esc(rp.join('>'))}"><td><b>${esc(gid)}</b><div class="path">${esc(rp.join(' › '))}</div></td>
+      <td><select class="sel">${c.map(x => `<option value="${esc(x.y.id + '|' + x.y.path[x.y.path.length - 1])}">${esc(x.y.id + '（近さ ' + Math.round(x.score * 100) + '％）' + x.y.path.join(' › '))}</option>`).join('')}</select></td>
+      <td><input class="spec" value="10011" title="スペックID（複数は : か空白で区切る）"></td>
+      <td><button class="btn main add" type="button">追加</button> <button class="btn csv" type="button">CSV行をコピー</button></td></tr>`;
+  }).join('') + '</tbody></table>';
+});
+function rowFromTr(tr){
+  const [ycat, yname] = tr.querySelector('.sel').value.split('|');
+  const specs = tr.querySelector('.spec').value.split(/[\s:：、,，]+/).filter(Boolean);
+  return [tr.dataset.gid, tr.dataset.path, ycat, yname, specs.length ? specs : ['10011']];
+}
+document.getElementById('lkOut').addEventListener('click', async e => {
+  const tr = e.target.closest('tr[data-gid]'); if (!tr) return;
+  if (e.target.classList.contains('add')){
+    const r = rowFromTr(tr), a = loadAdded().filter(x => x[0] !== r[0]); a.push(r); saveAdded(a);
+    buildRows(); document.getElementById('total').textContent = ROWS.length; render();
+    e.target.textContent = '✅ 追加済み'; toast('追加しました（このブラウザだけ）');
+  } else if (e.target.classList.contains('csv')){
+    const r = rowFromTr(tr), p = r[1].replace(/,/g, '、');
+    const text = r[4].map(s => [r[0], p, r[2], r[3], s].join(',')).join('\n');
+    toast(await copyText(text) ? 'CSV行をコピーしました' : 'コピーできませんでした');
   }
 });
 
