@@ -386,6 +386,18 @@ function checkReady() {
   }
 }
 
+// ========== 品番の照合（末尾ハイフンの有無だけの違いは同じ商品とみなす） ==========
+// GoQの基本コードと楽天の商品管理番号で「elco-mtp201」と「elco-mtp201-」のように
+// 末尾ハイフンの有無が揺れていることがあるため、どちらの表記でも一致させる
+function goqMatch(code) {
+  if (goqCodes.has(code)) return code;
+  const alt = code.endsWith('-') ? code.slice(0, -1) : code + '-';
+  return goqCodes.has(alt) ? alt : null;
+}
+function hasCodeOrVariant(set, code) {
+  return set.has(code) || set.has(code.endsWith('-') ? code.slice(0, -1) : code + '-');
+}
+
 // ========== Step1: GoQ itemdata 読込 ==========
 async function loadGoq(file) {
   try {
@@ -472,10 +484,16 @@ function doFilter() {
   const { headerRow: ih, dataRows: iRows, keyColIdx: iKey } = rawItem;
   let itemKeptRows = 0;
   const itemRemovedCodes = [];
+  const variantMatches = new Map(); // 楽天の品番 → 一致したGoQの品番（末尾ハイフン違い）
   const keptItem = iRows.filter(row => {
     const code = (row[iKey] || '').trim();
     if (!code) return false;
-    if (goqCodes.has(code)) { itemKeptRows++; return true; }
+    const g = goqMatch(code);
+    if (g) {
+      itemKeptRows++;
+      if (g !== code) variantMatches.set(code, g);
+      return true;
+    }
     if (!itemRemovedCodes.includes(code)) itemRemovedCodes.push(code);
     return false;
   });
@@ -488,6 +506,7 @@ function doFilter() {
     return r;
   })];
   log(`✅ 残：${itemKeptRows}行 / ${itemKeptUnique}商品　削除：${itemRemovedCodes.length}商品`, 'log-ok');
+  variantMatches.forEach((g, c) => log(`ℹ️ 末尾ハイフン違いで一致：GoQ「${g}」 ↔ 楽天「${c}」`, 'log-info'));
   if (itemRemovedCodes.length > 0) {
     const show = itemRemovedCodes.slice(0, 20);
     show.forEach(c => log(`　　削除品番：${c}`, 'log-warn'));
@@ -502,10 +521,16 @@ function doFilter() {
     log('🗂️ dl-item-cat を処理中...', 'log-info');
     const { headerRow: ch, dataRows: cRows, keyColIdx: cKey } = rawCat;
     let catKeptRows = 0;
+    const catVariantMatches = new Map();
     const keptCat = cRows.filter(row => {
       const code = (row[cKey] || '').trim();
       if (!code) return false;
-      if (goqCodes.has(code)) { catKeptRows++; return true; }
+      const g = goqMatch(code);
+      if (g) {
+        catKeptRows++;
+        if (g !== code) catVariantMatches.set(code, g);
+        return true;
+      }
       if (!catRemovedCodes.includes(code)) catRemovedCodes.push(code);
       return false;
     });
@@ -517,13 +542,14 @@ function doFilter() {
       return r;
     })];
     log(`✅ 残：${catKeptRows}行 / ${catKeptUnique}商品　削除：${catRemovedCodes.length}商品`, 'log-ok');
+    catVariantMatches.forEach((g, c) => log(`ℹ️ 末尾ハイフン違いで一致：GoQ「${g}」 ↔ 楽天「${c}」`, 'log-info'));
     if (catRemovedCodes.length > 0) {
       const show = catRemovedCodes.slice(0, 20);
       show.forEach(c => log(`　　削除品番：${c}`, 'log-warn'));
       if (catRemovedCodes.length > 20) log(`　　…他 ${catRemovedCodes.length - 20}件`, 'log-warn');
     }
     const allCatCodes = new Set(cRows.map(r => (r[cKey] || '').trim()));
-    const notInCat    = [...goqCodes].filter(c => c && !allCatCodes.has(c));
+    const notInCat    = [...goqCodes].filter(c => c && !hasCodeOrVariant(allCatCodes, c));
     if (notInCat.length) log(`⚠️ GoQにあるがdl-item-catに存在しない品番：${notInCat.join('、')}`, 'log-warn');
     logSep();
   } else {
@@ -533,7 +559,7 @@ function doFilter() {
 
   // GoQにあるが楽天に存在しない品番
   const allItemCodes = new Set(iRows.map(r => (r[iKey] || '').trim()));
-  const notInItem    = [...goqCodes].filter(c => c && !allItemCodes.has(c));
+  const notInItem    = [...goqCodes].filter(c => c && !hasCodeOrVariant(allItemCodes, c));
   if (notInItem.length) log(`⚠️ GoQにあるがdl-normal-itemに存在しない品番：${notInItem.join('、')}`, 'log-warn');
 
   log('🎉 完了！ダウンロードボタンからCSVを保存してください。', 'log-ok');
