@@ -4,7 +4,7 @@
 
 - 公開先（予定）：https://elcommun.github.io/app/rakuten-yahoo/
 - 構成：`index.html` 1ファイルのみ（HTML／CSS／JSをすべて内包。ビルド不要）
-- 現在のバージョン：`APP_VERSION = 38`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
+- 現在のバージョン：`APP_VERSION = 39`（v2でオプション・在庫CSVを追加、v4で画面を整理、v5で納期の確認を追加）
 
 このファイルは、Claudeのチャットで作成した初版をClaude Codeに引き継ぐためのメモです。
 
@@ -202,3 +202,7 @@ PC（caption）・スマホ（sp-additional）とも、薄い罫線（`SPEC_LINE
 
 ### 商品名末尾の「TRONCO」も削除しない（v38）
 - 【発送までに …】と同じく、商品名の末尾の「TRONCO」も短縮で削除せず、外して短縮してから付け直す（`convName`）。
+
+### TRONCOの予約商品は postage-set=8・lead-time-instock=2（v39）
+- 商品名に「TRONCO」を含み、楽天の在庫あり時の納期（出荷リードタイム）の列に「予約商品」を含む商品は、配送パターンに関わらず `postage-set=8`・`lead-time-instock=2` にする（`convertAll` の `tronco`）。ship-weight は通常の配送パターンのまま。納期の確認一覧には出さない。
+- 判定する列は、見出しに「在庫あり時」と（「納期」か「リードタイム」）を含む列。`在庫あり時納期管理番号` が数字だけの CSV では「予約商品」の文字が無いため当てはまらない。
