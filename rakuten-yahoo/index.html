@@ -831,10 +831,16 @@ function convertAll(rakRows, catRows, cfg) {
     if (prices.some(function (p) { return p !== prices[0]; })) warn(code, 'SKUごとに価格が異なります（先頭SKUの ' + prices[0] + ' 円を採用）');
     if (!keys.length && G.skus.length === 1) { var jan = g(sku0, 'カタログID'); if (/^\d{8,13}$/.test(jan)) o.jan = jan; }
     var sh = shippingFor(g(sku0, '配送方法セット管理番号'), g(sku0, '送料区分1'));
-    if (sh) { o['ship-weight'] = sh.w; o['postage-set'] = sh.p; notes.push('配送：' + sh.label); }
+    // 商品名に「TRONCO」を含み、在庫あり時の納期（出荷リードタイム）に「予約商品」を含む → postage-set=8・lead-time-instock=2
+    var tronco = false;
+    if (/TRONCO/i.test(g(it, '商品名'))) {
+      [it, sku0].forEach(function (r) { Object.keys(ix).forEach(function (k) { if (/在庫あり時/.test(k) && /納期|リードタイム/.test(k) && /予約商品/.test(g(r, k))) tronco = true; }); });
+    }
+    if (tronco) { o['postage-set'] = '8'; if (sh) o['ship-weight'] = sh.w; notes.push('TRONCO予約商品：postage-set=8・lead-time-instock=2'); }
+    else if (sh) { o['ship-weight'] = sh.w; o['postage-set'] = sh.p; notes.push('配送：' + sh.label); }
     else res.noShip.push(code + '（配送セット「' + g(sku0, '配送方法セット管理番号') + '」・送料区分「' + g(sku0, '送料区分1') + '」）');
     var rakLead = g(it, '在庫あり時納期管理番号') || g(sku0, '在庫あり時納期管理番号');
-    o['lead-time-instock'] = LEAD_MAP[rakLead] || '1000'; o['lead-time-outstock'] = '';
+    o['lead-time-instock'] = tronco ? '2' : (LEAD_MAP[rakLead] || '1000'); o['lead-time-outstock'] = '';
     o['keep-stock'] = '0'; o.taxable = '1'; o.delivery = '0'; o.condition = '0';
     o['taxrate-type'] = g(it, '消費税率') || '0.1';
     o.display = g(it, '倉庫指定') === '1' ? '0' : '1';
@@ -909,7 +915,7 @@ function convertAll(rakRows, catRows, cfg) {
       res.lib[v.imgName] = imgUrl(v.imgPath, v.imgType);
     });
 
-    res.items.push({ code: code, out: o, notes: notes, srcName: g(it, '商品名'), rakLead: rakLead, specKeys: specKeys, single: single, freeOpts: freeOpts, varRows: varRows });
+    res.items.push({ code: code, out: o, notes: notes, srcName: g(it, '商品名'), rakLead: rakLead, specKeys: specKeys, single: single, tronco: tronco, freeOpts: freeOpts, varRows: varRows });
   });
   return res;
 }
@@ -1229,7 +1235,7 @@ function pvInit() {
 /* 在庫あり時納期：楽天の値が 1000 でない商品（予約商品の可能性）を確認・一括変更 */
 var LEAD_NORMAL = ['1000', '4'];  // 通常の納期管理番号（これ以外は予約商品の可能性）
 var LEAD_MAP = { '2': '2' };      // 楽天の値 → Yahooの lead-time-instock（決まった変換。確認一覧には出さない）
-function leadItems() { return result.items.filter(function (it) { return it.rakLead && LEAD_NORMAL.indexOf(it.rakLead) < 0 && !(it.rakLead in LEAD_MAP); }); }
+function leadItems() { return result.items.filter(function (it) { return !it.tronco && it.rakLead && LEAD_NORMAL.indexOf(it.rakLead) < 0 && !(it.rakLead in LEAD_MAP); }); }
 function renderLead() {
   var list = leadItems(), keep = {};
   Array.prototype.forEach.call($('leadBody').querySelectorAll('input[type=checkbox]'), function (c) { keep[c.getAttribute('data-code')] = c.checked; });
