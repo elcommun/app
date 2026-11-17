@@ -315,7 +315,7 @@
       </div>
       <div class="tab-content" id="tabText">
         <div class="rule-box">
-          <b>商品名（全角75文字）</b>：先頭の【】は残し、＼…／などの装飾を削除。「｜」はスペースに。（週間ホリゾンタル）（月間ブロック）（週間ブロック・日記帳）を削除。超える場合は『A｜B』→『A』、』より後ろの検索ワードを後ろから順に削除。<br>
+          <b>商品名（全角75文字）</b>：【発送までに…】（例：約7-10営業日）は絶対に削除せず、残りを短縮して末尾に付ける。先頭の【】は残し、＼…／などの装飾を削除。「｜」はスペースに。（週間ホリゾンタル）（月間ブロック）（週間ブロック・日記帳）を削除。超える場合は『A｜B』→『A』、』より後ろの検索ワードを後ろから順に削除。<br>
           <b>キャッチコピー（全角30文字）</b>：【ゆうメール便・送料無料】→【メール便・送料無料】<br>
           <b>説明文</b>：関連ワード・メール便の注意事項の行を削除（PC用は関連カテゴリも削除）。お手入れの定型注意文を削除。サイズ・重量・仕様などのスペックは残します。<br>
           <b>リンク</b>：商品リンク→store.shopping.yahoo.co.jp/ストアアカウント/商品コード.html、カテゴリリンク→内蔵のリンク表、特集ページ→shopping.geocities.jp<br>
@@ -640,6 +640,9 @@ function buildExplanation(descText, specLines) {
 /* ---------- 商品名 ---------- */
 function convName(name, limit) {
   var s = String(name || '').replace(/[\r\n]+/g, ' ').trim();
+  // 【発送までに 約7-10営業日】は絶対に削らない（外して短縮し、最後に付け直す）
+  var ship = '', sm = /[ 　]*【発送までに[^】]*】/.exec(s);
+  if (sm) { ship = sm[0].trim(); s = (s.slice(0, sm.index) + ' ' + s.slice(sm.index + sm[0].length)).trim(); }
   var head = '';
   // 先頭の【】は残し、それ以外の装飾（＼…／ など）は削除
   for (;;) {
@@ -652,6 +655,7 @@ function convName(name, limit) {
   NAME_DROP.forEach(function (d) { s = s.split(d).join(''); });
   var norm = function (t) { return (head + t).replace(/｜/g, ' ').replace(/[ 　]{2,}/g, ' ').trim(); };
   var steps = [];
+  if (ship) { var lim0 = limit, shw = width(' ' + ship); limit = limit - shw; }
   if (width(norm(s)) > limit) { s = s.replace(/『([^｜』]+)｜[^』]*』/g, '『$1』'); steps.push('『』内の｜以降を削除'); }
   if (width(norm(s)) > limit && s.indexOf('』') >= 0) {
     var i = s.lastIndexOf('』') + 1, pre = s.slice(0, i), rest = s.slice(i), lead = /^[ 　]*/.exec(rest)[0];
@@ -665,7 +669,9 @@ function convName(name, limit) {
     while (w.length > 1 && width(norm(w.join(' '))) > limit) w.pop();
     s = w.join(' '); steps.push('末尾の検索ワードを削除');
   }
-  return { text: norm(s), steps: steps };
+  var outName = norm(s);
+  if (ship) outName = (outName + ' ' + ship).trim();
+  return { text: outName, steps: steps };
 }
 
 /* ---------- 配送（Yahoo data_add 配送補完ツールと同じ6パターン） ---------- */
@@ -1062,7 +1068,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 36;
+var APP_VERSION = 37;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',
