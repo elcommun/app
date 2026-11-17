@@ -217,7 +217,7 @@
       </div>
 
       <details class="fold" id="leadFold" style="display:none"><summary>在庫あり時納期の確認 <span class="badge badge-orange" id="leadCount">0</span></summary>
-        <p class="hint">楽天の「在庫あり時納期管理番号」が <b>1000 と 4 以外</b>の商品です（予約商品の可能性）。初期値は固定値の 1000 です。商品ごとに直すか、チェックした商品へ一括で変更できます。</p>
+        <p class="hint">楽天の「在庫あり時納期管理番号」が <b>1000・4・2 以外</b>の商品です（予約商品の可能性。2 は自動で 2 に変換）。初期値は固定値の 1000 です。商品ごとに直すか、チェックした商品へ一括で変更できます。</p>
         <div class="lead-bulk">
           <label class="check"><input type="checkbox" id="leadAll" checked> すべて選択</label>
           <span>選択した商品を</span><input type="text" id="leadVal" value="1000" class="lead-in">
@@ -309,7 +309,7 @@
             <tr><td>price／jan</td><td>通常購入販売価格／カタログID</td><td>jan はバリエーションなしの商品のみ</td></tr>
             <tr><td>product-category／spec</td><td>ジャンルID、商品属性</td><td>内蔵の対応表から設定。値IDが未登録の spec は空欄＋警告</td></tr>
             <tr><td>brand-code／product-code</td><td>商品コード、カテゴリ</td><td>「cal-」で始まる商品は 64324／11495。そのほかは設定のブランドルール</td></tr>
-            <tr><td>固定値</td><td>—</td><td>lead-time-instock=1000、lead-time-outstock=空白、keep-stock=0、taxable=1、delivery=0、condition=0</td></tr>
+            <tr><td>固定値</td><td>—</td><td>lead-time-instock=1000（楽天の在庫あり時納期管理番号が 2 なら 2）、lead-time-outstock=空白、keep-stock=0、taxable=1、delivery=0、condition=0</td></tr>
           </tbody>
         </table>
       </div>
@@ -833,8 +833,8 @@ function convertAll(rakRows, catRows, cfg) {
     var sh = shippingFor(g(sku0, '配送方法セット管理番号'), g(sku0, '送料区分1'));
     if (sh) { o['ship-weight'] = sh.w; o['postage-set'] = sh.p; notes.push('配送：' + sh.label); }
     else res.noShip.push(code + '（配送セット「' + g(sku0, '配送方法セット管理番号') + '」・送料区分「' + g(sku0, '送料区分1') + '」）');
-    o['lead-time-instock'] = '1000'; o['lead-time-outstock'] = '';
     var rakLead = g(it, '在庫あり時納期管理番号') || g(sku0, '在庫あり時納期管理番号');
+    o['lead-time-instock'] = LEAD_MAP[rakLead] || '1000'; o['lead-time-outstock'] = '';
     o['keep-stock'] = '0'; o.taxable = '1'; o.delivery = '0'; o.condition = '0';
     o['taxrate-type'] = g(it, '消費税率') || '0.1';
     o.display = g(it, '倉庫指定') === '1' ? '0' : '1';
@@ -1073,7 +1073,7 @@ function buildImageScript(itemImages, lib, stamp, maxMb) {
 
 
 /* ================= 画面まわり ================= */
-var APP_VERSION = 38;
+var APP_VERSION = 39;
 var LS_KEY = 'rakuten-yahoo-settings-v1';
 var DEFAULT_SETTINGS = {
   store: 'el-market',
@@ -1228,7 +1228,8 @@ function pvInit() {
 }
 /* 在庫あり時納期：楽天の値が 1000 でない商品（予約商品の可能性）を確認・一括変更 */
 var LEAD_NORMAL = ['1000', '4'];  // 通常の納期管理番号（これ以外は予約商品の可能性）
-function leadItems() { return result.items.filter(function (it) { return it.rakLead && LEAD_NORMAL.indexOf(it.rakLead) < 0; }); }
+var LEAD_MAP = { '2': '2' };      // 楽天の値 → Yahooの lead-time-instock（決まった変換。確認一覧には出さない）
+function leadItems() { return result.items.filter(function (it) { return it.rakLead && LEAD_NORMAL.indexOf(it.rakLead) < 0 && !(it.rakLead in LEAD_MAP); }); }
 function renderLead() {
   var list = leadItems(), keep = {};
   Array.prototype.forEach.call($('leadBody').querySelectorAll('input[type=checkbox]'), function (c) { keep[c.getAttribute('data-code')] = c.checked; });
