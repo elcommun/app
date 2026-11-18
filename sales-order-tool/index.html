@@ -560,8 +560,8 @@ const INIT_HINMEI_RULES = [
   { keyword: 'ペンケース', threshold: 2 },
 ];
 const INIT_HINBAN_RULES = [
-  { keyword: 'ECL-', threshold: 3 },
-  { keyword: 'LLN-', threshold: 3 },
+  { keyword: 'ECL-', threshold: 2 },
+  { keyword: 'LLN-', threshold: 2 },
   { keyword: 'NBA-', threshold: 1 },
   { keyword: 'BBC-', threshold: 5 },
   { keyword: 'BMK-', threshold: 5 },
@@ -1065,6 +1065,8 @@ function _doGenerateMain() {
       // 通常商品：販売実績の平均ベースのみ（予測 − 現在庫 をロット単位に切り上げ）
       const shortage = forecast - currentStock;
       orderQty = shortage > 0 ? Math.ceil(shortage / lotNum) * lotNum : 0;
+      // ポスター（ECL-・LLN-）は在庫2以下なら最低1ロット発注
+      if (/ECL-|LLN-/.test(partCode) && currentStock <= 2) orderQty = Math.max(orderQty, lotNum);
       if (orderQty <= 0) {
         skipOk++;
         log(`✅ 充足: ${partCode}  在庫:${currentStock} ≥ 予測:${forecast.toFixed(1)}（日販${adj.avgPerDay.toFixed(2)}）`, 'log-ok');
