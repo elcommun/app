@@ -330,7 +330,7 @@
 <script id="core">
 'use strict';
 /* ================= 埋め込み定数 ================= */
-const APP_VERSION = 39;
+const APP_VERSION = 40;
 const WOWMA_STORE = '69585078';
 const IMG_BASE = 'https://image.wowma.jp/' + WOWMA_STORE + '/elcommun/cabinet';
 const RAKUTEN_IMG = /https?:\/\/image\.rakuten\.co\.jp\/elcommun\/cabinet/g;
@@ -559,6 +559,7 @@ function buildShopCats(entries, unmappedOut) {
  */
 function convertAll(input, opt) {
   const logs = [], warns = [];
+  const autoGenres = new Map(), fallbackCats = new Map(); /* 警告にはせず、最後にログへまとめて出す */
   const stats = { total: 0, converted: 0, added: 0, updated: 0, skipped: 0, stockRows: 0 };
 
   /* --- 楽天商品CSVを商品単位にグループ化 --- */
@@ -739,7 +740,8 @@ function convertAll(input, opt) {
     if (auCat) o.categoryId = auCat;
     else if (autoCat) {
       o.categoryId = autoCat;
-      itemWarns.push('ジャンルID ' + genre + ' は自動対応（パス名の一致）です。auPAYカテゴリ「' + (AUPAY_CAT_PATH[autoCat] || autoCat) + '」（' + autoCat + '）で合っているか確認してください');
+      const an = autoGenres.get(genre) || { id: autoCat, n: 0 };
+      an.n++; autoGenres.set(genre, an);
     }
     else if (isNew || !o.categoryId) itemWarns.push('ジャンルID ' + (genre || '(空)') + ' に対応するauPAYカテゴリが未登録です（categoryId空欄）');
 
@@ -749,7 +751,7 @@ function convertAll(input, opt) {
       const cats = buildShopCats(catMap.get(id), unmapped);
       if (cats.length > 10) itemWarns.push('店舗内カテゴリが10件を超えるため11件目以降を省略（' + cats.length + '件）');
       for (let n = 1; n <= 10; n++) o['shopCategory' + n] = cats[n-1] || '';
-      [...new Set(unmapped)].forEach(u => itemWarns.push('対応表に無いカテゴリのため、楽天の表示名をそのまま使用: ' + u));
+      [...new Set(unmapped)].forEach(u => fallbackCats.set(u, (fallbackCats.get(u) || 0) + 1));
     } else if (input.cat && isNew) {
       itemWarns.push('店舗内カテゴリ情報がありません');
     }
@@ -840,6 +842,8 @@ function convertAll(input, opt) {
   }
 
   const images = collectImages(input.rak[0], includedRawRows);
+  autoGenres.forEach((a, g) => logs.push('ジャンルID ' + g + ' はパス名の一致で自動対応：auPAYカテゴリ「' + (AUPAY_CAT_PATH[a.id] || a.id) + '」（' + a.id + '）…' + a.n + '商品'));
+  fallbackCats.forEach((n, u) => logs.push('対応表に無い店舗内カテゴリは楽天の表示名のまま出力：' + u + '…' + n + '商品'));
   return { itemRows: [ITEM_HEADER.slice(), ...itemRows], stockRows: [STOCK_HEADER.slice(), ...stockRows], stats, warns, logs, images };
 }
 if (typeof module !== 'undefined') module.exports = { convertAll, parseCSV, toCSV, stripDecoration, convertDesc, buildShopCats, deliveryFor, renameItemOption, collectImages };
@@ -971,6 +975,7 @@ document.getElementById('execBtn').addEventListener('click', () => {
   log('✅ 変換完了：' + s.converted + '商品（すべて新規登録 n・在庫0で出力）、stock ' + s.stockRows + '行', 'log-ok');
   if (s.skipped) log('⏭️ スキップ：' + s.skipped + '商品（楽天で倉庫指定・非公開）', 'log-warn');
   if (!state.cat) log('ℹ️ dl-item-cat.csv 未読み込みのため店舗内カテゴリ（shopCategory）は空欄です', 'log-info');
+  (result.logs || []).forEach(m => log('ℹ️ ' + escHtml(m), 'log-info'));
   others.forEach(w => w.msgs.forEach(m => log('⚠️ ' + escHtml(w.code) + '：' + escHtml(m), 'log-warn')));
 
   document.getElementById('statsGrid').innerHTML =
