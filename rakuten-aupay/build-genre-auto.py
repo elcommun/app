@@ -7,6 +7,8 @@
 - 手作業で確認済みの GENRE_MAP（実績データ由来）は変更しない。自動対応はそれに無いジャンルだけ。
 - パス名の一致で「確実に近いもの」だけを採用する（迷うものは入れない→従来どおり未登録の警告）。
 - このショップに不要そうなジャンル（車・食品・医薬品・CD/DVD・ゲーム・楽器・ゴルフ等）は省く。
+  python3 rakuten-aupay/build-genre-auto.py <csv> <xlsx> --adopt ID,ID,...
+    （確認済みの GENRE_MAP のうち、指定したジャンルIDだけを自動対応の結果に置き換える）
 - 出力: index.html の GENRE_MAP_AUTO（ジャンルID→auPAYカテゴリID）と AUPAY_CAT_PATH（そのIDのパス名）
 """
 import csv, json, re, sys, unicodedata, zipfile
@@ -77,7 +79,7 @@ KEEP_SECOND = {
 DROP_SECOND = {'日用品雑貨・文房具・手芸': {'宗教用品'}}
 
 
-def main(rk_path, au_path):
+def main(rk_path, au_path, adopt=()):
     au = [r for r in read_xlsx(au_path)[1:] if 'A' in r and 'B' in r]
     nodes = {r['A']: r['B'].split('>') for r in au}
     paths = set('>'.join(p) for p in nodes.values())
@@ -156,6 +158,20 @@ def main(rk_path, au_path):
         if d:
             out[g] = d
 
+    adopted = {}
+    for g in adopt:
+        d = decide(rk[g].split('>'))
+        if not d:
+            sys.exit('自動対応の答えが出ないジャンルです: ' + g)
+        adopted[g] = d
+    if adopted:
+        km = re.search(r'const GENRE_MAP = (\{[^;]*\});', html)
+        known.update(adopted)
+        known = dict(sorted(known.items(), key=lambda kv: int(kv[0])))
+        html = html[:km.start(1)] + json.dumps(known, ensure_ascii=False, separators=(',', ':')) + html[km.end(1):]
+        for g, i in adopted.items():
+            print('置き換え', g, rk[g], '=>', ':'.join(nodes[i]), i)
+
     used = sorted(set(out.values()), key=int)
     paths_out = {i: ':'.join(nodes[i]) for i in used}
     out = dict(sorted(out.items(), key=lambda kv: int(kv[0])))
@@ -170,4 +186,5 @@ def main(rk_path, au_path):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    adopt = sys.argv[4].split(',') if len(sys.argv) > 4 and sys.argv[3] == '--adopt' else ()
+    main(sys.argv[1], sys.argv[2], adopt)
