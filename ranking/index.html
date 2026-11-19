@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v392</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v393</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -1024,6 +1024,8 @@ const CODE_PREFIX_TO_CAT=[
   {prefix:'RBB-',cat:'ライトスポーツ'},{prefix:'PGB-',cat:'ライトスポーツ'},
   // スマイルシリーズ: ポーチはポーチ・ケース、それ以外はその他
   {prefix:'SM-0',cat:'ポーチ・ケース'},
+  // mayako shinohara（2026-11-19 新ブランド）: キャンバストート・ミニ巾着はバッグ類、刺繍ブローチはブローチ（ペンケース・ポーチは生カテゴリのまま）
+  {prefix:'SMY-0',cat:'バッグ類'},{prefix:'SMY-1',cat:'バッグ類'},{prefix:'SMY-4',cat:'ブローチ'},
 ];
 // Rename old/broken codes to correct codes
 const CODE_REMAP={'WCL-017WCL-018':'WCL-018','B6-1J7F-DA1E':'CPC-004',
@@ -3998,6 +4000,17 @@ const TRANS_GROUPS=[
 ['medetai','めでたい','おめでたい','目出度い'],
 ['fukurou','ふくろう','梟','Owl'],
 ['箸箱','お箸箱','はしばこ','Chopstick Case'],
+// 2026-11-19 追加（11/13〜11/18 新商品）
+['Mayako Shinohara','mayako','shinohara','マヤコ','まやこ','シノハラ','しのはら','篠原'],
+['Canvas Tote','キャンバストート','帆布トート'],
+['Sea Otter','ラッコ','らっこ','Rakko'],
+['Polar Bear','シロクマ','白熊','しろくま'],
+['刺繍','ししゅう','Embroidery','Embroidered'],
+['Triple Pocket','トリプルポケット'],
+['Tissue Cover','ティッシュカバー','ティッシュケース'],
+['Blanche','ブランシュ'],
+['Dark Green','ダークグリーン','深緑'],
+['追いかけっこ','おいかけっこ','Oikakekko','Chase'],
 ];
 for(const g of TRANS_GROUPS){
   const ng=g.map(normalize);
