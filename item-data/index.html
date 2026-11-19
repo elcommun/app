@@ -563,7 +563,7 @@
   </div>
   <div class="header-line"></div>
   <span class="header-tag">EL COMMUN</span>
-  <span class="header-tag" style="font-size:9px;opacity:.35;">v2026-10-27</span>
+  <span class="header-tag" style="font-size:9px;opacity:.35;">v2026-11-19</span>
 </header>
 
 <!-- ── Page ── -->
@@ -1070,7 +1070,7 @@ function extractProductCode(pn, store) {
   // ③ elco- 自社商品
   if (/^elco-/i.test(pn)) {
     // 括弧あり → 括弧内コードを優先
-    const bm = pn.match(/[（(]([A-Z]+-\d+)[）)]/);
+    const bm = pn.match(/[（(]([0-9A-Z]+(?:-[0-9A-Z]+)*-\d+)[）)]/);
     if (bm) {
       const c = bm[1];
       return normalizeCode(/^MC-\d+$/.test(c) ? 'DR-' + c : c);
@@ -1090,7 +1090,7 @@ function extractProductCode(pn, store) {
 
   // ④ auPAY 括弧コード (elco- 以外)
   if (auPAY || pn.includes('（') || pn.includes('(')) {
-    const bm = pn.match(/[（(]([A-Z]+-\d+)[）)]/);
+    const bm = pn.match(/[（(]([0-9A-Z]+(?:-[0-9A-Z]+)*-\d+)[）)]/);
     if (bm) {
       const c = bm[1];
       return normalizeCode(/^MC-\d+$/.test(c) ? 'DR-' + c : c);
