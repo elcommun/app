@@ -7,6 +7,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="../ec-inventory/genka_master.js"></script>
 <script src="../item-data/search-codes.js?v=6"></script>
+<script>window.__supReady=new Promise(function(r){window.__supDone=r;});</script>
+<script src="../supplier-ranking/data.js" async onload="__supDone(true)" onerror="__supDone(false)"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -157,6 +159,12 @@
   .unlink-h{font-size:.86rem;font-weight:700;color:var(--amber);display:flex;align-items:center;gap:7px}
   .unlink p{font-size:.78rem;color:var(--text);margin-top:4px;line-height:1.7}
   .unlink .prev-wrap{margin-top:10px;max-height:260px;background:var(--surface)}
+  .mknote{margin-top:16px;padding:14px 16px;border:1px solid var(--blue-border);background:var(--blue-dim);border-radius:var(--radius-sm)}
+  .mknote-h{font-size:.84rem;font-weight:700;color:var(--blue)}
+  .mknote p{font-size:.78rem;color:var(--text);margin-top:4px;line-height:1.7}
+  .mknote .prev-wrap{margin-top:10px;max-height:220px;background:var(--surface)}
+  .mknote details{margin-top:12px}
+  .mknote summary{font-size:.8rem;font-weight:600;color:var(--blue);cursor:pointer}
   .tab .n{font-family:var(--mono);font-size:.72rem;background:var(--bg2);padding:1px 6px;border-radius:999px;margin-left:6px}
 
   .prev-wrap{margin-top:12px;max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
@@ -187,7 +195,7 @@
   <div class="topbar">
     <div class="brand">
       <h1><span class="logo"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>EC販売データ振り分け</h1>
-      <div class="sub">受注CSVを自社商品／メーカー商品に自動判定して2ファイル生成 <span class="ver">v9</span></div>
+      <div class="sub">受注CSVを自社商品／メーカー商品に自動判定して2ファイル生成 <span class="ver">v10</span></div>
     </div>
     <button class="theme-btn" id="themeBtn" title="テーマ切替">
       <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
@@ -263,6 +271,19 @@
         <div class="prev-wrap" id="unlinkList"></div>
       </div>
 
+      <div class="mknote hidden" id="mkNoteBox">
+        <div id="mkFixWrap">
+          <div class="mknote-h">🔁 メーカー商品の商品番号を、楽天などと同じ表記にそろえました（<span id="mkFixCount">0</span>）</div>
+          <p>auPAYマーケット店などは「管理番号-バリエーション名（SKUコード）」の形で届くため、仕入れ販売データ（supplier-ranking）に登録済みの「管理番号-SKUコード」の形に変換しています。</p>
+          <div class="prev-wrap" id="mkFixList"></div>
+        </div>
+        <details id="mkNewWrap">
+          <summary>仕入れ販売データにまだ無い商品番号（<span id="mkNewCount">0</span>）— 新商品、または店舗ごとの表記違いの可能性</summary>
+          <p>表記違いの場合、supplier-ranking に取り込むと別の商品として集計されます。心当たりのない商品番号があれば確認してください。</p>
+          <div class="prev-wrap" id="mkNewList"></div>
+        </details>
+      </div>
+
       <div class="dlrow">
         <a class="dl own" id="dlOwnBtn" href="#" download>
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -273,7 +294,7 @@
           <span class="dl-label">メーカー変換<small>XLSX・supplier-ranking用</small></span>
         </a>
       </div>
-      <a class="subtle-link" id="confirmDlBtn" href="#" download>確認用（自社・商品データ未紐付け／掛け率未設定／商品番号空）をまとめてExcelダウンロード</a>
+      <a class="subtle-link" id="confirmDlBtn" href="#" download>確認用（自社・商品データ未紐付け／メーカー商品番号の変換・未登録／掛け率未設定／商品番号空）をまとめてExcelダウンロード</a>
 
       <div class="tabs">
         <div class="tab on" data-tab="own">自社プレビュー <span class="n" id="ownTabN">0</span></div>
@@ -489,6 +510,53 @@ function makerFor(pn){
   const low=(pn||'').trim().toLowerCase();
   for(const k of MAKER_KEYS){if(low.startsWith(k))return MAKER_MAP[k];}
   return ['',''];
+}
+/* ---------- メーカー商品番号の表記そろえ（auPAY など） ---------- */
+// 仕入れ販売データ（supplier-ranking/data.js）の登録済み商品番号。照合に使うだけで書き換えない
+let SUP_CODES=new Set(),SUP_PREFIX=new Set(),SUP_LOADED=false;
+function loadSupplierCodes(){
+  SUP_CODES=new Set();SUP_PREFIX=new Set();SUP_LOADED=false;
+  try{
+    if(typeof PRELOADED==='undefined'||!PRELOADED.products)return;
+    for(const k in PRELOADED.products){
+      const c=String(PRELOADED.products[k][3]||'').trim().toLowerCase();
+      if(!c)continue;
+      SUP_CODES.add(c);
+      const i=c.lastIndexOf('-'); if(i>0)SUP_PREFIX.add(c.slice(0,i));
+    }
+    SUP_LOADED=SUP_CODES.size>0;
+  }catch(e){}
+}
+// 照合用のキー（supplier-ranking/index.html の normalizeApjCode と同じ読み替え。変えるときは両方そろえる）
+function supLookupKey(c){
+  c=String(c||'').trim();
+  if(/^apj-mgt-/i.test(c))c=c.replace(/^apj-/i,'');
+  else if(/^(af|wf)\d/i.test(c)){const m=c.match(/^(af|wf)(\d+)[x_](\d+)/i);c=m?`apj-${m[1].toLowerCase()}${m[2]}_${m[3]}`:'apj-'+c;}
+  else if(/^apj-/i.test(c))c=c.replace(/(\d)x(\d)/gi,'$1_$2');
+  return c.toLowerCase();
+}
+// メーカー商品の商品番号を、楽天などと同じ「管理番号-SKUコード」の形にそろえる
+function normalizeMakerPn(pn,store){
+  const t=String(pn||'').trim();
+  const known=c=>SUP_CODES.has(supLookupKey(c));
+  // ① 「管理番号-バリエーション名（SKUコード）」→「管理番号-SKUコード」
+  const m=t.match(/^(.+)-[^-（(]*[（(]\s*([^（）()\s]+)\s*[）)]$/);
+  if(m){
+    const base=m[1],code=m[2];
+    // auPAYはページ分割で管理番号の末尾に a/b が付くことがある（wh-plus-51876a）。
+    // 末尾の英字が正しい品番もある（pb-mo35914z）ので、登録済みの商品番号と照合して決める
+    const bases=[base];
+    if(/\d[a-z]$/.test(base))bases.push(base.slice(0,-1));
+    for(const b of bases){ if(known(b+'-'+code))return b+'-'+code; }
+    if(known(t))return t;                    // 元の表記のまま登録済み → 変えない
+    if(!/auPAY/i.test(store||''))return t;   // auPAY以外は、登録済みの商品番号に一致するときだけ変換
+    const b=(bases[1]&&SUP_PREFIX.has(bases[1].toLowerCase())&&!SUP_PREFIX.has(base.toLowerCase()))?bases[1]:base;
+    return b+'-'+code;
+  }
+  // ② APJ「af40_50apj-af40_50ホワイト-…」→「apj-af40_50」（登録済みのときだけ）
+  const a=t.match(/^((?:af|wf)\d+[x_]\d+[a-z0-9]*)apj-/i);
+  if(a){ const c=('apj-'+a[1].toLowerCase()).replace(/(\d)x(\d)/g,'$1_$2'); if(known(c))return c; }
+  return t;
 }
 function makerFallback(pn,rawName){
   const nm=rawName||'';
@@ -714,7 +782,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 /* ---------- generate ---------- */
 const OWN_FIELDS=['販売日','大分類','中分類','小分類','商品名','商品番号','税抜単価','数量','小計（税抜）','店舗','検索コード','マスター一致'];
 const MAKER_FIELDS=['店舗','出荷日','商品名','項目・選択肢','商品番号','税抜単価','数量','小計（税抜）','メーカー','掛け率'];
-let ownRows=null,makerRows=null,noMakerRows=null,emptyRows=null,unlinkedRows=[],srcFields=null,srcName='受注データ';
+let ownRows=null,makerRows=null,noMakerRows=null,emptyRows=null,unlinkedRows=[],makerFixRows=[],makerNewRows=[],srcFields=null,srcName='受注データ';
 const intOf=v=>{const n=parseInt(String(v==null?'':v).replace(/[^\d-]/g,''),10);return isNaN(n)?0:n;};
 
 function formatPeriodName(dates){
@@ -732,6 +800,9 @@ document.getElementById('goBtn').onclick=async()=>{
     showMsg('処理中…','warning');
     document.getElementById('goBtn').disabled=true;
     await new Promise(r=>setTimeout(r,30));
+    // 仕入れ販売データ（登録済み商品番号）の読み込みを待つ（読めなくても続行）
+    await Promise.race([window.__supReady,new Promise(r=>setTimeout(r,10000))]);
+    loadSupplierCodes();
 
     const [salesBuf,masterBuf]=await Promise.all([files.sales.arrayBuffer(),files.master.arrayBuffer()]);
     const { map: productMap, ownSet } = buildProductMap(masterBuf);
@@ -773,6 +844,7 @@ document.getElementById('goBtn').onclick=async()=>{
 
     // ── パス2: 全行を自社／メーカー／要確認に振り分け ──
     const own=[],maker=[],noMaker=[],empty=[];
+    const pnFixMap=new Map(); // メーカー商品番号の変換（店舗＋元の商品番号ごと）
     const unlinkedInfo=new Map(); // 自社行 → {元の商品番号, 元の商品名}（商品データ未紐付けの行）
     const dates=[];
     for(let i=1;i<csvRows.length;i++){
@@ -834,10 +906,17 @@ document.getElementById('goBtn').onclick=async()=>{
         if(!linked)unlinkedInfo.set(own[own.length-1],{pn,rawName});
       }else{
         let [mk,rate]=makerFor(pn);
+        const makerPn=normalizeMakerPn(pn,store);
+        if(makerPn!==pn.trim()){
+          const fk=store+'\t'+pn;
+          let f=pnFixMap.get(fk);
+          if(!f){f={'店舗':store,'元の商品番号':pn,'変換後の商品番号':makerPn,'行数':0};pnFixMap.set(fk,f);}
+          f['行数']++;
+        }
         if(!mk){ const fb=makerFallback(pn,rawName); if(fb[0]){ mk=fb[0]; rate=fb[1]; } }
         const row={
           '店舗':store,'出荷日':date,'商品名':cleanNameMaker(rawName),
-          '項目・選択肢':extractOption(g('項目・選択肢')),'商品番号':pn,
+          '項目・選択肢':extractOption(g('項目・選択肢')),'商品番号':makerPn,
           '税抜単価':net,'数量':qty,'小計（税抜）':net*qty,'メーカー':mk,'掛け率':rate===''?'':rate,
         };
         if(!mk)noMaker.push(row);
@@ -876,6 +955,21 @@ document.getElementById('goBtn').onclick=async()=>{
     }));
     const unlinkedLineCount=unlinkedInfo.size;
 
+    // ── メーカー: 商品番号の変換一覧／仕入れ販売データに無い商品番号 ──
+    makerFixRows=[...pnFixMap.values()];
+    makerNewRows=[];
+    if(SUP_LOADED){
+      const nm=new Map();
+      maker.forEach(r=>{
+        const c=r['商品番号'];
+        if(SUP_CODES.has(supLookupKey(c)))return;
+        let u=nm.get(c);
+        if(!u){u={'商品番号':c,'メーカー':r['メーカー'],'商品名':r['商品名'],'項目・選択肢':r['項目・選択肢'],'店舗':new Set(),'行数':0,'数量':0};nm.set(c,u);}
+        u['店舗'].add(r['店舗']); u['行数']++; u['数量']+=r['数量'];
+      });
+      makerNewRows=[...nm.values()].map(u=>({...u,'店舗':[...u['店舗']].join(' / ')}));
+    }
+
     ownRows=own; makerRows=maker; noMakerRows=noMaker; emptyRows=empty;
     srcName=formatPeriodName(dates);
 
@@ -902,7 +996,7 @@ document.getElementById('goBtn').onclick=async()=>{
     if(dlUrls['confirmDlBtn'])URL.revokeObjectURL(dlUrls['confirmDlBtn']);
     const confirmUrl=buildConfirmWbUrl();
     if(confirmUrl){ dlUrls['confirmDlBtn']=confirmUrl; confirmEl.href=confirmUrl; confirmEl.download=`${srcName}_確認用.xlsx`; confirmEl.dataset.ready='1'; }
-    else{ dlUrls['confirmDlBtn']=null; confirmEl.removeAttribute('href'); confirmEl.dataset.ready=''; confirmEl.dataset.emptyMsg='商品データ未紐付け・掛け率未設定・商品番号空のいずれの行もありませんでした'; }
+    else{ dlUrls['confirmDlBtn']=null; confirmEl.removeAttribute('href'); confirmEl.dataset.ready=''; confirmEl.dataset.emptyMsg='確認が必要な行はありませんでした'; }
 
     // 統計
     document.getElementById('result').classList.remove('hidden');
@@ -921,6 +1015,17 @@ document.getElementById('goBtn').onclick=async()=>{
       renderPreview('unlinkList',UNLINK_FIELDS,unlinkedRows,{'商品名':'nm','元の商品番号':'mono','店舗':''});
       ulBox.classList.remove('hidden');
     }else{ ulBox.classList.add('hidden'); }
+
+    const mkBox=document.getElementById('mkNoteBox');
+    if(makerFixRows.length||makerNewRows.length){
+      document.getElementById('mkFixWrap').classList.toggle('hidden',!makerFixRows.length);
+      document.getElementById('mkNewWrap').classList.toggle('hidden',!makerNewRows.length);
+      document.getElementById('mkFixCount').textContent=`${makerFixRows.length.toLocaleString()}件`;
+      document.getElementById('mkNewCount').textContent=`${makerNewRows.length.toLocaleString()}件`;
+      renderPreview('mkFixList',MKFIX_FIELDS,makerFixRows,{'元の商品番号':'mono','変換後の商品番号':'mono'});
+      renderPreview('mkNewList',MKNEW_FIELDS,makerNewRows,{'商品番号':'mono','商品名':'nm','項目・選択肢':'nm'});
+      mkBox.classList.remove('hidden');
+    }else{ mkBox.classList.add('hidden'); }
 
     renderPreview('prevOwn',OWN_FIELDS,own,{'商品名':'nm'});
     renderPreview('prevMaker',MAKER_FIELDS,maker,{'商品名':'nm','項目・選択肢':'nm'});
@@ -974,11 +1079,15 @@ function updateMakerDownloadLink(rows){
   }
 }
 const UNLINK_FIELDS=['商品番号','元の商品番号','商品名','店舗','行数','数量'];
+const MKFIX_FIELDS=['店舗','元の商品番号','変換後の商品番号','行数'];
+const MKNEW_FIELDS=['商品番号','メーカー','商品名','項目・選択肢','店舗','行数','数量'];
 function buildConfirmWbUrl(){
   const hasNoMaker=noMakerRows&&noMakerRows.length, hasEmpty=emptyRows&&emptyRows.length, hasUnlinked=unlinkedRows.length;
-  if(!hasNoMaker&&!hasEmpty&&!hasUnlinked)return null;
+  if(!hasNoMaker&&!hasEmpty&&!hasUnlinked&&!makerFixRows.length&&!makerNewRows.length)return null;
   const wb=XLSX.utils.book_new();
   if(hasUnlinked)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(unlinkedRows,{header:UNLINK_FIELDS}),'自社・商品データ未紐付け');
+  if(makerFixRows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(makerFixRows,{header:MKFIX_FIELDS}),'メーカー・商品番号の変換');
+  if(makerNewRows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(makerNewRows,{header:MKNEW_FIELDS}),'メーカー・販売データ未登録');
   if(hasNoMaker)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(noMakerRows,{header:MAKER_FIELDS}),'掛け率未設定');
   if(hasEmpty)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(emptyRows,{header:srcFields}),'商品番号空');
   const arr=XLSX.write(wb,{bookType:'xlsx',type:'array'});
