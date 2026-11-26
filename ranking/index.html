@@ -4047,7 +4047,7 @@ const ZODIAC_ANIMALS=[
   '羊','ひつじ','ヒツジ','sheep','シープ','goat','やぎ','ヤギ','山羊','baabaa', // 未（BaaBaa＝2027年の未年シリーズ）
   '猿','おさる','monkey','モンキー',                                // 申
   '鶏','酉','にわとり','ニワトリ','rooster','chicken','チキン',       // 酉
-  '犬','戌','いぬ','イヌ','dog','ドッグ','puppy',                    // 戌
+  '戌',                                                             // 戌（犬は定番の柄なので干支にしない。2026-11-26 ユーザー指示）
   '猪','亥','いのしし','イノシシ','boar','pig','ピッグ','豚','ぶた','ブタ', // 亥
 ];
 const ZODIAC_NOT=['はりねずみ','ハリネズミ','恐竜','きょうりゅう','キョウリュウ','たつのおとしご','タツノオトシゴ','ぼうし','ボウシ','うしろ','board','mouse pad','mousepad','pigment','hotdog','hot dog','ふたつ','フタツ','午後','neighbor','neighbour','dragonfly','ポニーテール','ぽにーてーる','pigeon','dogu'];
@@ -4056,6 +4056,28 @@ const ZODIAC_WORDS=['干支','十二支','干支文字','etomoji','エトモジ'
 const ZODIAC_KEYS_N=new Set(ZODIAC_KEYS.map(normalize)), ZODIAC_ANIMALS_N=[...new Set(ZODIAC_ANIMALS.map(normalize))], ZODIAC_NOT_N=ZODIAC_NOT.map(normalize);
 const ZODIAC_WORDS_N=ZODIAC_WORDS.map(normalize);
 function isZodiacName(nn){let s=nn;for(const w of ZODIAC_NOT_N)s=s.split(w).join(' ');return ZODIAC_ANIMALS_N.some(a=>s.includes(a))||ZODIAC_WORDS_N.some(w=>s.includes(w))||/(^|[^a-z])eto([^a-z]|$)/.test(s);}
+// 手帳（DR-・XDR-）の干支は「その年版の干支の動物」だけ（2026-11-26 ユーザー指示）。登録画像で判定した品番は CODE_SEARCH_TAGS に「干支 ◯◯」で入れてある（照合文字列 nn に含まれる）。
+// 画像が未登録の新しい手帳のため、商品名に「その年版の動物」の語があれば干支とする補助も残す。2018年版（戌）は犬なので対象外
+const ZODIAC_BY_YEAR={
+  2019:['猪','亥','いのしし','イノシシ','boar','pig','ピッグ','豚','ぶた','ブタ'],
+  2020:['鼠','子','ねずみ','ネズミ','mouse'],
+  2021:['牛','丑','うし','ウシ','cow','cattle','ox'],
+  2022:['虎','寅','とら','トラ','タイガー','tiger'],
+  2023:['兎','卯','うさぎ','ウサギ','rabbit','bunny','ラビット'],
+  2024:['龍','竜','辰','りゅう','リュウ','dragon','ドラゴン'],
+  2025:['蛇','巳','へび','ヘビ','snake','スネーク'],
+  2026:['馬','午','うま','ウマ','horse','pony','ポニー','neigh'],
+  2027:['羊','未','ひつじ','ヒツジ','sheep','シープ','baabaa','hitsuji','meechan','めーちゃん'],
+};
+const ZODIAC_BY_YEAR_N={};for(const[y,ws]of Object.entries(ZODIAC_BY_YEAR))ZODIAC_BY_YEAR_N[y]=[...new Set(ws.map(normalize))];
+function isZodiacItem(item,nn){
+  if(!/^X?DR-/.test(item.code||''))return isZodiacName(nn);
+  let s=nn;for(const w of ZODIAC_NOT_N)s=s.split(w).join(' ');
+  if(ZODIAC_WORDS_N.some(w=>s.includes(w))||/(^|[^a-z])eto([^a-z]|$)/.test(s))return true;   // 画像判定のタグ「干支」・Etomoji など
+  const y=((item.name||'').match(/(\d{4})年(?:度)?版/)||[])[1];
+  const ws=ZODIAC_BY_YEAR_N[y];
+  return !!ws&&ws.some(a=>s.includes(a));
+}
 
 // ── Search ────────────────────────────────────────────────────────────────────
 // 手帳/カレンダーのカテゴリを年月の若い順に並べるためのキー（年*100+開始月、
@@ -4141,8 +4163,8 @@ document.getElementById('hd-search').addEventListener('input',e=>{
       const nComp=sc?normalize(sc+item.code):'';
       if(excludeTerms.length&&excludeTerms.some(et=>nn.includes(et)))return;
       if(negTerms.length&&negTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t))))return;
-      if(negZodiac&&isZodiacName(nn))return;
-      if(wordData.every(({allTerms,zodiac})=>zodiac?isZodiacName(nn):allTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t)))))
+      if(negZodiac&&isZodiacItem(item,nn))return;
+      if(wordData.every(({allTerms,zodiac})=>zodiac?isZodiacItem(item,nn):allTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t)))))
         results.push({...item,cat,rank:i+1,searchCode:sc});
     });
   }
