@@ -147,7 +147,8 @@ def main():
             row['qty'] += q
             row['last'] = max(row['last'], last[pid])
             continue
-        rows[code] = {'item': rakuten_item_no(code, p[2]), 'code': code, 'maker': p[0], 'name': p[1],
+        # 楽天の商品管理番号は小文字だけ（RMS の絞り込みは大文字のままだと当たらない）
+        rows[code] = {'item': rakuten_item_no(code, p[2]).lower(), 'code': code, 'maker': p[0], 'name': p[1],
                       'vari': p[2] or '', 'qty': q, 'last': last[pid]}
 
     items = sorted(rows.values(), key=lambda r: (-r['qty'], r['code']))
