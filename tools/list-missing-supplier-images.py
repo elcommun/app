@@ -80,6 +80,13 @@ def rakuten_item_no(code, vari=''):
     c = str(code or '').strip()
     if re.match(r'^ak-', c, re.I):
         return c
+    # 楽天の商品管理番号が商品番号から素直に出ない商品（2026-11-26 ユーザー確認）
+    m = re.match(r'^(rio-[a-z0-9]+)-', c, re.I)          # rio-w88600-W88620 → rio-w88600
+    if m:
+        return m.group(1)
+    m = re.match(r'^wh-kg-(cls(?:ac)?\d+)-(\d+)$', c, re.I)   # wh-kg-CLS22-020 → wh-kg-cls22020
+    if m:
+        return 'wh-kg-' + m.group(1) + m.group(2)
     m = re.match(r'^apj-([^-]+)', c, re.I)
     if m:
         return m.group(1)
