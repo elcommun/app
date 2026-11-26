@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v394</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v395</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -1016,6 +1016,7 @@ const CODE_PREFIX_TO_CAT=[
   {prefix:'BBC-',cat:'ブックカバー'},      // 文豪ブックカバー
   {prefix:'MM-08',cat:'ブックカバー'},     // miyuki matsuo 刺繍ブックカバー (MM-09はブローチで上に定義済)
   {prefix:'MTP-2',cat:'メガネケース'},    // Masterpiece メガネケース（MTP-201〜）
+  {prefix:'MTP-1',cat:'ランチサック・巾着'}, // Masterpiece 刺繍巾着（MTP-101〜。ミニ巾着 SMY-1 と同じ扱い）
   {prefix:'MTP-',cat:'ブックカバー'},      // Masterpiece ブックカバー
   {prefix:'PRT-2',cat:'ブックカバー'},     // printemps ブックカバー
   {prefix:'PRT-3',cat:'メガネケース'},     // printemps 刺繍メガネケース
@@ -4011,6 +4012,10 @@ const TRANS_GROUPS=[
 ['Blanche','ブランシュ'],
 ['Dark Green','ダークグリーン','深緑'],
 ['追いかけっこ','おいかけっこ','Oikakekko','Chase'],
+// 2026-11-26 追加（11/19〜11/25 新商品）
+['Spring Fling','スプリングフリング'],
+['DECO LOOP STAMP','Deco Loop','デコループスタンプ','デコループ'],
+['Face','フェイス','顔','かお'],
 ];
 for(const g of TRANS_GROUPS){
   const ng=g.map(normalize);
