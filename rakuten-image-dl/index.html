@@ -486,6 +486,16 @@ function computeSup(rows, slug) {
       if (m && v && !mainBy[m.toLowerCase()]) mainBy[m.toLowerCase()] = v;
     }
   }
+  // 商品管理番号ごとのSKU行の数。1行以下＝選択肢の無い単体の商品（2026-11-26 ユーザー指示：単体の商品はメイン画像を使う）
+  const skuRows = {};
+  { let cur = '';
+    for (const row of rows.slice(1)) {
+      const m = (row[iMng] || '').trim(); if (m) cur = m.toLowerCase();
+      if (!cur) continue;
+      const s1 = iSys >= 0 ? (row[iSys] || '').trim() : '', s2 = iSku >= 0 ? (row[iSku] || '').trim() : '';
+      if (s1 || s2) skuRows[cur] = (skuRows[cur] || 0) + 1;
+    }
+  }
   const imgOf = (skuImg, mainImg) => {
     let pick = null, kind = '';
     if (skuImg) { pick = toUrl(skuImg); kind = 'sku'; }
@@ -514,7 +524,9 @@ function computeSup(rows, slug) {
     SUP.matched++;
     let skuImg = '';
     for (const i of iImgs) { const v = (row[i] || '').trim(); if (v) { skuImg = v; break; } }
-    const r = imgOf(skuImg, mainBy[mng.toLowerCase()] || '');
+    const mainImg = mainBy[mng.toLowerCase()] || '';
+    const single = (skuRows[mng.toLowerCase()] || 0) <= 1;
+    const r = (single && mainImg ? imgOf('', mainImg) : null) || imgOf(skuImg, mainImg);
     if (!r) { SUP.noImage++; continue; }
     push(key, r, r.kind);
   }
