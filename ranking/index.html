@@ -625,13 +625,13 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v395</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v396</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
   <div class="search-wrap">
     <span class="si">🔍</span>
-    <input type="text" id="hd-search" placeholder="商品名・品番で検索…" autocomplete="off">
+    <input type="text" id="hd-search" placeholder="商品名・品番で検索…（-語 で除外）" title="スペース区切りで複数の語（すべて含む商品）。先頭に - を付けた語はその語を含む商品を除きます（例: 猫 -ポーチ）" autocomplete="off">
     <button type="button" id="hd-search-clear" aria-label="検索をクリア" title="検索をクリア">×</button>
     <div id="hd-suggest" class="hd-suggest" role="listbox" aria-label="検索の候補"></div>
   </div>
@@ -4081,16 +4081,22 @@ document.getElementById('hd-search').addEventListener('input',e=>{
   document.getElementById('cat-view').style.display='none';
   document.getElementById('search-view').style.display='block';
   setOverviewVisible(false);
-  // スペース区切りで複数キーワードのAND検索に対応
-  const words=q.split(/[\s　]+/).filter(Boolean);
-  const wordData=words.map(w=>{
+  // スペース区切りで複数キーワードのAND検索に対応。先頭に「-」を付けた語はその語を含む商品を除く（例: 猫 -ポーチ。2026-11-26 ユーザー指示）
+  const allWords=q.split(/[\s　]+/).filter(Boolean);
+  const isNeg=w=>/^[-－]./.test(w);
+  const words=allWords.filter(w=>!isNeg(w));
+  const negWords=allWords.filter(isNeg).map(w=>w.slice(1));
+  const termsOf=w=>{
     const wn=normalize(w);
     // 静的辞書(TRANS_N)は完全一致＋部分一致（入力が登録キーの一部）で相方語を取得
     const transStatic=[...(TRANS_N[wn]||[])];
     if(wn.length>=2){for(const k in TRANS_N){if(k!==wn&&k.includes(wn))transStatic.push(...TRANS_N[k]);}}
     const trans=[...transStatic,...getAliasTerms(wn)];
     return {wn,trans,allTerms:[...new Set([wn,...trans])]};
-  });
+  };
+  const wordData=words.map(termsOf);
+  // 除外語も日本語＝英語の相方語ごと除く（「-猫」で cat・ネコ を含む商品も除く）
+  const negTerms=[...new Set(negWords.flatMap(w=>termsOf(w).allTerms))].filter(Boolean);
   const trans=[...new Set(wordData.flatMap(w=>w.trans))], results=[];
   // 誤ヒット除外: 検索語(正規化キー) → 商品名に含まれていたら除外する語(部分一致)
   // 例)「箸」は同義語「はし」が「はしびろこう」に部分一致するため除外する
@@ -4106,6 +4112,7 @@ document.getElementById('hd-search').addEventListener('input',e=>{
       const sc=isDC?((DATA.products[item.code]||[])[2]||''):'';
       const nComp=sc?normalize(sc+item.code):'';
       if(excludeTerms.length&&excludeTerms.some(et=>nn.includes(et)))return;
+      if(negTerms.length&&negTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t))))return;
       if(wordData.every(({allTerms})=>allTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t)))))
         results.push({...item,cat,rank:i+1,searchCode:sc});
     });
