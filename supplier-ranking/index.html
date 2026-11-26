@@ -559,7 +559,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v195</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v196</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -2680,6 +2680,27 @@ const SUP_TRANS_GROUPS=[
   ['LED','エルイーディー'],
   ['Light','ライト','照明'],
 ];
+// 十二支（干支）の検索（2026-11-26 ユーザー指示）：「干支」「えと」などで、商品名に十二支の動物（羊・ひつじ・ヒツジ・馬・うま・ウマ…）を含む商品を出す。
+// 片方向（「羊」で干支の商品全部は出ない）。ZODIAC_NOT は動物の語を含むが十二支ではない語（ハリネズミ・恐竜・ストライプ等）で、判定の前に取り除く。
+// 両アプリ（ranking・supplier-ranking）で同じ一覧。変えるときは両方そろえる
+const ZODIAC_KEYS=['干支','えと','エト','eto','十二支','じゅうにし','zodiac'];
+const ZODIAC_ANIMALS=[
+  '鼠','ねずみ','ネズミ','mouse',                                   // 子
+  '牛','丑','うし','ウシ','cow','cattle',                           // 丑
+  '虎','寅','タイガー','tiger',                                     // 寅
+  '兎','卯','うさぎ','ウサギ','rabbit','bunny','ラビット',           // 卯
+  '龍','竜','辰','りゅう','リュウ','たつ','タツ','dragon','ドラゴン',  // 辰
+  '蛇','巳','へび','ヘビ','snake','スネーク',                       // 巳
+  '馬','午','うま','ウマ','horse','pony','ポニー','neigh',           // 午（Neigh＝2026年の午年シリーズ）
+  '羊','ひつじ','ヒツジ','sheep','シープ','goat','やぎ','ヤギ','山羊','baabaa', // 未（BaaBaa＝2027年の未年シリーズ）
+  '猿','おさる','monkey','モンキー',                                // 申
+  '鶏','酉','にわとり','ニワトリ','rooster','chicken','チキン',       // 酉
+  '犬','戌','いぬ','イヌ','dog','ドッグ','puppy',                    // 戌
+  '猪','亥','いのしし','イノシシ','boar','pig','ピッグ','豚','ぶた','ブタ', // 亥
+];
+const ZODIAC_NOT=['はりねずみ','ハリネズミ','恐竜','きょうりゅう','キョウリュウ','たつのおとしご','タツノオトシゴ','ぼうし','ボウシ','うしろ','board','mouse pad','mousepad','pigment','hotdog','hot dog','ふたつ','フタツ','午後','neighbor','neighbour','dragonfly','ポニーテール','ぽにーてーる','pigeon','dogu'];
+// 干支そのものを表す語（商品名にあれば干支の商品）。eto は単語として出たときだけ（DETOA・ピエト等の一部は除く）
+const ZODIAC_WORDS=['干支','十二支','干支文字','etomoji','エトモジ'];
 // 検索用の正規化：全角半角・大文字小文字・カタカナ/ひらがな・ラテン文字のアクセント・空白をそろえる
 function searchNorm(s){
   return String(s||'').normalize('NFKC').toLowerCase()
@@ -2696,6 +2717,10 @@ const SUP_TRANS_N=(()=>{
   }
   return T;
 })();
+const ZODIAC_KEYS_N=new Set(ZODIAC_KEYS.map(searchNorm)), ZODIAC_ANIMALS_N=[...new Set(ZODIAC_ANIMALS.map(searchNorm))], ZODIAC_NOT_N=ZODIAC_NOT.map(searchNorm);
+const ZODIAC_WORDS_N=ZODIAC_WORDS.map(searchNorm);
+// 商品名は語の区切り（空白）を残して正規化してから判定する
+function isZodiacName(name){let s=String(name||'').split(/[\s　]+/).map(searchNorm).join(' ');for(const w of ZODIAC_NOT_N)s=s.split(w).join('|');return ZODIAC_ANIMALS_N.some(a=>s.includes(a))||ZODIAC_WORDS_N.some(w=>s.includes(w))||/(^|[^a-z])eto([^a-z]|$)/.test(s);}
 // 1語ぶんの検索語（その語＋辞書の相方語。辞書の語の一部を入れたときも、その語の相方を足す）
 function searchTermsOf(wn){
   const out=new Set([wn]);
@@ -2713,7 +2738,9 @@ function renderSearch(){
   // 先頭に「-」を付けた語は、その語（と相方語）を含む商品を除く（例: 猫 -ポーチ。2026-11-26 ユーザー指示）
   const rawWords=String(searchQuery||'').split(/[\s　]+/).filter(Boolean);
   const isNeg=w=>/^[-－]./.test(w);
-  const qWords=rawWords.filter(w=>!isNeg(w)).map(searchNorm).filter(Boolean).map(searchTermsOf);
+  const posN=rawWords.filter(w=>!isNeg(w)).map(searchNorm).filter(Boolean);
+  const qWords=posN.map(searchTermsOf), qZodiac=posN.map(w=>ZODIAC_KEYS_N.has(w));
+  const negZodiac=rawWords.filter(isNeg).some(w=>ZODIAC_KEYS_N.has(searchNorm(w.slice(1))));
   const negTerms=[...new Set(rawWords.filter(isNeg).map(w=>searchNorm(w.slice(1))).filter(Boolean).flatMap(searchTermsOf))];
   document.getElementById('cat-view').style.display='none';
   document.getElementById('search-view').style.display='';
@@ -2724,7 +2751,8 @@ function renderSearch(){
     Object.keys(AGG[m].items).forEach(pid=>{
       const p=ALL_PRODUCTS[pid];
       const hay=searchNorm(p[0]+' '+p[1]+' '+p[2]+' '+p[3]+' '+(p[6]||''));
-      if((qWords.length||negTerms.length)&&qWords.every(ts=>ts.some(t=>hay.includes(t)))&&!negTerms.some(t=>hay.includes(t))){
+      const zName=p[1]+' '+p[2];   // 十二支の判定は商品名・バリエーション名だけで見る
+      if((qWords.length||negTerms.length)&&qWords.every((ts,i)=>qZodiac[i]?isZodiacName(zName):ts.some(t=>hay.includes(t)))&&!negTerms.some(t=>hay.includes(t))&&!(negZodiac&&isZodiacName(zName))){
         const it=AGG[m].items[pid];
         rows.push({pid, maker:p[0], name:p[1], varName:p[2], code:p[3], price:unitPriceOf(p,it.qty,it.amount), category:p[5], qty:it.qty, amount:it.amount});
       }
