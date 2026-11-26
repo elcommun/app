@@ -175,7 +175,7 @@ def main():
             for r in items:
                 w.writerow([r['item'], r['code'], r['maker'], r['name'], r['vari'], r['qty'], r['last']])
         print(f'CSV: {a.out}')
-    print('商品管理番号（コンマ区切り）:')
+    print('商品管理番号（商品URL）（コンマ区切り）:')
     print(','.join(order))
 
 
