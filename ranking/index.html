@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v398</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v399</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -4030,8 +4030,28 @@ const MOTIF_TERMS={'Fluide':['猫','ねこ','ネコ','cat','cats','キャット'
 for(const[term,words] of Object.entries(MOTIF_TERMS))
   for(const w of words)(TRANS_N[normalize(w)]=TRANS_N[normalize(w)]||[]).push(normalize(term));
 // 品番ごとの隠し検索ワード（商品名には出さず、検索の照合だけに使う）。名前の語が一般的で MOTIF_TERMS では他の商品まで出てしまうときに使う
-// 2026-11-26 ユーザー指示：次の20品番はひつじ柄の干支デザイン（Dream・Wool・Chase・Meechan・ﾌｧﾐｰﾕ・追いかけっこ など）
-const CODE_SEARCH_TAGS={'DR-WK-780':'ひつじ 干支','DR-WK-781':'ひつじ 干支','DR-WK-782':'ひつじ 干支','DR-WK-783':'ひつじ 干支','DR-WB-517':'ひつじ 干支','DR-WB-518':'ひつじ 干支','DR-WB-535':'ひつじ 干支','DR-WB-536':'ひつじ 干支','DR-WK-758':'ひつじ 干支','DR-WK-759':'ひつじ 干支','DR-WV-056':'ひつじ 干支','DR-WV-057':'ひつじ 干支','XDR-WL-121':'ひつじ 干支','XDR-WL-122':'ひつじ 干支','XDR-WL-124':'ひつじ 干支','XDR-WL-125':'ひつじ 干支','XDR-WK-817':'ひつじ 干支','XDR-WK-818':'ひつじ 干支','XDR-MM-025':'ひつじ 干支','XDR-MM-026':'ひつじ 干支'};
+// 手帳の干支（2026-11-26 ユーザー指示）：登録済みの手帳画像を確かめ、「その年版の干支の動物」が描かれた品番に「干支 ◯◯」を付けた（犬は除く。2018年版（戌）は対象外）。
+// 新しい年版の手帳画像が増えたら、画像を確かめてここに足す
+const CODE_SEARCH_TAGS={
+  // 2019年版（いのしし）9品番
+  'DR-MC-017':'干支 いのしし','DR-MG-092':'干支 いのしし','DR-MG-093':'干支 いのしし','DR-MH-038':'干支 いのしし','DR-MH-039':'干支 いのしし','DR-WB-066':'干支 いのしし','DR-WB-067':'干支 いのしし','DR-WS-006':'干支 いのしし','DR-WS-007':'干支 いのしし',
+  // 2020年版（ねずみ）12品番
+  'DR-MC-070':'干支 ねずみ','DR-MC-071':'干支 ねずみ','DR-MC-072':'干支 ねずみ','DR-MG-174':'干支 ねずみ','DR-MG-175':'干支 ねずみ','DR-MH-098':'干支 ねずみ','DR-MH-099':'干支 ねずみ','DR-WB-148':'干支 ねずみ','DR-WB-149':'干支 ねずみ','DR-WB-150':'干支 ねずみ','DR-WS-029':'干支 ねずみ','DR-WS-030':'干支 ねずみ',
+  // 2021年版（うし）19品番
+  'DR-MC-122':'干支 うし','DR-MC-128':'干支 うし','DR-MC-129':'干支 うし','DR-MC-130':'干支 うし','DR-MG-219':'干支 うし','DR-MG-232':'干支 うし','DR-MG-233':'干支 うし','DR-MG-234':'干支 うし','DR-MG-235':'干支 うし','DR-MG-236':'干支 うし','DR-MG-237':'干支 うし','DR-MH-157':'干支 うし','DR-MH-158':'干支 うし','DR-MH-166':'干支 うし','DR-MH-167':'干支 うし','DR-WB-197':'干支 うし','DR-WB-198':'干支 うし','DR-WB-232':'干支 うし','DR-WS-072':'干支 うし',
+  // 2022年版（とら）18品番
+  'DR-MC-173':'干支 とら','DR-MC-187':'干支 とら','DR-MG-285':'干支 とら','DR-MG-300':'干支 とら','DR-MG-301':'干支 とら','DR-MG-302':'干支 とら','DR-MG-303':'干支 とら','DR-MH-229':'干支 とら','DR-MH-230':'干支 とら','DR-MH-235':'干支 とら','DR-MH-236':'干支 とら','DR-WB-260':'干支 とら','DR-WB-261':'干支 とら','DR-WK-305':'干支 とら','DR-WK-306':'干支 とら','DR-WL-073':'干支 とら','DR-WL-074':'干支 とら','DR-WS-088':'干支 とら',
+  // 2023年版（うさぎ）47品番
+  'DR-MC-220':'干支 うさぎ','DR-MC-221':'干支 うさぎ','DR-MC-227':'干支 うさぎ','DR-MC-228':'干支 うさぎ','DR-MC-235':'干支 うさぎ','XDR-MC-244':'干支 うさぎ','XDR-MC-245':'干支 うさぎ','DR-MG-347':'干支 うさぎ','DR-MG-363':'干支 うさぎ','DR-MG-364':'干支 うさぎ','DR-MG-365':'干支 うさぎ','DR-MG-366':'干支 うさぎ','DR-MH-289':'干支 うさぎ','DR-MH-290':'干支 うさぎ','DR-MH-306':'干支 うさぎ','DR-MH-307':'干支 うさぎ','DR-MH-313':'干支 うさぎ','DR-MH-314':'干支 うさぎ','DR-MH-315':'干支 うさぎ','DR-MH-316':'干支 うさぎ','DR-MH-317':'干支 うさぎ','DR-MH-318':'干支 うさぎ','DR-WB-305':'干支 うさぎ','DR-WB-306':'干支 うさぎ','DR-WB-313':'干支 うさぎ','DR-WB-316':'干支 うさぎ','DR-WB-317':'干支 うさぎ','DR-WB-323':'干支 うさぎ','DR-WB-324':'干支 うさぎ','DR-WK-395':'干支 うさぎ','DR-WK-396':'干支 うさぎ','DR-WK-408':'干支 うさぎ','DR-WK-413':'干支 うさぎ','DR-WK-414':'干支 うさぎ','DR-WK-415':'干支 うさぎ','DR-WK-421':'干支 うさぎ','DR-WK-422':'干支 うさぎ','DR-WK-423':'干支 うさぎ','XDR-WK-431':'干支 うさぎ','XDR-WK-473':'干支 うさぎ','DR-WL-089':'干支 うさぎ','DR-WL-090':'干支 うさぎ','DR-WL-091':'干支 うさぎ','DR-WL-092':'干支 うさぎ','DR-WL-100':'干支 うさぎ','DR-WS-105':'干支 うさぎ','DR-WS-106':'干支 うさぎ',
+  // 2024年版（たつ）26品番
+  'DR-MC-271':'干支 たつ','DR-MC-272':'干支 たつ','DR-MC-296':'干支 たつ','DR-MG-421':'干支 たつ','DR-MG-422':'干支 たつ','DR-MG-423':'干支 たつ','DR-MG-424':'干支 たつ','DR-MH-390':'干支 たつ','DR-MH-395':'干支 たつ','DR-MH-396':'干支 たつ','DR-MH-397':'干支 たつ','DR-MH-398':'干支 たつ','XDR-MH-413':'干支 たつ','XDR-MM-001':'干支 たつ','DR-WK-502':'干支 たつ','DR-WK-503':'干支 たつ','DR-WK-504':'干支 たつ','DR-WK-505':'干支 たつ','DR-WK-517':'干支 たつ','DR-WS-121':'干支 たつ','DR-WS-122':'干支 たつ','DR-WV-001':'干支 たつ','DR-WX-039':'干支 たつ','DR-WX-040':'干支 たつ','DR-WX-048':'干支 たつ','DR-WX-049':'干支 たつ',
+  // 2025年版（へび）35品番
+  'DR-MC-342':'干支 へび','DR-MC-346':'干支 へび','DR-MC-347':'干支 へび','DR-MC-348':'干支 へび','DR-MG-471':'干支 へび','DR-MG-478':'干支 へび','DR-MG-479':'干支 へび','DR-MG-488':'干支 へび','DR-MG-489':'干支 へび','DR-MG-492':'干支 へび','DR-MG-493':'干支 へび','DR-MH-451':'干支 へび','DR-MH-452':'干支 へび','DR-MH-462':'干支 へび','XDR-MH-487':'干支 へび','DR-WB-389':'干支 へび','DR-WB-390':'干支 へび','DR-WB-393':'干支 へび','DR-WB-394':'干支 へび','DR-WB-410':'干支 へび','DR-WB-411':'干支 へび','DR-WB-420':'干支 へび','DR-WB-421':'干支 へび','DR-WK-572':'干支 へび','DR-WK-573':'干支 へび','DR-WK-594':'干支 へび','DR-WK-595':'干支 へび','DR-WK-608':'干支 へび','DR-WK-620':'干支 へび','DR-WK-621':'干支 へび','XDR-WL-106':'干支 へび','DR-WS-139':'干支 へび','DR-WS-140':'干支 へび','DR-WV-014':'干支 へび','DR-WV-022':'干支 へび',
+  // 2026年版（うま）55品番
+  'DR-MC-380':'干支 うま','DR-MC-387':'干支 うま','DR-MC-397':'干支 うま','DR-MC-398':'干支 うま','DR-MC-401':'干支 うま','DR-MC-405':'干支 うま','DR-MG-533':'干支 うま','DR-MG-546':'干支 うま','DR-MG-551':'干支 うま','DR-MG-552':'干支 うま','DR-MG-553':'干支 うま','DR-MG-554':'干支 うま','DR-MG-557':'干支 うま','DR-MG-558':'干支 うま','DR-MG-569':'干支 うま','DR-MG-570':'干支 うま','DR-MH-522':'干支 うま','DR-MH-523':'干支 うま','DR-MH-533':'干支 うま','DR-MH-536':'干支 うま','DR-MH-537':'干支 うま','DR-MH-538':'干支 うま','XDR-MH-560':'干支 うま','XDR-MH-561':'干支 うま','XDR-MH-562':'干支 うま','XDR-MH-563':'干支 うま','DR-WB-454':'干支 うま','DR-WB-455':'干支 うま','DR-WB-458':'干支 うま','DR-WB-475':'干支 うま','DR-WB-476':'干支 うま','DR-WB-477':'干支 うま','DR-WB-478':'干支 うま','DR-WB-487':'干支 うま','DR-WK-664':'干支 うま','DR-WK-665':'干支 うま','DR-WK-679':'干支 うま','DR-WK-687':'干支 うま','DR-WK-688':'干支 うま','DR-WK-689':'干支 うま','DR-WK-690':'干支 うま','DR-WK-701':'干支 うま','DR-WK-710':'干支 うま','DR-WK-711':'干支 うま','XDR-WK-719':'干支 うま','XDR-WK-725':'干支 うま','XDR-WK-726':'干支 うま','XDR-WK-727':'干支 うま','XDR-WK-728':'干支 うま','XDR-WL-116':'干支 うま','DR-WS-155':'干支 うま','DR-WS-156':'干支 うま','DR-WS-157':'干支 うま','DR-WV-030':'干支 うま','DR-WV-038':'干支 うま',
+  // 2027年版（ひつじ）68品番
+  'DR-MC-435':'干支 ひつじ','DR-MC-438':'干支 ひつじ','DR-MC-453':'干支 ひつじ','DR-MC-454':'干支 ひつじ','DR-MC-455':'干支 ひつじ','DR-MC-459':'干支 ひつじ','DR-MC-460':'干支 ひつじ','DR-MC-461':'干支 ひつじ','DR-MC-462':'干支 ひつじ','DR-MG-593':'干支 ひつじ','DR-MG-596':'干支 ひつじ','DR-MG-597':'干支 ひつじ','DR-MG-610':'干支 ひつじ','DR-MG-611':'干支 ひつじ','DR-MG-612':'干支 ひつじ','DR-MG-613':'干支 ひつじ','DR-MG-614':'干支 ひつじ','DR-MG-615':'干支 ひつじ','DR-MG-616':'干支 ひつじ','DR-MG-617':'干支 ひつじ','DR-MH-600':'干支 ひつじ','DR-MH-601':'干支 ひつじ','DR-MH-604':'干支 ひつじ','DR-MH-605':'干支 ひつじ','DR-MH-617':'干支 ひつじ','DR-MH-618':'干支 ひつじ','DR-MH-619':'干支 ひつじ','DR-MH-620':'干支 ひつじ','DR-MH-621':'干支 ひつじ','DR-MH-624':'干支 ひつじ','XDR-MH-649':'干支 ひつじ','XDR-MH-650':'干支 ひつじ','XDR-MM-025':'干支 ひつじ','XDR-MM-026':'干支 ひつじ','DR-WB-517':'干支 ひつじ','DR-WB-518':'干支 ひつじ','DR-WB-526':'干支 ひつじ','DR-WB-535':'干支 ひつじ','DR-WB-536':'干支 ひつじ','DR-WB-544':'干支 ひつじ','DR-WB-545':'干支 ひつじ','DR-WB-546':'干支 ひつじ','DR-WK-758':'干支 ひつじ','DR-WK-759':'干支 ひつじ','DR-WK-773':'干支 ひつじ','DR-WK-780':'干支 ひつじ','DR-WK-781':'干支 ひつじ','DR-WK-782':'干支 ひつじ','DR-WK-783':'干支 ひつじ','DR-WK-794':'干支 ひつじ','DR-WK-798':'干支 ひつじ','DR-WK-799':'干支 ひつじ','DR-WK-804':'干支 ひつじ','DR-WK-805':'干支 ひつじ','XDR-WK-817':'干支 ひつじ','XDR-WK-818':'干支 ひつじ','XDR-WL-121':'干支 ひつじ','XDR-WL-122':'干支 ひつじ','XDR-WL-123':'干支 ひつじ','XDR-WL-124':'干支 ひつじ','XDR-WL-125':'干支 ひつじ','XDR-WN-001':'干支 ひつじ','DR-WS-171':'干支 ひつじ','DR-WS-172':'干支 ひつじ','DR-WS-173':'干支 ひつじ','DR-WV-046':'干支 ひつじ','DR-WV-056':'干支 ひつじ','DR-WV-057':'干支 ひつじ',
+};
 // 十二支（干支）の検索（2026-11-26 ユーザー指示）：「干支」「えと」などで、商品名に十二支の動物（羊・ひつじ・ヒツジ・馬・うま・ウマ…）を含む商品を出す。
 // 片方向（「羊」で干支の商品全部は出ない）。ZODIAC_NOT は動物の語を含むが十二支ではない語（ハリネズミ・恐竜・ストライプ等）で、判定の前に取り除く。
 // 両アプリ（ranking・supplier-ranking）で同じ一覧。変えるときは両方そろえる
@@ -4047,7 +4067,7 @@ const ZODIAC_ANIMALS=[
   '羊','ひつじ','ヒツジ','sheep','シープ','goat','やぎ','ヤギ','山羊','baabaa', // 未（BaaBaa＝2027年の未年シリーズ）
   '猿','おさる','monkey','モンキー',                                // 申
   '鶏','酉','にわとり','ニワトリ','rooster','chicken','チキン',       // 酉
-  '犬','戌','いぬ','イヌ','dog','ドッグ','puppy',                    // 戌
+  '戌',                                                             // 戌（犬は定番の柄なので干支にしない。2026-11-26 ユーザー指示）
   '猪','亥','いのしし','イノシシ','boar','pig','ピッグ','豚','ぶた','ブタ', // 亥
 ];
 const ZODIAC_NOT=['はりねずみ','ハリネズミ','恐竜','きょうりゅう','キョウリュウ','たつのおとしご','タツノオトシゴ','ぼうし','ボウシ','うしろ','board','mouse pad','mousepad','pigment','hotdog','hot dog','ふたつ','フタツ','午後','neighbor','neighbour','dragonfly','ポニーテール','ぽにーてーる','pigeon','dogu'];
@@ -4056,6 +4076,28 @@ const ZODIAC_WORDS=['干支','十二支','干支文字','etomoji','エトモジ'
 const ZODIAC_KEYS_N=new Set(ZODIAC_KEYS.map(normalize)), ZODIAC_ANIMALS_N=[...new Set(ZODIAC_ANIMALS.map(normalize))], ZODIAC_NOT_N=ZODIAC_NOT.map(normalize);
 const ZODIAC_WORDS_N=ZODIAC_WORDS.map(normalize);
 function isZodiacName(nn){let s=nn;for(const w of ZODIAC_NOT_N)s=s.split(w).join(' ');return ZODIAC_ANIMALS_N.some(a=>s.includes(a))||ZODIAC_WORDS_N.some(w=>s.includes(w))||/(^|[^a-z])eto([^a-z]|$)/.test(s);}
+// 手帳（DR-・XDR-）の干支は「その年版の干支の動物」だけ（2026-11-26 ユーザー指示）。登録画像で判定した品番は CODE_SEARCH_TAGS に「干支 ◯◯」で入れてある（照合文字列 nn に含まれる）。
+// 画像が未登録の新しい手帳のため、商品名に「その年版の動物」の語があれば干支とする補助も残す。2018年版（戌）は犬なので対象外
+const ZODIAC_BY_YEAR={
+  2019:['猪','亥','いのしし','イノシシ','boar','pig','ピッグ','豚','ぶた','ブタ'],
+  2020:['鼠','子','ねずみ','ネズミ','mouse'],
+  2021:['牛','丑','うし','ウシ','cow','cattle'],
+  2022:['虎','寅','とら','トラ','タイガー','tiger'],
+  2023:['兎','卯','うさぎ','ウサギ','rabbit','bunny','ラビット'],
+  2024:['龍','竜','辰','りゅう','リュウ','dragon','ドラゴン'],
+  2025:['蛇','巳','へび','ヘビ','snake','スネーク'],
+  2026:['馬','午','うま','ウマ','horse','pony','ポニー','neigh'],
+  2027:['羊','未','ひつじ','ヒツジ','sheep','シープ','baabaa','hitsuji','meechan','めーちゃん'],
+};
+const ZODIAC_BY_YEAR_N={};for(const[y,ws]of Object.entries(ZODIAC_BY_YEAR))ZODIAC_BY_YEAR_N[y]=[...new Set(ws.map(normalize))];
+function isZodiacItem(item,nn){
+  if(!/^X?DR-/.test(item.code||''))return isZodiacName(nn);
+  let s=nn;for(const w of ZODIAC_NOT_N)s=s.split(w).join(' ');
+  if(ZODIAC_WORDS_N.some(w=>s.includes(w))||/(^|[^a-z])eto([^a-z]|$)/.test(s))return true;   // 画像判定のタグ「干支」・Etomoji など
+  const y=((item.name||'').match(/(\d{4})年(?:度)?版/)||[])[1];
+  const ws=ZODIAC_BY_YEAR_N[y];
+  return !!ws&&ws.some(a=>s.includes(a));
+}
 
 // ── Search ────────────────────────────────────────────────────────────────────
 // 手帳/カレンダーのカテゴリを年月の若い順に並べるためのキー（年*100+開始月、
@@ -4141,8 +4183,8 @@ document.getElementById('hd-search').addEventListener('input',e=>{
       const nComp=sc?normalize(sc+item.code):'';
       if(excludeTerms.length&&excludeTerms.some(et=>nn.includes(et)))return;
       if(negTerms.length&&negTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t))))return;
-      if(negZodiac&&isZodiacName(nn))return;
-      if(wordData.every(({allTerms,zodiac})=>zodiac?isZodiacName(nn):allTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t)))))
+      if(negZodiac&&isZodiacItem(item,nn))return;
+      if(wordData.every(({allTerms,zodiac})=>zodiac?isZodiacItem(item,nn):allTerms.some(t=>nn.includes(t)||nc.includes(t)||(nComp&&nComp.includes(t)))))
         results.push({...item,cat,rank:i+1,searchCode:sc});
     });
   }
