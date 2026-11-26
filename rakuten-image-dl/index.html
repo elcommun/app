@@ -507,29 +507,39 @@ function computeSup(rows, slug) {
     if (kind === 'sku') SUP.bySku++; else if (kind === 'base') SUP.byBase++; else SUP.byMain++;
     SUP.items.push({ code: SUP_MASTER[key], url: r.pick.url, srcPath: r.pick.srcPath, path: key + '.jpg', kind });
   };
+  // 商品の楽天ページ（supBase）→ 商品。そのページが単体の商品（SKU行1行以下）なら、SKU番号が違っていてもその商品のページとして照合する
+  // 例: 単体ページ rio-w88620 → 商品 rio-w88600-W88620（2026-11-26 ユーザー確認）
+  const byPage = {};
+  for (const k of Object.keys(SUP_MASTER)) { const b = supBase(SUP_MASTER[k]); if (b) (byPage[b.toLowerCase()] = byPage[b.toLowerCase()] || []).push(k); }
+  // 同じ商品が複数のページに出るときは、良い方を使う：
+  //  0 = その商品の単体ページのメイン画像 ／ 1 = SKU画像 ／ 2 = 選択肢のあるページのメイン画像（SKU画像が無いときの代わり）
+  const best = {}, noImg = new Set();
   let mng = '';
   for (const row of rows.slice(1)) {
     const m = (row[iMng] || '').trim();
     if (m) mng = m;
     if (!mng) continue;
+    const ml = mng.toLowerCase();
     const sys = iSys >= 0 ? (row[iSys] || '').trim() : '';
     const sku = iSku >= 0 ? (row[iSku] || '').trim() : '';
+    const single = (skuRows[ml] || 0) <= 1;
     // 商品管理番号そのもの（SKUなしの商品）は、SKU行ではない行だけで照合する（SKU行まで商品管理番号に一致させない）
     const cands = [sys, sku ? mng + sku : '', sku, (!sys && !sku) ? mng : ''].filter(Boolean);
     let key = '';
     for (const c of cands) { const k = supKey(c); if (SUP_MASTER[k]) { key = k; break; } }
     if (!key && SUP_FRAME) { const f = apjFrameKey(sys || mng + sku); if (f && SUP_FRAME[f]) key = SUP_FRAME[f]; }
-    if (!key || done.has(key)) continue;
-    done.add(key);
-    SUP.matched++;
+    if (!key && single && byPage[ml] && byPage[ml].length === 1) key = byPage[ml][0];
+    if (!key) continue;
     let skuImg = '';
     for (const i of iImgs) { const v = (row[i] || '').trim(); if (v) { skuImg = v; break; } }
-    const mainImg = mainBy[mng.toLowerCase()] || '';
-    const single = (skuRows[mng.toLowerCase()] || 0) <= 1;
+    const mainImg = mainBy[ml] || '';
     const r = (single && mainImg ? imgOf('', mainImg) : null) || imgOf(skuImg, mainImg);
-    if (!r) { SUP.noImage++; continue; }
-    push(key, r, r.kind);
+    if (!r) { if (!best[key]) noImg.add(key); continue; }
+    const rank = single && r.kind === 'main' ? 0 : r.kind === 'sku' ? 1 : 2;
+    if (!best[key] || rank < best[key].rank) { best[key] = { r, rank }; noImg.delete(key); }
   }
+  for (const key of Object.keys(best)) { done.add(key); SUP.matched++; push(key, best[key].r, best[key].r.kind); }
+  for (const key of noImg) { done.add(key); SUP.matched++; SUP.noImage++; }
   // CSVにSKU行が無い商品（色違いなど）は、商品番号から商品管理番号を導き（supBase）、その商品のメイン画像で補う
   for (const key of Object.keys(SUP_MASTER)) {
     if (done.has(key)) continue;
@@ -554,10 +564,10 @@ function supBase(code) {
   if (mApj) return mApj[1];
   if (/^ldw001-/i.test(c)) return 'ldw001-';
   // 楽天の商品管理番号が商品番号から素直に出ない商品（2026-11-26 ユーザー確認）：
-  //  リオのネオン rio-w88600-W88620 → rio-w88600（末尾のハイフン無し）
+  //  リオのネオン rio-w88600-W88620 → rio-w88620（色・柄ごとの単体ページ）
   //  氷印スタンプ wh-kg-CLS22-020 → wh-kg-cls22020（区切りのハイフン無し）
-  const mRio = c.match(/^(rio-[a-z0-9]+)-/i);
-  if (mRio) return mRio[1].toLowerCase();
+  const mRio = c.match(/^rio-[a-z0-9]+-([a-z0-9]+)$/i);
+  if (mRio) return ('rio-' + mRio[1]).toLowerCase();
   const mKg = c.match(/^wh-kg-(cls(?:ac)?\d+)-(\d+)$/i);
   if (mKg) return ('wh-kg-' + mKg[1] + mKg[2]).toLowerCase();
   const mPb = c.match(/^pb-[a-z0-9]*([A-Z][A-Z0-9]*)$/);
