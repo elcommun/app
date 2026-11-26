@@ -559,7 +559,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v192</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC 販売ランキング（メーカー商品）</div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v193</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -790,6 +790,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
   var _ver=((document.querySelector('.hd-sub span')||{}).textContent||'0').replace(/\D/g,'');
   document.write('<script src="data.js?v='+_ver+'"><\/script>');
   document.write('<script src="image-index.js?v='+_ver+'"><\/script>');
+  document.write('<script src="search-dict.js?v='+_ver+'"><\/script>');
 </script>
 <script>
 // スマホ判定: 縦持ち＝幅600px以下（カード表示）。横持ち＝高さ500px以下の横向きタッチ端末（PCに近い表のまま、サイドメニューだけドロワー）
@@ -2670,13 +2671,46 @@ function closeCatalog(){
 function printCatalog(){window.print();}
 
 // ── 検索 ──────────────────────────────────────────────────
+// 商品名のワードを「日本語＝英語」で検索できるようにする（2026-11-26 ユーザー指示：全ての検索で）。
+// 辞書は自社商品アプリ（ranking）の検索同義語辞書の写し（search-dict.js の SEARCH_DICT。
+// tools/build-supplier-search-dict.py で作る）＋ 仕入れ商品だけの語（SUP_TRANS_GROUPS）。
+// グループ内の語はどれで検索しても同じ商品が出る。商品ごとの検索ワード（商品データの7番目の値）も今まで通り使う
+const SUP_TRANS_GROUPS=[
+  ['Neon','ネオン','ねおん'],
+  ['LED','エルイーディー'],
+  ['Light','ライト','照明'],
+];
+// 検索用の正規化：全角半角・大文字小文字・カタカナ/ひらがな・ラテン文字のアクセント・空白をそろえる
+function searchNorm(s){
+  return String(s||'').normalize('NFKC').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC')
+    .replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+    .replace(/\s+/g,'');
+}
+const SUP_TRANS_N=(()=>{
+  const T={};
+  const groups=[...(typeof SEARCH_DICT!=='undefined'?SEARCH_DICT:[]),...SUP_TRANS_GROUPS];
+  for(const g of groups){
+    const ng=[...new Set(g.map(searchNorm).filter(Boolean))];
+    for(const w of ng){const a=T[w]=T[w]||new Set();ng.forEach(v=>{if(v!==w)a.add(v);});}
+  }
+  return T;
+})();
+// 1語ぶんの検索語（その語＋辞書の相方語。辞書の語の一部を入れたときも、その語の相方を足す）
+function searchTermsOf(wn){
+  const out=new Set([wn]);
+  (SUP_TRANS_N[wn]||[]).forEach(v=>out.add(v));
+  if(wn.length>=2) for(const k in SUP_TRANS_N){ if(k!==wn&&k.includes(wn)) SUP_TRANS_N[k].forEach(v=>out.add(v)); }
+  return [...out];
+}
 function clearSearch(){
   searchQuery='';
   document.getElementById('hd-search').value='';
   document.querySelector('.search-wrap').classList.remove('has-text');
 }
 function renderSearch(){
-  const qn=normalize(searchQuery);
+  // スペース区切りは AND 検索。1語ごとに辞書の相方語（日本語⇔英語）のどれかに当たれば一致
+  const qWords=String(searchQuery||'').split(/[\s　]+/).map(searchNorm).filter(Boolean).map(searchTermsOf);
   document.getElementById('cat-view').style.display='none';
   document.getElementById('search-view').style.display='';
   setOverviewVisible(false); // 検索中はKPI・グラフを隠す（直前のグループの数字が残るのを防ぐ）
@@ -2685,8 +2719,8 @@ function renderSearch(){
   Object.keys(AGG).forEach(m=>{
     Object.keys(AGG[m].items).forEach(pid=>{
       const p=ALL_PRODUCTS[pid];
-      const hay=normalize(p[0]+p[1]+p[2]+p[3]+(p[6]||''));
-      if(hay.includes(qn)){
+      const hay=searchNorm(p[0]+' '+p[1]+' '+p[2]+' '+p[3]+' '+(p[6]||''));
+      if(qWords.length&&qWords.every(ts=>ts.some(t=>hay.includes(t)))){
         const it=AGG[m].items[pid];
         rows.push({pid, maker:p[0], name:p[1], varName:p[2], code:p[3], price:unitPriceOf(p,it.qty,it.amount), category:p[5], qty:it.qty, amount:it.amount});
       }
