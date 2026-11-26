@@ -70,6 +70,7 @@ EC（楽天・Amazon等）の販売データをExcelでインポートし、カ�
 - **shopify-converter：楽天リンクの付け替え（2026-10-17 ユーザー指示）**。商品説明の楽天リンクは、商品ページ→Shopify商品、カテゴリ（/c/）→対応表のコレクション、楽天の倉庫ページ（soko.rms）・rakuten.co.jp直下→item.rakuten.co.jp に正規化してから同じ付け替え、楽天の検索結果→同じ検索語のShopifyサイト内検索（`normalizeRakutenLinks`）。2026-10-17 に既存31商品の残っていた楽天リンク37か所も同じルールで直した（元の説明文は `shopify-converter/backup/`）
 - **shopify-converter：Collectionの読み替え（2026-10-22 ユーザー指示）**。Type「小物ディスプレイ」→ コレクション「小物ディスプレイ」（https://elcommun.com/collections/display。コレクション一覧に追加）。楽天カテゴリ「花瓶」「花瓶・フラワーベース」に入っている商品は、Typeに関わらずコレクション「花瓶・フラワーベース」（https://elcommun.com/collections/flowervase）にする（`VASE_CATEGORY_RE` / `buildPathCollectionMap`。カレンダーのフルパス判定と同じ仕組み）
 - **shopify-converter：リンク切れ判定の有効商品（2026-10-22 ユーザー指示）**。説明文・関連商品のリンクは「Shopify登録済み商品CSVのHandle」＋「今回のCSVでアップする商品」を有効とする。登録済みに無くても同時にアップする新商品へのリンクは省かない。どちらにも無い商品・楽天GOLDの対応表に無いページへのリンクだけを削除する
+- **shopify-converter：ジャンルID → Product Category の追加（2026-11-26 ユーザー指示）**。楽天ジャンルID `404046`（ジョーロ）→ `hg-12-6-7`（ホーム・ガーデン > ガーデン用品・ガーデン機器 > 散水用品 > じょうろ）を `GENRE_CATEGORY_MAP` に追加。対応表に無いジャンルは Shopify の taxonomy（GraphQL `taxonomy.categories(search:)`、日本語の名前で検索）で確かめてから足す
 - **shopify-converter：新規商品は必ず「新商品」コレクションに入れる（2026-10-15 ユーザー指示）**。Shopifyの「新商品」は自動コレクション（CSVのCollection列では入れられない）なので、新規商品（Shopify登録済み商品CSVに無い商品。未読み込み時は全商品）にタグ `新商品`（`NEW_PRODUCT_TAG`）を付け、コレクション側の条件「タグが 新商品 と等しい」（OR条件。2026-10-15 追加済み）で入れる
 
 ### トップページ（アプリ一覧）`index.html`（2026-10-11 ユーザー指示）
