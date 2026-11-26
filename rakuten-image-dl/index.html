@@ -541,6 +541,13 @@ function supBase(code) {
   const mApj = c.match(/^apj-(.+)$/i);
   if (mApj) return mApj[1];
   if (/^ldw001-/i.test(c)) return 'ldw001-';
+  // 楽天の商品管理番号が商品番号から素直に出ない商品（2026-11-26 ユーザー確認）：
+  //  リオのネオン rio-w88600-W88620 → rio-w88600（末尾のハイフン無し）
+  //  氷印スタンプ wh-kg-CLS22-020 → wh-kg-cls22020（区切りのハイフン無し）
+  const mRio = c.match(/^(rio-[a-z0-9]+)-/i);
+  if (mRio) return mRio[1].toLowerCase();
+  const mKg = c.match(/^wh-kg-(cls(?:ac)?\d+)-(\d+)$/i);
+  if (mKg) return ('wh-kg-' + mKg[1] + mKg[2]).toLowerCase();
   const mPb = c.match(/^pb-[a-z0-9]*([A-Z][A-Z0-9]*)$/);
   if (mPb) { const pb = mPb[1].slice(0, -1).toLowerCase(); if (pb) return 'pb-' + pb; }
   const m8 = c.match(/^8mw-[^-]+-/i);
