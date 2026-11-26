@@ -625,7 +625,7 @@ details[open]>.tc-head::before{transform:rotate(90deg)}
 
 <header class="hdr">
   <button class="hd-menu" id="hd-menu" aria-label="メニュー">☰</button>
-  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v397</span></div></div>
+  <div class="hd-title-box"><div class="hd-logo" onclick="location.reload()" style="cursor:pointer">EC事業部 販売データ<span class="hd-logo-sub">：自社商品</span></div><div class="hd-sub">EL COMMUN <span style="font-size:9px;opacity:.5">v398</span></div></div>
   <div class="hd-sep"></div>
   <div class="hd-date" id="hd-date"></div>
   <div class="hd-spacer"></div>
@@ -4029,6 +4029,9 @@ for(const g of TRANS_GROUPS){
 const MOTIF_TERMS={'Fluide':['猫','ねこ','ネコ','cat','cats','キャット','neko','にゃんこ']};
 for(const[term,words] of Object.entries(MOTIF_TERMS))
   for(const w of words)(TRANS_N[normalize(w)]=TRANS_N[normalize(w)]||[]).push(normalize(term));
+// 品番ごとの隠し検索ワード（商品名には出さず、検索の照合だけに使う）。名前の語が一般的で MOTIF_TERMS では他の商品まで出てしまうときに使う
+// 2026-11-26 ユーザー指示：次の20品番はひつじ柄の干支デザイン（Dream・Wool・Chase・Meechan・ﾌｧﾐｰﾕ・追いかけっこ など）
+const CODE_SEARCH_TAGS={'DR-WK-780':'ひつじ 干支','DR-WK-781':'ひつじ 干支','DR-WK-782':'ひつじ 干支','DR-WK-783':'ひつじ 干支','DR-WB-517':'ひつじ 干支','DR-WB-518':'ひつじ 干支','DR-WB-535':'ひつじ 干支','DR-WB-536':'ひつじ 干支','DR-WK-758':'ひつじ 干支','DR-WK-759':'ひつじ 干支','DR-WV-056':'ひつじ 干支','DR-WV-057':'ひつじ 干支','XDR-WL-121':'ひつじ 干支','XDR-WL-122':'ひつじ 干支','XDR-WL-124':'ひつじ 干支','XDR-WL-125':'ひつじ 干支','XDR-WK-817':'ひつじ 干支','XDR-WK-818':'ひつじ 干支','XDR-MM-025':'ひつじ 干支','XDR-MM-026':'ひつじ 干支'};
 // 十二支（干支）の検索（2026-11-26 ユーザー指示）：「干支」「えと」などで、商品名に十二支の動物（羊・ひつじ・ヒツジ・馬・うま・ウマ…）を含む商品を出す。
 // 片方向（「羊」で干支の商品全部は出ない）。ZODIAC_NOT は動物の語を含むが十二支ではない語（ハリネズミ・恐竜・ストライプ等）で、判定の前に取り除く。
 // 両アプリ（ranking・supplier-ranking）で同じ一覧。変えるときは両方そろえる
@@ -4132,7 +4135,7 @@ document.getElementById('hd-search').addEventListener('input',e=>{
     const isDC=_dcGroups.some(g=>g.match(cat));
     const items=Object.values(codes).sort((a,b)=>b.qty-a.qty);
     items.forEach((item,i)=>{
-      const nn=normalize(item.name),nc=normalize(item.code);
+      const nn=normalize(item.name+(CODE_SEARCH_TAGS[item.code]?' '+CODE_SEARCH_TAGS[item.code]:'')),nc=normalize(item.code);
       // 手帳/カレンダーのみ「検索コード＋品番」の複合キーでも検索
       const sc=isDC?((DATA.products[item.code]||[])[2]||''):'';
       const nComp=sc?normalize(sc+item.code):'';
